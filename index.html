@@ -501,6 +501,80 @@
       }));
     }
 
+    function createRevealRegistry({
+      setTimeoutFn = setTimeout,
+      clearTimeoutFn = clearTimeout,
+      delay = 10_000,
+    } = {}) {
+      const timers = new Map();
+
+      function hide(key) {
+        if (!timers.has(key)) {
+          return;
+        }
+        clearTimeoutFn(timers.get(key));
+        timers.delete(key);
+      }
+
+      function show(key, onHide) {
+        hide(key);
+        const timerId = setTimeoutFn(() => {
+          timers.delete(key);
+          onHide();
+        }, delay);
+        timers.set(key, timerId);
+      }
+
+      function clear() {
+        for (const timerId of timers.values()) {
+          clearTimeoutFn(timerId);
+        }
+        timers.clear();
+      }
+
+      return Object.freeze({ clear, hide, show });
+    }
+
+    async function copyText(text, {
+      navigatorRef = typeof navigator === "undefined" ? null : navigator,
+      documentRef = typeof document === "undefined" ? null : document,
+    } = {}) {
+      if (navigatorRef?.clipboard?.writeText) {
+        try {
+          await navigatorRef.clipboard.writeText(text);
+          return "clipboard";
+        } catch {
+          // Continue to the local textarea fallback.
+        }
+      }
+
+      if (!documentRef?.body || typeof documentRef.execCommand !== "function") {
+        throw new Error("当前浏览器不允许自动复制，请手动选择脱敏 JSON。");
+      }
+
+      const textarea = documentRef.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      documentRef.body.appendChild(textarea);
+      textarea.select();
+      const copied = documentRef.execCommand("copy");
+      textarea.remove();
+
+      if (!copied) {
+        throw new Error("当前浏览器不允许自动复制，请手动选择脱敏 JSON。");
+      }
+      return "fallback";
+    }
+
+    function formatDisplayValue(value) {
+      if (typeof value === "string") {
+        return value;
+      }
+      return JSON.stringify(value, null, 2);
+    }
+
     function parseJwt(input, nowMilliseconds = Date.now()) {
       const normalized = normalizeInput(input);
       if (!normalized) {
@@ -535,21 +609,222 @@
       };
     }
 
+    function boot(documentRef) {
+      const input = documentRef.getElementById("tokenInput");
+      const parseButton = documentRef.getElementById("parseButton");
+      const clearButton = documentRef.getElementById("clearButton");
+      const errorBox = documentRef.getElementById("errorBox");
+      const resultArea = documentRef.getElementById("resultArea");
+      const statusSummary = documentRef.getElementById("statusSummary");
+      const warningList = documentRef.getElementById("warningList");
+      const sectionsRoot = documentRef.getElementById("sections");
+      const rawJson = documentRef.getElementById("rawJson");
+      const copyButton = documentRef.getElementById("copyButton");
+      const copyStatus = documentRef.getElementById("copyStatus");
+      const revealRegistry = createRevealRegistry();
+      let redactedResult = null;
+
+      function makeElement(tagName, className, text) {
+        const element = documentRef.createElement(tagName);
+        if (className) {
+          element.className = className;
+        }
+        if (text !== undefined) {
+          element.textContent = text;
+        }
+        return element;
+      }
+
+      function setError(message = "") {
+        errorBox.textContent = message;
+        errorBox.hidden = message.length === 0;
+      }
+
+      function resetResult() {
+        revealRegistry.clear();
+        redactedResult = null;
+        resultArea.hidden = true;
+        statusSummary.replaceChildren();
+        warningList.replaceChildren();
+        sectionsRoot.replaceChildren();
+        rawJson.textContent = "";
+        copyStatus.textContent = "";
+      }
+
+      function clearAll({ focus = true } = {}) {
+        input.value = "";
+        setError();
+        resetResult();
+        if (focus) {
+          input.focus();
+        }
+      }
+
+      function addSummary(label, value, state = "") {
+        const card = makeElement("div", "summary-card");
+        if (state) {
+          card.dataset.state = state;
+        }
+        card.append(
+          makeElement("span", "summary-label", label),
+          makeElement("strong", "summary-value", value),
+        );
+        statusSummary.appendChild(card);
+      }
+
+      function renderSummary(result) {
+        const { claims } = result.time;
+        addSummary("JWT 结构", "三段式 · Signature 未验证");
+        addSummary("签名算法", String(result.header.alg ?? "未提供"));
+        addSummary("签发时间", claims.iat.valid ? claims.iat.beijing : "未提供或格式错误");
+        addSummary("到期时间", claims.exp.valid ? claims.exp.beijing : "未提供或格式错误");
+        addSummary("时间状态", result.time.label, result.time.code);
+      }
+
+      function renderWarnings(warnings) {
+        warningList.replaceChildren();
+        for (const warning of warnings) {
+          const item = makeElement("div", "warning-item", `⚠ ${warning.message}`);
+          warningList.appendChild(item);
+        }
+      }
+
+      function createFieldRow(entry) {
+        const row = makeElement("div", "field-row");
+        const key = makeElement("div", "field-key", entry.path);
+        const value = makeElement("pre", "field-value");
+        row.append(key, value);
+
+        if (!entry.sensitive) {
+          value.textContent = formatDisplayValue(entry.value);
+          return row;
+        }
+
+        let revealed = false;
+        const button = makeElement("button", "reveal-button", "显示 10 秒");
+        button.type = "button";
+        button.setAttribute("aria-label", `临时显示 ${entry.path}`);
+
+        function conceal() {
+          revealed = false;
+          value.textContent = "••••••••";
+          button.textContent = "显示 10 秒";
+          button.setAttribute("aria-pressed", "false");
+        }
+
+        conceal();
+        button.addEventListener("click", () => {
+          if (revealed) {
+            revealRegistry.hide(entry.path);
+            conceal();
+            return;
+          }
+
+          revealed = true;
+          value.textContent = formatDisplayValue(entry.value);
+          button.textContent = "立即隐藏";
+          button.setAttribute("aria-pressed", "true");
+          revealRegistry.show(entry.path, conceal);
+        });
+        row.appendChild(button);
+        return row;
+      }
+
+      function renderSections(result) {
+        sectionsRoot.replaceChildren();
+        for (const section of buildSections(result.header, result.payload)) {
+          if (section.entries.length === 0) {
+            continue;
+          }
+          const card = makeElement("section", "claim-card");
+          card.appendChild(makeElement("h3", "", section.title));
+          const list = makeElement("div", "field-list");
+          for (const entry of section.entries) {
+            list.appendChild(createFieldRow(entry));
+          }
+          card.appendChild(list);
+          sectionsRoot.appendChild(card);
+        }
+      }
+
+      function handleParse() {
+        setError();
+        resetResult();
+
+        try {
+          const result = parseJwt(input.value);
+          input.value = "";
+          redactedResult = {
+            header: redactDeep(result.header),
+            payload: redactDeep(result.payload),
+            signature: result.signature,
+          };
+          renderSummary(result);
+          renderWarnings(result.warnings);
+          renderSections(result);
+          rawJson.textContent = JSON.stringify(redactedResult, null, 2);
+          resultArea.hidden = false;
+          resultArea.focus();
+        } catch (error) {
+          const message = error instanceof ParserError
+            ? error.message
+            : "解析失败，请确认输入是完整的三段式 JWT。";
+          setError(message);
+        }
+      }
+
+      parseButton.addEventListener("click", handleParse);
+      clearButton.addEventListener("click", () => clearAll());
+      copyButton.addEventListener("click", async () => {
+        if (!redactedResult) {
+          return;
+        }
+        const text = JSON.stringify(redactedResult, null, 2);
+        try {
+          await copyText(text, { documentRef, navigatorRef: globalThis.navigator });
+          copyStatus.textContent = "已复制脱敏 JSON";
+        } catch (error) {
+          copyStatus.textContent = error.message;
+          rawJson.focus();
+          const selection = globalThis.getSelection?.();
+          if (selection) {
+            const range = documentRef.createRange();
+            range.selectNodeContents(rawJson);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+        }
+      });
+      documentRef.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          clearAll();
+        }
+      });
+    }
+
     globalThis.ATParserCore = Object.freeze({
       ParserError,
+      boot,
       buildSections,
       buildWarnings,
       categorizeEntry,
+      copyText,
+      createRevealRegistry,
       decodeJsonObject,
       evaluateTimeStatus,
       flattenEntries,
       formatBeijingTime,
+      formatDisplayValue,
       isSensitiveKey,
       normalizeInput,
       parseJwt,
       parseNumericDate,
       redactDeep,
     });
+
+    if (typeof document !== "undefined") {
+      boot(document);
+    }
   })();
   </script>
 </body>

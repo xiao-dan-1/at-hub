@@ -52,3 +52,12 @@ test("page includes responsive light and dark styles", () => {
   assert.match(html, /@media\s*\(max-width:\s*700px\)/u);
   assert.match(html, /:focus-visible/u);
 });
+
+test("browser controller avoids HTML injection and implements clear controls", () => {
+  assert.doesNotMatch(html, /\.innerHTML\s*=/u);
+  assert.match(html, /textContent/u);
+  assert.match(html, /event\.key\s*===\s*["']Escape["']/u);
+  assert.match(html, /input\.value\s*=\s*["']["']/u);
+  assert.match(html, /replaceChildren\(/u);
+  assert.match(html, /selectNodeContents\(/u);
+});
