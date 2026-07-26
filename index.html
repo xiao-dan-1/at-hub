@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src data:; font-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>AT 本地解析器</title>
+</head>
+<body>
+  <main>
+    <h1>AT 本地解析器</h1>
+  </main>
+  <script id="app-script">
+  (() => {
+    "use strict";
+
+    class ParserError extends Error {
+      constructor(code, message) {
+        super(message);
+        this.name = "ParserError";
+        this.code = code;
+      }
+    }
+
+    function normalizeInput(input) {
+      return String(input ?? "")
+        .trim()
+        .replace(/^Bearer\s+/iu, "")
+        .trim();
+    }
+
+    function decodeJsonObject(segment, label) {
+      if (!/^[A-Za-z0-9_-]+={0,2}$/u.test(segment)) {
+        throw new ParserError(`${label.toUpperCase()}_BASE64URL`, `${label} 不是合法的 Base64URL。`);
+      }
+
+      const unpadded = segment.replace(/=+$/u, "");
+      if (unpadded.length % 4 === 1) {
+        throw new ParserError(`${label.toUpperCase()}_BASE64URL`, `${label} 不是合法的 Base64URL。`);
+      }
+
+      const standard = unpadded.replace(/-/gu, "+").replace(/_/gu, "/");
+      const padded = standard.padEnd(Math.ceil(standard.length / 4) * 4, "=");
+      let binary;
+
+      try {
+        binary = atob(padded);
+      } catch {
+        throw new ParserError(`${label.toUpperCase()}_BASE64URL`, `${label} 不是合法的 Base64URL。`);
+      }
+
+      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      let text;
+
+      try {
+        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      } catch {
+        throw new ParserError(`${label.toUpperCase()}_UTF8`, `${label} 不是合法的 UTF-8 文本。`);
+      }
+
+      let value;
+      try {
+        value = JSON.parse(text);
+      } catch {
+        throw new ParserError(`${label.toUpperCase()}_JSON`, `${label} 不是合法的 JSON。`);
+      }
+
+      if (value === null || Array.isArray(value) || typeof value !== "object") {
+        throw new ParserError(`${label.toUpperCase()}_NOT_OBJECT`, `${label} 顶层必须是 JSON 对象。`);
+      }
+
+      return value;
+    }
+
+    function parseJwt(input) {
+      const normalized = normalizeInput(input);
+      if (!normalized) {
+        throw new ParserError("EMPTY_INPUT", "请输入一个 AT。数据只会在当前页面内解析。");
+      }
+
+      const parts = normalized.split(".");
+      if (parts.length !== 3 || parts.some((part) => part.length === 0)) {
+        throw new ParserError("JWT_STRUCTURE", "AT 必须是由两个点分隔的三段式 JWT。");
+      }
+
+      return {
+        header: decodeJsonObject(parts[0], "Header"),
+        payload: decodeJsonObject(parts[1], "Payload"),
+        signature: { present: true, verified: false },
+      };
+    }
+
+    globalThis.ATParserCore = Object.freeze({
+      ParserError,
+      decodeJsonObject,
+      normalizeInput,
+      parseJwt,
+    });
+  })();
+  </script>
+</body>
+</html>
