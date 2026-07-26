@@ -73,7 +73,109 @@
       return value;
     }
 
-    function parseJwt(input) {
+    const COMMON_SIGNING_ALGORITHMS = new Set([
+      "RS256", "RS384", "RS512",
+      "PS256", "PS384", "PS512",
+      "ES256", "ES384", "ES512",
+      "EdDSA",
+      "HS256", "HS384", "HS512",
+    ]);
+
+    function parseNumericDate(payload, key) {
+      if (!Object.prototype.hasOwnProperty.call(payload, key)) {
+        return { key, present: false, valid: false, raw: undefined };
+      }
+
+      const raw = payload[key];
+      if (typeof raw !== "number" || !Number.isFinite(raw)) {
+        return { key, present: true, valid: false, raw };
+      }
+
+      const milliseconds = raw * 1000;
+      const beijing = formatBeijingTime(raw);
+      if (!Number.isFinite(milliseconds) || beijing === null) {
+        return { key, present: true, valid: false, raw };
+      }
+
+      return {
+        key,
+        present: true,
+        valid: true,
+        raw,
+        milliseconds,
+        beijing,
+      };
+    }
+
+    function formatBeijingTime(seconds) {
+      if (typeof seconds !== "number" || !Number.isFinite(seconds)) {
+        return null;
+      }
+
+      const shifted = new Date(seconds * 1000 + 8 * 60 * 60 * 1000);
+      if (Number.isNaN(shifted.getTime())) {
+        return null;
+      }
+
+      return `${shifted.toISOString().slice(0, 19).replace("T", " ")} +08:00`;
+    }
+
+    function evaluateTimeStatus(payload, nowMilliseconds = Date.now()) {
+      const claims = {
+        iat: parseNumericDate(payload, "iat"),
+        nbf: parseNumericDate(payload, "nbf"),
+        exp: parseNumericDate(payload, "exp"),
+      };
+      const invalidClaims = Object.values(claims)
+        .filter((claim) => claim.present && !claim.valid)
+        .map((claim) => claim.key);
+
+      if (claims.nbf.valid && nowMilliseconds < claims.nbf.milliseconds) {
+        return { code: "not_yet_valid", label: "尚未生效", claims, invalidClaims };
+      }
+      if (claims.exp.valid && nowMilliseconds >= claims.exp.milliseconds) {
+        return { code: "expired", label: "已过期", claims, invalidClaims };
+      }
+      if (claims.nbf.valid || claims.exp.valid) {
+        return { code: "within_window", label: "在声明时间窗口内", claims, invalidClaims };
+      }
+      return { code: "missing_time", label: "缺少时间声明", claims, invalidClaims };
+    }
+
+    function buildWarnings(header, time) {
+      const warnings = [{
+        code: "SIGNATURE_UNVERIFIED",
+        message: "只完成了本地解码，未验证签名、撤销状态或服务器可用性。",
+      }];
+      const algorithm = typeof header.alg === "string" ? header.alg : "";
+
+      if (!algorithm) {
+        warnings.push({ code: "MISSING_ALG", message: "Header 缺少 alg 字段。" });
+      } else if (algorithm.toLowerCase() === "none") {
+        warnings.push({ code: "ALG_NONE", message: "alg=none 不提供签名保护。" });
+      } else if (!COMMON_SIGNING_ALGORITHMS.has(algorithm)) {
+        warnings.push({ code: "UNKNOWN_ALG", message: `算法 ${algorithm} 不在常见签名算法列表中。` });
+      }
+
+      for (const key of time.invalidClaims) {
+        warnings.push({
+          code: "INVALID_TIME_CLAIM",
+          message: `${key} 不是有效的 JWT NumericDate 数字。`,
+        });
+      }
+
+      if (time.code === "expired") {
+        warnings.push({ code: "TOKEN_EXPIRED", message: "根据本机时间，该 token 已经过期。" });
+      } else if (time.code === "not_yet_valid") {
+        warnings.push({ code: "TOKEN_NOT_YET_VALID", message: "根据本机时间，该 token 尚未生效。" });
+      } else if (time.code === "missing_time") {
+        warnings.push({ code: "MISSING_TIME", message: "Payload 缺少有效的 nbf 和 exp 时间声明。" });
+      }
+
+      return warnings;
+    }
+
+    function parseJwt(input, nowMilliseconds = Date.now()) {
       const normalized = normalizeInput(input);
       if (!normalized) {
         throw new ParserError("EMPTY_INPUT", "请输入一个 AT。数据只会在当前页面内解析。");
@@ -84,18 +186,28 @@
         throw new ParserError("JWT_STRUCTURE", "AT 必须是由两个点分隔的三段式 JWT。");
       }
 
+      const header = decodeJsonObject(parts[0], "Header");
+      const payload = decodeJsonObject(parts[1], "Payload");
+      const time = evaluateTimeStatus(payload, nowMilliseconds);
+
       return {
-        header: decodeJsonObject(parts[0], "Header"),
-        payload: decodeJsonObject(parts[1], "Payload"),
+        header,
+        payload,
         signature: { present: true, verified: false },
+        time,
+        warnings: buildWarnings(header, time),
       };
     }
 
     globalThis.ATParserCore = Object.freeze({
       ParserError,
+      buildWarnings,
       decodeJsonObject,
+      evaluateTimeStatus,
+      formatBeijingTime,
       normalizeInput,
       parseJwt,
+      parseNumericDate,
     });
   })();
   </script>
