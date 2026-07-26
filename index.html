@@ -411,6 +411,14 @@
       if (["email", "name", "sub", "jti", "session_id"].includes(normalized)) {
         return true;
       }
+      if (normalized.includes("verified_identity")) {
+        return true;
+      }
+      const identitySubject = ["user", "account", "organization", "org", "workspace"]
+        .some((fragment) => normalized.includes(fragment));
+      if (identitySubject && (normalized.includes("uuid") || normalized.includes("identity"))) {
+        return true;
+      }
       return /(?:^|_)(?:id|ids)$/u.test(normalized);
     }
 
@@ -575,6 +583,15 @@
       return JSON.stringify(value, null, 2);
     }
 
+    function formatTimeClaimValue(key, value) {
+      const original = formatDisplayValue(value);
+      if (!["iat", "nbf", "exp"].includes(String(key).toLowerCase())) {
+        return original;
+      }
+      const beijing = formatBeijingTime(value);
+      return beijing === null ? original : `${original}\n北京时间：${beijing}`;
+    }
+
     function parseJwt(input, nowMilliseconds = Date.now()) {
       const normalized = normalizeInput(input);
       if (!normalized) {
@@ -696,7 +713,7 @@
         row.append(key, value);
 
         if (!entry.sensitive) {
-          value.textContent = formatDisplayValue(entry.value);
+          value.textContent = formatTimeClaimValue(entry.key, entry.value);
           return row;
         }
 
@@ -721,7 +738,7 @@
           }
 
           revealed = true;
-          value.textContent = formatDisplayValue(entry.value);
+          value.textContent = formatTimeClaimValue(entry.key, entry.value);
           button.textContent = "立即隐藏";
           button.setAttribute("aria-pressed", "true");
           revealRegistry.show(entry.path, conceal);
@@ -815,6 +832,7 @@
       flattenEntries,
       formatBeijingTime,
       formatDisplayValue,
+      formatTimeClaimValue,
       isSensitiveKey,
       normalizeInput,
       parseJwt,

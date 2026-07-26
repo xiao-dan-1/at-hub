@@ -7,6 +7,7 @@ const core = loadCore();
 const {
   evaluateTimeStatus,
   formatBeijingTime,
+  formatTimeClaimValue,
   normalizeInput,
   parseJwt,
 } = core;
@@ -82,6 +83,16 @@ test("evaluateTimeStatus reports each supported time state", () => {
 
 test("formatBeijingTime is deterministic and uses UTC+08:00", () => {
   assert.equal(formatBeijingTime(0), "1970-01-01 08:00:00 +08:00");
+});
+
+test("time claim display includes the NumericDate and Beijing time", () => {
+  for (const key of ["iat", "nbf", "exp"]) {
+    assert.equal(
+      formatTimeClaimValue(key, 0),
+      "0\n北京时间：1970-01-01 08:00:00 +08:00",
+    );
+  }
+  assert.equal(formatTimeClaimValue("nbf", "invalid"), "invalid");
 });
 
 test("parseJwt warns that signatures are not verified", () => {

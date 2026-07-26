@@ -53,6 +53,12 @@ test("page includes responsive light and dark styles", () => {
   assert.match(html, /:focus-visible/u);
 });
 
+test("time claims render through the Beijing-time formatter", () => {
+  assert.match(html, /function\s+formatTimeClaimValue\s*\(/u);
+  assert.match(html, /formatTimeClaimValue\(entry\.key,\s*entry\.value\)/u);
+  assert.match(html, /北京时间：/u);
+});
+
 test("browser controller avoids HTML injection and implements clear controls", () => {
   assert.doesNotMatch(html, /\.innerHTML\s*=/u);
   assert.match(html, /textContent/u);

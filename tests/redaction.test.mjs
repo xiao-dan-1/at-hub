@@ -9,6 +9,11 @@ test("isSensitiveKey identifies personal and identifier fields", () => {
   assert.equal(isSensitiveKey("email"), true);
   assert.equal(isSensitiveKey("session_id"), true);
   assert.equal(isSensitiveKey("verified_org_ids"), true);
+  assert.equal(isSensitiveKey("user_uuid"), true);
+  assert.equal(isSensitiveKey("account_uuid"), true);
+  assert.equal(isSensitiveKey("organization_uuid"), true);
+  assert.equal(isSensitiveKey("workspace_uuid"), true);
+  assert.equal(isSensitiveKey("verified_identity"), true);
   assert.equal(isSensitiveKey("chatgpt_plan_type"), false);
   assert.equal(isSensitiveKey("email_verified"), false);
 });
@@ -16,14 +21,30 @@ test("isSensitiveKey identifies personal and identifier fields", () => {
 test("redactDeep masks nested sensitive values without changing public values", () => {
   const source = {
     profile: { email: "person@example.test", email_verified: true, name: "Example" },
-    auth: { user_id: "user-synthetic", verified_org_ids: ["org-synthetic"] },
+    auth: {
+      user_id: "user-synthetic",
+      user_uuid: "uuid-user-synthetic",
+      account_uuid: "uuid-account-synthetic",
+      organization_uuid: "uuid-organization-synthetic",
+      workspace_uuid: "uuid-workspace-synthetic",
+      verified_identity: "identity-synthetic",
+      verified_org_ids: ["org-synthetic"],
+    },
     chatgpt_plan_type: "free",
     scp: ["openid", "profile"],
   };
 
   assert.deepEqual(toPlain(redactDeep(source)), {
     profile: { email: "[REDACTED]", email_verified: true, name: "[REDACTED]" },
-    auth: { user_id: "[REDACTED]", verified_org_ids: ["[REDACTED]"] },
+    auth: {
+      user_id: "[REDACTED]",
+      user_uuid: "[REDACTED]",
+      account_uuid: "[REDACTED]",
+      organization_uuid: "[REDACTED]",
+      workspace_uuid: "[REDACTED]",
+      verified_identity: "[REDACTED]",
+      verified_org_ids: ["[REDACTED]"],
+    },
     chatgpt_plan_type: "free",
     scp: ["openid", "profile"],
   });
