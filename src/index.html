@@ -8,7 +8,135 @@
   <title>AT Inspector</title>
 </head>
 <body>
-  <main id="app" aria-live="polite">正在载入 AT Inspector</main>
+  <a class="skip-link" href="#tokenInput">跳到 AT 输入框</a>
+
+  <header class="app-bar">
+    <div class="app-bar__inner">
+      <a class="brand" href="#top" aria-label="AT Inspector 首页">
+        <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
+        <span>AT Inspector</span>
+      </a>
+      <div class="local-status">
+        <span class="local-status__dot" aria-hidden="true"></span>
+        <span>本地运行 · 零上传</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="app-shell">
+    <section id="inputSurface" class="input-surface" aria-labelledby="inputHeading">
+      <div class="input-surface__heading">
+        <div>
+          <h1 id="inputHeading">解析一个 AT</h1>
+          <p>在当前页面内读取 JWT 声明，不验证签名或服务器状态。</p>
+        </div>
+        <span class="privacy-note"><i data-lucide="key-round" aria-hidden="true"></i> 不保存历史</span>
+      </div>
+      <textarea
+        id="tokenInput"
+        aria-labelledby="inputHeading"
+        aria-describedby="inputHelp"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="粘贴三段式 JWT，也可以包含 Bearer 前缀"
+      ></textarea>
+      <p id="inputHelp" class="input-help">解析成功后输入会立即清空。请勿把真实 AT 分享到聊天、Issue 或日志。</p>
+      <div class="input-actions">
+        <button id="parseButton" class="button button--primary" type="button">
+          <i data-lucide="scan-search" aria-hidden="true"></i><span>本地解析</span>
+        </button>
+        <button id="clearButton" class="button button--secondary" type="button">
+          <i data-lucide="trash-2" aria-hidden="true"></i><span>清空</span>
+        </button>
+        <span class="keyboard-hint">Esc 清空全部</span>
+      </div>
+      <div id="errorBox" class="error-box" role="alert" hidden></div>
+    </section>
+
+    <section id="resultArea" class="result-area" aria-labelledby="resultHeading" tabindex="-1" hidden>
+      <header class="result-toolbar">
+        <div>
+          <h1 id="resultHeading">AT 检查结果</h1>
+          <p>JWT 声明可能陈旧；结果不代表服务器接受该凭据。</p>
+        </div>
+        <div class="result-actions" aria-label="结果操作">
+          <button id="newParseButton" class="icon-button" type="button" title="重新解析" aria-label="重新解析">
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          </button>
+          <button id="copyButton" class="button button--secondary" type="button">
+            <i data-lucide="copy" aria-hidden="true"></i><span>复制脱敏 JSON</span>
+          </button>
+          <button id="resultClearButton" class="icon-button icon-button--danger" type="button" title="清空全部" aria-label="清空全部">
+            <i data-lucide="trash-2" aria-hidden="true"></i>
+          </button>
+        </div>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="检查结果视图">
+        <button id="overviewTab" class="tab" type="button" role="tab" aria-selected="true" aria-controls="overviewPanel" tabindex="0" data-tab="overview">概览</button>
+        <button id="permissionsTab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="permissionsPanel" tabindex="-1" data-tab="permissions">权限</button>
+        <button id="inspectorTab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="inspectorPanel" tabindex="-1" data-tab="inspector">高级检查器</button>
+      </nav>
+
+      <section id="overviewPanel" class="tab-panel" role="tabpanel" aria-labelledby="overviewTab">
+        <div id="statusStrip" class="status-strip" aria-live="polite"></div>
+        <div id="warningList" class="warning-list"></div>
+        <div class="overview-sections">
+          <section class="data-section" aria-labelledby="accountHeading">
+            <div class="section-title"><i data-lucide="user-round" aria-hidden="true"></i><h2 id="accountHeading">账号</h2></div>
+            <dl id="accountSummary" class="definition-list"></dl>
+          </section>
+          <section class="data-section" aria-labelledby="authenticationHeading">
+            <div class="section-title"><i data-lucide="fingerprint" aria-hidden="true"></i><h2 id="authenticationHeading">认证</h2></div>
+            <dl id="authenticationSummary" class="definition-list"></dl>
+          </section>
+          <section class="data-section data-section--wide" aria-labelledby="securityHeading">
+            <div class="section-title"><i data-lucide="shield-alert" aria-hidden="true"></i><h2 id="securityHeading">安全上下文</h2></div>
+            <dl id="securitySummary" class="definition-list definition-list--columns"></dl>
+          </section>
+        </div>
+      </section>
+
+      <section id="permissionsPanel" class="tab-panel" role="tabpanel" aria-labelledby="permissionsTab" hidden>
+        <div class="panel-heading">
+          <div><h2>权限解释</h2><p>按本地规则解释 scope，不代表 OpenAI 官方评级。</p></div>
+          <div id="permissionFilters" class="segmented" aria-label="权限筛选"></div>
+        </div>
+        <div id="permissionList" class="permission-list"></div>
+        <p id="permissionNotice" class="panel-note"></p>
+      </section>
+
+      <section id="inspectorPanel" class="tab-panel" role="tabpanel" aria-labelledby="inspectorTab" hidden>
+        <div class="inspector-toolbar">
+          <label class="search-field" for="inspectorSearch">
+            <i data-lucide="search" aria-hidden="true"></i>
+            <input id="inspectorSearch" type="search" placeholder="搜索名称、key 或路径">
+          </label>
+          <label class="category-select" for="inspectorCategory">
+            <span>分类</span>
+            <select id="inspectorCategory"></select>
+          </label>
+          <span id="inspectorCount" class="result-count"></span>
+        </div>
+        <div class="inspector-layout">
+          <nav id="inspectorCategories" class="inspector-categories" aria-label="字段分类"></nav>
+          <div id="inspectorFields" class="inspector-fields" aria-label="字段列表"></div>
+          <section id="inspectorDetail" class="inspector-detail" aria-label="字段详情"></section>
+        </div>
+        <details class="json-disclosure">
+          <summary>脱敏 JSON</summary>
+          <div class="json-toolbar"><span>敏感值固定替换为 [REDACTED]</span></div>
+          <pre id="rawJson" tabindex="0"></pre>
+        </details>
+      </section>
+
+      <span id="copyStatus" class="sr-only" aria-live="polite"></span>
+      <span id="revealStatus" class="sr-only" aria-live="polite"></span>
+    </section>
+  </main>
+
+  <footer class="app-footer">解码不等于验证。AT 泄露后应立即注销相关会话或更新凭据。</footer>
   <script type="module" src="/main.js"></script>
 </body>
 </html>

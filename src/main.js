@@ -1,4 +1,32 @@
+import {
+  Copy,
+  Fingerprint,
+  KeyRound,
+  RotateCcw,
+  ScanSearch,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  createIcons,
+} from "lucide";
 import "./styles.css";
+import { createApp } from "./ui/app.js";
 
-const app = document.getElementById("app");
-app.textContent = "AT Inspector";
+createIcons({
+  icons: {
+    Copy,
+    Fingerprint,
+    KeyRound,
+    RotateCcw,
+    ScanSearch,
+    Search,
+    ShieldAlert,
+    ShieldCheck,
+    Trash2,
+    UserRound,
+  },
+});
+
+createApp();
