@@ -16,6 +16,10 @@ test("isSensitiveKey identifies personal and identifier fields", () => {
   assert.equal(isSensitiveKey("account_uuid"), true);
   assert.equal(isSensitiveKey("organization_uuid"), true);
   assert.equal(isSensitiveKey("workspace_uuid"), true);
+  assert.equal(isSensitiveKey("session_uuid"), true);
+  assert.equal(isSensitiveKey("userId"), true);
+  assert.equal(isSensitiveKey("workspace-id"), true);
+  assert.equal(isSensitiveKey("sid"), true);
   assert.equal(isSensitiveKey("verified_identity"), true);
   assert.equal(isSensitiveKey("chatgpt_plan_type"), false);
   assert.equal(isSensitiveKey("email_verified"), false);
@@ -30,6 +34,8 @@ test("redactDeep masks nested sensitive values without changing public values", 
       account_uuid: "uuid-account-synthetic",
       organization_uuid: "uuid-organization-synthetic",
       workspace_uuid: "uuid-workspace-synthetic",
+      session_uuid: "uuid-session-synthetic",
+      userId: "camel-user-synthetic",
       verified_identity: "identity-synthetic",
       verified_org_ids: ["org-synthetic"],
     },
@@ -45,6 +51,8 @@ test("redactDeep masks nested sensitive values without changing public values", 
       account_uuid: "[REDACTED]",
       organization_uuid: "[REDACTED]",
       workspace_uuid: "[REDACTED]",
+      session_uuid: "[REDACTED]",
+      userId: "[REDACTED]",
       verified_identity: "[REDACTED]",
       verified_org_ids: ["[REDACTED]"],
     },

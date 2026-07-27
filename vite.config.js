@@ -11,5 +11,6 @@ export default defineConfig({
     cssCodeSplit: false,
     assetsInlineLimit: Number.MAX_SAFE_INTEGER,
     sourcemap: false,
+    modulePreload: { polyfill: false },
   },
 });

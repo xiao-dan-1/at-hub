@@ -40,7 +40,7 @@ npm run build
 npm run release
 ```
 
-- `npm test` 先重新构建，再运行全部解析、脱敏、语义、交互、发布与仓库安全测试。
+- `npm test` 先重新构建，再运行全部解析、脱敏、语义、交互、发布与仓库安全测试；若根目录发布文件尚未同步，测试会明确失败。
 - `npm run build` 在 `dist/index.html` 生成无外部运行时资源的单文件版本。
 - `npm run release` 验证构建产物后，将它发布为根目录可双击使用的 `index.html`。
 

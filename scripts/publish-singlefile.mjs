@@ -10,5 +10,8 @@ if (/<script[^>]+src=|<link[^>]+rel=["']stylesheet["']/iu.test(html)) {
 if (!html.includes("connect-src 'none'")) {
   throw new Error("Refusing to publish without the offline CSP");
 }
+if (/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/u.test(html)) {
+  throw new Error("Refusing to publish an artifact containing network APIs");
+}
 
 await copyFile(source, target);

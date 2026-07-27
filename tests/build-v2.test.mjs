@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const html = readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
+const publishedHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 test("build emits one self-contained offline HTML", () => {
@@ -12,8 +13,13 @@ test("build emits one self-contained offline HTML", () => {
   assert.doesNotMatch(html, /<link[^>]+rel=["']stylesheet["']/iu);
   assert.match(html, /connect-src 'none'/u);
   assert.doesNotMatch(html, /sourceMappingURL/u);
+  assert.doesNotMatch(html, /\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/u);
 });
 
 test("the standard test command rebuilds the generated artifact first", () => {
   assert.match(packageJson.scripts.test, /npm run build/u);
+});
+
+test("the committed root entry is byte-identical to the generated artifact", () => {
+  assert.equal(publishedHtml, html);
 });

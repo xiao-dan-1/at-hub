@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { filterInspectorEntries } from "../src/ui/app.js";
-import { copyText } from "../src/ui/dom.js";
+import { copyText, selectTextContent } from "../src/ui/dom.js";
 import { createRevealRegistry } from "../src/ui/reveal.js";
 
 test("reveal registry counts down from ten and conceals on expiry", () => {
@@ -104,4 +104,47 @@ test("copyText falls back to a temporary local textarea", async () => {
   assert.equal(selected, true);
   assert.equal(command, "copy");
   assert.equal(removed, true);
+});
+
+test("copyText falls back when the Clipboard API rejects", async () => {
+  let command = "";
+  const textarea = {
+    style: {},
+    value: "",
+    setAttribute() {},
+    select() {},
+    remove() {},
+  };
+  const mode = await copyText("safe redacted text", {
+    navigatorRef: { clipboard: { async writeText() { throw new Error("denied"); } } },
+    documentRef: {
+      body: { appendChild() {} },
+      createElement() { return textarea; },
+      execCommand(value) { command = value; return true; },
+    },
+  });
+
+  assert.equal(mode, "fallback");
+  assert.equal(command, "copy");
+});
+
+test("selectTextContent focuses and selects the complete redacted output", () => {
+  const calls = [];
+  const range = { selectNodeContents(node) { calls.push(["range", node]); } };
+  const selection = {
+    removeAllRanges() { calls.push(["clear"]); },
+    addRange(value) { calls.push(["add", value]); },
+  };
+  const node = { focus() { calls.push(["focus"]); } };
+  selectTextContent(node, {
+    createRange() { return range; },
+    defaultView: { getSelection() { return selection; } },
+  });
+
+  assert.deepEqual(calls, [
+    ["focus"],
+    ["range", node],
+    ["clear"],
+    ["add", range],
+  ]);
 });

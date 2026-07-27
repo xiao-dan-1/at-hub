@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { formatOverviewEntryValue } from "../src/ui/app.js";
+import { formatExpiry, formatOverviewEntryValue, selectOverviewWarnings } from "../src/ui/app.js";
 
 const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/ui/app.js", import.meta.url), "utf8");
@@ -35,4 +35,40 @@ test("overview formats booleans for people while keeping sensitive values masked
   assert.equal(formatOverviewEntryValue(null), "未提供");
   assert.equal(formatOverviewEntryValue({ key: "email_verified", value: true, sensitive: false }), "是");
   assert.equal(formatOverviewEntryValue({ key: "email", value: "person@example.test", sensitive: true }), "••••••••");
+});
+
+test("overview warnings keep the three product-critical messages in priority order", () => {
+  const visible = selectOverviewWarnings([
+    { code: "SIGNATURE_UNVERIFIED" },
+    { code: "UNKNOWN_ALG" },
+    { code: "TOKEN_EXPIRED" },
+    { code: "HIGH_RISK_PERMISSIONS" },
+    { code: "INVALID_TIME_CLAIM" },
+  ]);
+
+  assert.deepEqual(visible.map(warning => warning.code), [
+    "SIGNATURE_UNVERIFIED",
+    "HIGH_RISK_PERMISSIONS",
+    "TOKEN_EXPIRED",
+  ]);
+});
+
+test("overview exposes an absolute Beijing expiry alongside remaining time", () => {
+  assert.equal(formatExpiry({ claims: { exp: { valid: true, beijing: "2033-05-18 11:33:20 +08:00" } } }), "2033-05-18 11:33:20 +08:00");
+  assert.equal(formatExpiry({ claims: { exp: { valid: false } } }), "未声明");
+  assert.match(app, /statusItem\("到期时间",\s*formatExpiry\(analysis\.status\)\)/u);
+  assert.match(app, /statusItem\("剩余时间",\s*formatRemaining\(analysis\.status\)\)/u);
+});
+
+test("overview sensitive values use the shared ten-second reveal control", () => {
+  assert.match(app, /sensitiveDefinitionRow\("邮箱"/u);
+  assert.match(app, /sensitiveDefinitionRow\("账号成员"/u);
+  assert.match(app, /sensitiveDefinitionRow\("客户端"/u);
+  assert.match(app, /renderRevealButton\(/u);
+  assert.match(app, /JWT 声明的套餐/u);
+});
+
+test("inspector list rows include namespace context for duplicate short keys", () => {
+  assert.match(app, /field-button__namespace/u);
+  assert.match(app, /entry\.namespace/u);
 });

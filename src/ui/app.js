@@ -2,7 +2,7 @@ import { analyzeToken } from "../core/analyze.js";
 import { filterPermissions, PERMISSION_HEURISTIC_NOTICE } from "../core/permissions.js";
 import { formatKnownTime } from "../core/time.js";
 import { CircleAlert, Eye, EyeOff, Info, createElement as createLucideElement } from "lucide";
-import { copyText, el, formatValue, replace } from "./dom.js";
+import { copyText, el, formatValue, replace, selectTextContent } from "./dom.js";
 import { createRevealRegistry } from "./reveal.js";
 
 const MASK = "••••••••";
@@ -20,6 +20,12 @@ const PERMISSION_FILTERS = [
   ["high", "高风险"],
   ["write", "写入"],
   ["identity", "身份"],
+];
+const OVERVIEW_WARNING_ORDER = [
+  "SIGNATURE_UNVERIFIED",
+  "HIGH_RISK_PERMISSIONS",
+  "TOKEN_EXPIRED",
+  "TOKEN_NOT_YET_VALID",
 ];
 
 export function filterInspectorEntries(entries, { query = "", category = "all" } = {}) {
@@ -48,6 +54,10 @@ function formatRemaining(status, nowMilliseconds = Date.now()) {
   return `约 ${minutes} 分钟`;
 }
 
+export function formatExpiry(status) {
+  return status.claims.exp.valid ? status.claims.exp.beijing : "未声明";
+}
+
 function findEntry(analysis, key) {
   return analysis.entries.find(entry => entry.key === key && entry.namespace === "OpenAI Auth")
     ?? analysis.entries.find(entry => entry.key === key && entry.source === "payload")
@@ -62,6 +72,12 @@ export function formatOverviewEntryValue(entry) {
     return formatKnownTime(entry.key, entry.value);
   }
   return formatValue(entry.value);
+}
+
+export function selectOverviewWarnings(warnings) {
+  return OVERVIEW_WARNING_ORDER
+    .flatMap(code => warnings.filter(warning => warning.code === code))
+    .slice(0, 3);
 }
 
 function icon(iconNode, label = "") {
@@ -88,18 +104,31 @@ function definitionRow(label, value, { mono = false, sensitive = false } = {}) {
   ]);
 }
 
-function renderOverview(analysis, nodes) {
+function sensitiveDefinitionRow(label, entry, nodes, revealRegistry) {
+  if (!entry?.sensitive) return definitionRow(label, formatOverviewEntryValue(entry));
+  const valueNode = el("span", { className: "masked", text: MASK });
+  return el("div", { className: "definition-row" }, [
+    el("dt", { text: label }),
+    el("dd", { className: "definition-row__sensitive" }, [
+      valueNode,
+      renderRevealButton(entry, valueNode, nodes, revealRegistry),
+    ]),
+  ]);
+}
+
+function renderOverview(analysis, nodes, revealRegistry) {
   const algorithm = analysis.decoded.header.alg ?? "未提供";
   const highRiskCount = analysis.permissions.filter(item => item.risk === "high").length;
   replace(nodes.statusStrip, [
     statusItem("时间状态", analysis.status.label, analysis.status.code),
+    statusItem("到期时间", formatExpiry(analysis.status)),
     statusItem("剩余时间", formatRemaining(analysis.status)),
     statusItem("签名", "未验证", "warning"),
     statusItem("算法", algorithm),
     statusItem("高风险权限", String(highRiskCount), highRiskCount ? "danger" : "safe"),
   ]);
 
-  replace(nodes.warningList, analysis.warnings.slice(0, 3).map(warning => (
+  replace(nodes.warningList, selectOverviewWarnings(analysis.warnings).map(warning => (
     el("div", { className: "warning-row", dataset: { level: warning.level } }, [
       el("span", { className: "warning-row__icon", attrs: { "aria-hidden": "true" } }, [
         icon(warning.level === "danger" ? CircleAlert : Info),
@@ -113,10 +142,10 @@ function renderOverview(analysis, nodes) {
   const email = findEntry(analysis, "email");
   const accountUser = findEntry(analysis, "chatgpt_account_user_id");
   replace(nodes.accountSummary, [
-    definitionRow("套餐", plan?.value ?? "未提供"),
+    definitionRow("JWT 声明的套餐", plan?.value ?? "未提供"),
     definitionRow("计算驻留", residency?.value ?? "未提供", { mono: true }),
-    definitionRow("邮箱", formatOverviewEntryValue(email), { sensitive: email?.sensitive }),
-    definitionRow("账号成员", formatOverviewEntryValue(accountUser), { sensitive: accountUser?.sensitive }),
+    sensitiveDefinitionRow("邮箱", email, nodes, revealRegistry),
+    sensitiveDefinitionRow("账号成员", accountUser, nodes, revealRegistry),
   ]);
 
   replace(nodes.authenticationSummary, [
@@ -130,7 +159,7 @@ function renderOverview(analysis, nodes) {
   replace(nodes.securitySummary, [
     definitionRow("签发方", formatOverviewEntryValue(findEntry(analysis, "iss")), { mono: true }),
     definitionRow("目标受众", formatOverviewEntryValue(findEntry(analysis, "aud")), { mono: true }),
-    definitionRow("客户端", formatOverviewEntryValue(client), { sensitive: client?.sensitive }),
+    sensitiveDefinitionRow("客户端", client, nodes, revealRegistry),
     definitionRow("密钥标识", formatOverviewEntryValue(findEntry(analysis, "kid")), { mono: true }),
   ]);
 }
@@ -282,6 +311,7 @@ function renderInspector(analysis, nodes, state, revealRegistry) {
       attrs: { type: "button", "aria-current": entry.path === state.selectedPath ? "true" : "false" },
       dataset: { path: entry.path },
     }, [
+      el("span", { className: "field-button__namespace", text: entry.namespace }),
       el("strong", { text: entry.label }),
       el("span", { className: "field-button__meta" }, [
         el("span", { className: "mono", text: entry.key }),
@@ -374,7 +404,7 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
       const analysis = analyzeToken(rawInput);
       input.value = "";
       state.analysis = analysis;
-      renderOverview(analysis, nodes);
+      renderOverview(analysis, nodes, revealRegistry);
       renderPermissions(analysis, nodes, state);
       renderInspector(analysis, nodes, state, revealRegistry);
       inputSurface.hidden = true;
@@ -401,7 +431,10 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
       status.textContent = "已复制脱敏 JSON";
     } catch (error) {
       status.textContent = error.message;
-      nodes.rawJson.focus();
+      activateTab("inspector");
+      const rawDetails = nodes.rawJson.closest("details");
+      if (rawDetails) rawDetails.open = true;
+      selectTextContent(nodes.rawJson, documentRef);
     }
   });
   input.addEventListener("input", () => setError());

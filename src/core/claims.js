@@ -48,17 +48,18 @@ function namespaceLabel(key, fallback) {
 }
 
 function genericIdentifierDefinition(key) {
+  const normalized = String(key).toLowerCase();
   if (!isSensitiveKey(key)) return null;
-  if (key.includes("workspace") || key.includes("ws_")) {
+  if (normalized.includes("workspace") || normalized.includes("ws_")) {
     return { label: "工作区标识", description: "工作区相关标识。", category: "account" };
   }
-  if (key.includes("organization") || key.includes("org")) {
+  if (normalized.includes("organization") || normalized.includes("org")) {
     return { label: "组织标识", description: "组织相关标识。", category: "account" };
   }
-  if (key.includes("account")) {
+  if (normalized.includes("account")) {
     return { label: "账号标识", description: "账号相关标识。", category: "account" };
   }
-  if (key.includes("user")) {
+  if (normalized.includes("user")) {
     return { label: "用户标识", description: "用户相关标识。", category: "account" };
   }
   return { label: "敏感标识", description: "默认遮罩的身份或会话标识。", category: "account" };
@@ -66,7 +67,7 @@ function genericIdentifierDefinition(key) {
 
 export function describeClaim(key) {
   const normalized = String(key).toLowerCase();
-  const definition = CLAIM_DEFINITIONS[normalized] ?? genericIdentifierDefinition(normalized);
+  const definition = CLAIM_DEFINITIONS[normalized] ?? genericIdentifierDefinition(key);
   if (!definition) {
     return {
       label: key,
@@ -92,6 +93,7 @@ export function buildClaimEntries(header, payload) {
   const output = [];
 
   function visit(value, context) {
+    const inheritedSensitivity = context.sensitive || isSensitiveKey(context.key);
     if (value !== null && typeof value === "object" && !Array.isArray(value)) {
       for (const [childKey, childValue] of Object.entries(value)) {
         const nextNamespace = context.source === "payload"
@@ -102,13 +104,14 @@ export function buildClaimEntries(header, payload) {
           namespace: nextNamespace,
           path: [...context.path, childKey],
           key: childKey,
+          sensitive: inheritedSensitivity,
         });
       }
       return;
     }
 
     const definition = describeClaim(context.key);
-    const sensitive = isSensitiveKey(context.key);
+    const sensitive = inheritedSensitivity;
     output.push({
       source: context.source,
       namespace: context.namespace,
@@ -125,8 +128,8 @@ export function buildClaimEntries(header, payload) {
     });
   }
 
-  visit(header, { source: "header", namespace: "JWT Header", path: ["header"], key: "header" });
-  visit(payload, { source: "payload", namespace: "JWT Payload", path: ["payload"], key: "payload" });
+  visit(header, { source: "header", namespace: "JWT Header", path: ["header"], key: "header", sensitive: false });
+  visit(payload, { source: "payload", namespace: "JWT Payload", path: ["payload"], key: "payload", sensitive: false });
   return output;
 }
 

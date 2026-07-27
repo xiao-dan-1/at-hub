@@ -26,8 +26,15 @@ export function formatValue(value) {
 
 export async function copyText(text, { navigatorRef = globalThis.navigator, documentRef = document } = {}) {
   if (navigatorRef?.clipboard?.writeText) {
-    await navigatorRef.clipboard.writeText(text);
-    return "clipboard";
+    try {
+      await navigatorRef.clipboard.writeText(text);
+      return "clipboard";
+    } catch {
+      // file:// pages commonly expose Clipboard API while denying write access.
+    }
+  }
+  if (!documentRef?.body || !documentRef.createElement || !documentRef.execCommand) {
+    throw new Error("当前浏览器不允许自动复制，请在高级检查器中手动选择脱敏 JSON。");
   }
   const textarea = documentRef.createElement("textarea");
   textarea.value = text;
@@ -39,4 +46,15 @@ export async function copyText(text, { navigatorRef = globalThis.navigator, docu
   textarea.remove();
   if (!copied) throw new Error("当前浏览器不允许自动复制，请在高级检查器中手动选择脱敏 JSON。");
   return "fallback";
+}
+
+export function selectTextContent(node, documentRef = document) {
+  node.focus();
+  const selection = documentRef.defaultView?.getSelection();
+  if (!selection) return false;
+  const range = documentRef.createRange();
+  range.selectNodeContents(node);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return true;
 }

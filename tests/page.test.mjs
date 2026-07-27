@@ -57,11 +57,23 @@ test("V2 source is a compact tool rather than a marketing hero", () => {
   assert.match(html, /高级检查器/u);
 });
 
-test("mobile status strip gives the unmatched fifth metric a deliberate full row", () => {
+test("mobile result layouts keep status metrics balanced and stack inspector detail", () => {
   assert.match(
     css,
-    /@media \(max-width: 700px\)[\s\S]*\.status-item:last-child\s*\{[^}]*grid-column:\s*1\s*\/\s*-1;[^}]*\}/u,
+    /@media \(max-width: 700px\)[\s\S]*\.status-strip\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr;[^}]*\}/u,
   );
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.inspector-layout\s*\{[^}]*display:\s*block;[^}]*\}/u);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.inspector-fields\s*\{[^}]*border-bottom:\s*1px solid var\(--line\);[^}]*\}/u);
+});
+
+test("dark primary actions use a dedicated contrasting foreground", () => {
+  assert.match(css, /--on-primary:\s*#[0-9a-f]{6}/iu);
+  assert.match(css, /\.button--primary\s*\{[^}]*color:\s*var\(--on-primary\)/u);
+  assert.match(css, /@media \(prefers-color-scheme: dark\)[\s\S]*--on-primary:\s*#[0-9a-f]{6}/iu);
+});
+
+test("informational warnings have a distinct blue treatment", () => {
+  assert.match(css, /\.warning-row\[data-level="info"\]\s*\{[^}]*color:\s*var\(--info\);[^}]*background:\s*var\(--info-soft\);[^}]*\}/u);
 });
 
 test("controller avoids HTML injection and implements accessible error recovery", () => {

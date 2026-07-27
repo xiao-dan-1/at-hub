@@ -64,3 +64,17 @@ test("sensitive entries never expose raw values in searchable previews", () => {
   assert.ok(sensitive.every(entry => entry.searchPreview === ""));
   assert.ok(entries.find(entry => entry.key === "unknown_claim").searchPreview.includes("visible"));
 });
+
+test("children of an object-valued sensitive claim inherit sensitivity", () => {
+  const entries = buildClaimEntries(header, {
+    verified_identity: {
+      provider: "synthetic-provider",
+      subject: "synthetic-subject",
+    },
+  });
+  const children = entries.filter(entry => entry.path.startsWith("payload.verified_identity."));
+
+  assert.equal(children.length, 2);
+  assert.ok(children.every(entry => entry.sensitive));
+  assert.ok(children.every(entry => entry.searchPreview === ""));
+});

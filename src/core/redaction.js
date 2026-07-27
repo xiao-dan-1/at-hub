@@ -8,8 +8,12 @@ const SECTION_DEFINITIONS = [
 ];
 
 export function isSensitiveKey(key) {
-  const normalized = String(key).toLowerCase();
-  if (["email", "name", "sub", "jti", "session_id"].includes(normalized)) {
+  const normalized = String(key)
+    .replace(/([a-z0-9])([A-Z])/gu, "$1_$2")
+    .replace(/[^A-Za-z0-9]+/gu, "_")
+    .replace(/^_+|_+$/gu, "")
+    .toLowerCase();
+  if (["email", "name", "sub", "jti", "sid", "session_id"].includes(normalized)) {
     return true;
   }
   if (normalized.includes("verified_identity")) {
@@ -20,7 +24,7 @@ export function isSensitiveKey(key) {
   if (identitySubject && (normalized.includes("uuid") || normalized.includes("identity"))) {
     return true;
   }
-  return /(?:^|_)(?:id|ids)$/u.test(normalized);
+  return /(?:^|_)(?:id|ids|uuid|uuids)$/u.test(normalized);
 }
 
 export function redactDeep(value, key = "") {
