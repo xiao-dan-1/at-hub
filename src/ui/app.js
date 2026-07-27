@@ -380,7 +380,7 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
       inputSurface.hidden = true;
       resultArea.hidden = false;
       activateTab("overview");
-      resultArea.focus();
+      resultArea.focus({ preventScroll: true });
     } catch (error) {
       clearAll({ focus: false });
       input.value = rawInput;

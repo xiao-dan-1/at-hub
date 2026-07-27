@@ -57,10 +57,18 @@ test("V2 source is a compact tool rather than a marketing hero", () => {
   assert.match(html, /高级检查器/u);
 });
 
+test("mobile status strip gives the unmatched fifth metric a deliberate full row", () => {
+  assert.match(
+    css,
+    /@media \(max-width: 700px\)[\s\S]*\.status-item:last-child\s*\{[^}]*grid-column:\s*1\s*\/\s*-1;[^}]*\}/u,
+  );
+});
+
 test("controller avoids HTML injection and implements accessible error recovery", () => {
   assert.doesNotMatch(app, /\.innerHTML\s*=/u);
   assert.match(app, /textContent/u);
   assert.match(app, /aria-invalid/u);
   assert.match(app, /aria-describedby/u);
   assert.match(app, /input\.focus\(/u);
+  assert.match(app, /resultArea\.focus\(\{\s*preventScroll:\s*true\s*\}\)/u);
 });

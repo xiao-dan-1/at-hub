@@ -207,6 +207,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .status-item { border-top: 1px solid var(--line); border-left: 0; }
   .status-item:nth-child(even) { border-left: 1px solid var(--line); }
   .status-item:nth-child(-n + 2) { border-top: 0; }
+  .status-item:last-child { grid-column: 1 / -1; }
   .overview-sections { grid-template-columns: 1fr; }
   .data-section--wide { grid-column: auto; }
   .definition-list--columns { display: block; }
