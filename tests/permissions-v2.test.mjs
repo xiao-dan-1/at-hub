@@ -27,6 +27,36 @@ test("interpretScopes assigns stable Chinese labels, groups, and local risks", (
   ]);
 });
 
+test("known permissions expose stable display groups", () => {
+  const items = interpretScopes([
+    "organization.write",
+    "organization.read",
+    "model.request",
+    "model.read",
+    "offline_access",
+    "openid",
+    "email",
+    "profile",
+  ]);
+
+  assert.deepEqual(items.map(({ scope, displayGroup }) => [scope, displayGroup]), [
+    ["organization.write", "组织"],
+    ["organization.read", "组织"],
+    ["model.request", "模型"],
+    ["model.read", "模型"],
+    ["offline_access", "身份与会话"],
+    ["openid", "身份与会话"],
+    ["email", "身份与会话"],
+    ["profile", "身份与会话"],
+  ]);
+});
+
+test("low-risk permissions use cautious user-facing wording", () => {
+  const [permission] = interpretScopes(["openid"]);
+
+  assert.equal(permission.riskLabel, "较低关注");
+});
+
 test("unknown scopes are preserved without inventing a high-risk verdict", () => {
   assert.deepEqual(interpretScopes(["synthetic.unknown"]), [{
     scope: "synthetic.unknown",
@@ -34,6 +64,8 @@ test("unknown scopes are preserved without inventing a high-risk verdict", () =>
     description: "本工具尚未提供该 scope 的语义解释。",
     risk: "unknown",
     group: "unknown",
+    displayGroup: "其他",
+    riskLabel: "未解释",
   }]);
   assert.match(PERMISSION_HEURISTIC_NOTICE, /本地阅读提示/u);
   assert.match(PERMISSION_HEURISTIC_NOTICE, /不是 OpenAI 官方权限评级/u);

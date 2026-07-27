@@ -27,6 +27,13 @@ const OVERVIEW_WARNING_ORDER = [
   "TOKEN_EXPIRED",
   "TOKEN_NOT_YET_VALID",
 ];
+const AUTHENTICATION_METHOD_LABELS = {
+  otp: "OTP",
+  "urn:openai:amr:otp_email": "邮箱验证码",
+};
+const AUDIENCE_LABELS = {
+  "https://api.openai.com/v1": "OpenAI API",
+};
 
 export function filterInspectorEntries(entries, { query = "", category = "all" } = {}) {
   const normalizedQuery = query.trim().toLowerCase();
@@ -41,7 +48,7 @@ export function filterInspectorEntries(entries, { query = "", category = "all" }
   });
 }
 
-function formatRemaining(status, nowMilliseconds = Date.now()) {
+export function formatRemaining(status, nowMilliseconds = Date.now()) {
   if (!status.claims.exp.valid) return "未声明到期时间";
   const difference = status.claims.exp.milliseconds - nowMilliseconds;
   if (difference <= 0) return "已到期";
@@ -49,9 +56,32 @@ function formatRemaining(status, nowMilliseconds = Date.now()) {
   const days = Math.floor(totalMinutes / 1440);
   const hours = Math.floor((totalMinutes % 1440) / 60);
   const minutes = totalMinutes % 60;
-  if (days > 0) return `约 ${days} 天 ${hours} 小时`;
-  if (hours > 0) return `约 ${hours} 小时 ${minutes} 分钟`;
+  if (days > 0) return `约 ${[`${days} 天`, hours > 0 ? `${hours} 小时` : ""].filter(Boolean).join(" ")}`;
+  if (hours > 0) return `约 ${[`${hours} 小时`, minutes > 0 ? `${minutes} 分钟` : ""].filter(Boolean).join(" ")}`;
   return `约 ${minutes} 分钟`;
+}
+
+export function formatAuthenticationMethods(values) {
+  const items = Array.isArray(values) ? values : values == null ? [] : [values];
+  const labels = items
+    .filter(value => typeof value === "string" && value.trim())
+    .map(value => {
+      const normalized = value.trim();
+      return AUTHENTICATION_METHOD_LABELS[normalized]
+        ?? normalized.replace(/^urn:openai:amr:/u, "").replaceAll("_", " ");
+    });
+  return [...new Set(labels)].join("、") || "未提供";
+}
+
+export function formatAudience(values) {
+  const items = Array.isArray(values) ? values : values == null ? [] : [values];
+  const labels = items
+    .filter(value => typeof value === "string" && value.trim())
+    .map(value => {
+      const normalized = value.trim();
+      return AUDIENCE_LABELS[normalized] ?? normalized;
+    });
+  return [...new Set(labels)].join("、") || "未提供";
 }
 
 export function formatExpiry(status) {
@@ -151,7 +181,7 @@ function renderOverview(analysis, nodes, revealRegistry) {
   ]);
 
   replace(nodes.authenticationSummary, [
-    definitionRow("认证方式", formatOverviewEntryValue(findEntry(analysis, "amr")), { mono: true }),
+    definitionRow("认证方式", formatAuthenticationMethods(findEntry(analysis, "amr")?.value), { mono: true }),
     definitionRow("邮箱已验证", formatOverviewEntryValue(findEntry(analysis, "email_verified"))),
     definitionRow("注册流程", formatOverviewEntryValue(findEntry(analysis, "is_signup"))),
     definitionRow("密码认证时间", formatOverviewEntryValue(findEntry(analysis, "pwd_auth_time")), { mono: true }),
@@ -160,7 +190,7 @@ function renderOverview(analysis, nodes, revealRegistry) {
   const client = findEntry(analysis, "client_id");
   replace(nodes.securitySummary, [
     definitionRow("签发方", formatOverviewEntryValue(findEntry(analysis, "iss")), { mono: true }),
-    definitionRow("目标受众", formatOverviewEntryValue(findEntry(analysis, "aud")), { mono: true }),
+    definitionRow("目标受众", formatAudience(findEntry(analysis, "aud")?.value), { mono: true }),
     sensitiveDefinitionRow("客户端", client, nodes, revealRegistry),
     definitionRow("密钥标识", formatOverviewEntryValue(findEntry(analysis, "kid")), { mono: true }),
   ]);
@@ -190,7 +220,7 @@ function renderPermissions(analysis, nodes, state) {
         el("code", { text: permission.scope }),
       ]),
       el("p", { text: permission.description }),
-      el("span", { className: "risk-label", text: permission.risk === "high" ? "高风险" : permission.risk === "medium" ? "需留意" : permission.risk === "low" ? "低风险" : "未解释" }),
+      el("span", { className: "risk-label", text: permission.riskLabel }),
     ])
   )) : [el("p", { className: "empty-state", text: "当前筛选下没有权限项目。" })]);
   nodes.permissionNotice.textContent = PERMISSION_HEURISTIC_NOTICE;
@@ -373,6 +403,7 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
   }
 
   function activateTab(name, { focus = false } = {}) {
+    revealRegistry.clear();
     state.activeTab = name;
     for (const tab of tabs) {
       const selected = tab.dataset.tab === name;

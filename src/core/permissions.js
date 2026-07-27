@@ -58,13 +58,32 @@ const UNKNOWN_PERMISSION = {
   group: "unknown",
 };
 
+const RISK_LABELS = {
+  high: "高风险",
+  medium: "需留意",
+  low: "较低关注",
+  unknown: "未解释",
+};
+
+function displayGroupForScope(scope) {
+  if (scope.startsWith("organization.")) return "组织";
+  if (scope.startsWith("model.")) return "模型";
+  if (["openid", "email", "profile", "offline_access"].includes(scope)) return "身份与会话";
+  return "其他";
+}
+
 export function interpretScopes(value) {
   if (!Array.isArray(value)) return [];
   const unique = [...new Set(value.filter(scope => typeof scope === "string" && scope.trim()).map(scope => scope.trim()))];
-  return unique.map(scope => ({
-    scope,
-    ...(PERMISSION_DEFINITIONS[scope] ?? UNKNOWN_PERMISSION),
-  }));
+  return unique.map(scope => {
+    const definition = PERMISSION_DEFINITIONS[scope] ?? UNKNOWN_PERMISSION;
+    return {
+      scope,
+      ...definition,
+      displayGroup: displayGroupForScope(scope),
+      riskLabel: RISK_LABELS[definition.risk] ?? RISK_LABELS.unknown,
+    };
+  });
 }
 
 export function filterPermissions(items, filter) {

@@ -36,6 +36,22 @@ test("reveal registry counts down from ten and conceals on expiry", () => {
   assert.deepEqual(hidden, ["payload.email"]);
 });
 
+test("reveal registry conceals the active field before registering another", () => {
+  const events = [];
+  let nextId = 0;
+  const registry = createRevealRegistry({
+    setIntervalFn() { nextId += 1; return nextId; },
+    clearIntervalFn() {},
+    setTimeoutFn() { nextId += 1; return nextId; },
+    clearTimeoutFn() {},
+  });
+
+  registry.show("one", { onTick() {}, onHide: () => events.push("one hidden") });
+  registry.show("two", { onTick: () => events.push("two registered"), onHide() {} });
+
+  assert.deepEqual(events, ["one hidden", "two registered"]);
+});
+
 test("reveal registry clears every active field and timer", () => {
   const clearedIntervals = [];
   const clearedTimeouts = [];

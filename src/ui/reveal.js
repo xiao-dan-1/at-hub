@@ -19,7 +19,7 @@ export function createRevealRegistry({
   }
 
   function show(key, { onTick, onHide }) {
-    hide(key);
+    clear();
     let remaining = Math.ceil(delay / interval);
     onTick(remaining);
     const intervalId = setIntervalFn(() => {

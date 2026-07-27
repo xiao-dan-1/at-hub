@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import * as ui from "../src/ui/app.js";
 import { formatExpiry, formatOverviewEntryValue, selectOverviewWarnings } from "../src/ui/app.js";
 
 const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
@@ -35,6 +36,21 @@ test("overview formats booleans for people while keeping sensitive values masked
   assert.equal(formatOverviewEntryValue(null), "未提供");
   assert.equal(formatOverviewEntryValue({ key: "email_verified", value: true, sensitive: false }), "是");
   assert.equal(formatOverviewEntryValue({ key: "email", value: "person@example.test", sensitive: true }), "••••••••");
+});
+
+test("overview summarizes authentication method arrays", () => {
+  assert.equal(ui.formatAuthenticationMethods?.(["otp", "urn:openai:amr:otp_email"]), "OTP、邮箱验证码");
+});
+
+test("overview summarizes the OpenAI API audience", () => {
+  assert.equal(ui.formatAudience?.(["https://api.openai.com/v1"]), "OpenAI API");
+});
+
+test("remaining time omits a zero hour unit", () => {
+  const now = Date.UTC(2033, 4, 17, 3, 33, 20);
+  const status = { claims: { exp: { valid: true, milliseconds: now + 24 * 60 * 60 * 1000 } } };
+
+  assert.equal(ui.formatRemaining?.(status, now), "约 1 天");
 });
 
 test("overview warnings keep the three product-critical messages in priority order", () => {
