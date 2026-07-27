@@ -76,6 +76,14 @@ test("informational warnings have a distinct blue treatment", () => {
   assert.match(css, /\.warning-row\[data-level="info"\]\s*\{[^}]*color:\s*var\(--info\);[^}]*background:\s*var\(--info-soft\);[^}]*\}/u);
 });
 
+test("result styling supports stable sensitive values and open permission groups", () => {
+  assert.match(css, /\.definition-row__sensitive\s*\{[^}]*grid-template-columns:/u);
+  assert.match(css, /\.permission-group\s*\{/u);
+  assert.match(css, /\.permission-group__heading\s*\{/u);
+  assert.match(css, /\.permission-row__heading\s*\{/u);
+  assert.match(css, /\.inspector-layout\s*\{[^}]*height:\s*clamp\(/u);
+});
+
 test("controller avoids HTML injection and implements accessible error recovery", () => {
   assert.doesNotMatch(app, /\.innerHTML\s*=/u);
   assert.match(app, /textContent/u);

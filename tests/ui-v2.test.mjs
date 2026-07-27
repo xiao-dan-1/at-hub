@@ -53,6 +53,27 @@ test("remaining time omits a zero hour unit", () => {
   assert.equal(ui.formatRemaining?.(status, now), "约 1 天");
 });
 
+test("permissions are grouped into stable product-facing sections", () => {
+  const groups = ui.groupPermissionsForDisplay?.([
+    { scope: "organization.write", displayGroup: "组织" },
+    { scope: "openid", displayGroup: "身份与会话" },
+    { scope: "model.request", displayGroup: "模型" },
+    { scope: "synthetic.unknown", displayGroup: "其他" },
+  ]);
+
+  assert.deepEqual(groups?.map(group => [group.label, group.items.map(item => item.scope)]), [
+    ["身份与会话", ["openid"]],
+    ["模型", ["model.request"]],
+    ["组织", ["organization.write"]],
+    ["其他", ["synthetic.unknown"]],
+  ]);
+});
+
+test("permission rendering keeps risk beside the permission name", () => {
+  assert.match(app, /permission-group/u);
+  assert.match(app, /permission-row__heading[\s\S]*risk-label/u);
+});
+
 test("overview warnings keep the three product-critical messages in priority order", () => {
   const visible = selectOverviewWarnings([
     { code: "SIGNATURE_UNVERIFIED" },
@@ -97,6 +118,8 @@ test("overview sensitive values use the shared ten-second reveal control", () =>
   assert.match(app, /sensitiveDefinitionRow\("客户端"/u);
   assert.match(app, /renderRevealButton\(/u);
   assert.match(app, /JWT 声明的套餐/u);
+  assert.match(app, /classList\.remove\("masked"\)/u);
+  assert.match(app, /classList\.add\("masked"\)/u);
 });
 
 test("inspector list rows include namespace context for duplicate short keys", () => {

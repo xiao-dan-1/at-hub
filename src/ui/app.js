@@ -34,6 +34,7 @@ const AUTHENTICATION_METHOD_LABELS = {
 const AUDIENCE_LABELS = {
   "https://api.openai.com/v1": "OpenAI API",
 };
+const PERMISSION_GROUP_ORDER = ["身份与会话", "模型", "组织", "其他"];
 
 export function filterInspectorEntries(entries, { query = "", category = "all" } = {}) {
   const normalizedQuery = query.trim().toLowerCase();
@@ -82,6 +83,12 @@ export function formatAudience(values) {
       return AUDIENCE_LABELS[normalized] ?? normalized;
     });
   return [...new Set(labels)].join("、") || "未提供";
+}
+
+export function groupPermissionsForDisplay(items) {
+  return PERMISSION_GROUP_ORDER
+    .map(label => ({ label, items: items.filter(item => item.displayGroup === label) }))
+    .filter(group => group.items.length > 0);
 }
 
 export function formatExpiry(status) {
@@ -138,7 +145,7 @@ function definitionRow(label, value, { mono = false, sensitive = false } = {}) {
 
 function sensitiveDefinitionRow(label, entry, nodes, revealRegistry) {
   if (!entry?.sensitive) return definitionRow(label, formatOverviewEntryValue(entry));
-  const valueNode = el("span", { className: "masked", text: MASK });
+  const valueNode = el("span", { className: "sensitive-value masked", text: MASK });
   return el("div", { className: "definition-row" }, [
     el("dt", { text: label }),
     el("dd", { className: "definition-row__sensitive" }, [
@@ -175,13 +182,13 @@ function renderOverview(analysis, nodes, revealRegistry) {
   const accountUser = findEntry(analysis, "chatgpt_account_user_id");
   replace(nodes.accountSummary, [
     definitionRow("JWT 声明的套餐", plan?.value ?? "未提供"),
-    definitionRow("计算驻留", residency?.value ?? "未提供", { mono: true }),
+    definitionRow("计算驻留", residency?.value ?? "未提供"),
     sensitiveDefinitionRow("邮箱", email, nodes, revealRegistry),
     sensitiveDefinitionRow("账号成员", accountUser, nodes, revealRegistry),
   ]);
 
   replace(nodes.authenticationSummary, [
-    definitionRow("认证方式", formatAuthenticationMethods(findEntry(analysis, "amr")?.value), { mono: true }),
+    definitionRow("认证方式", formatAuthenticationMethods(findEntry(analysis, "amr")?.value)),
     definitionRow("邮箱已验证", formatOverviewEntryValue(findEntry(analysis, "email_verified"))),
     definitionRow("注册流程", formatOverviewEntryValue(findEntry(analysis, "is_signup"))),
     definitionRow("密码认证时间", formatOverviewEntryValue(findEntry(analysis, "pwd_auth_time")), { mono: true }),
@@ -190,7 +197,7 @@ function renderOverview(analysis, nodes, revealRegistry) {
   const client = findEntry(analysis, "client_id");
   replace(nodes.securitySummary, [
     definitionRow("签发方", formatOverviewEntryValue(findEntry(analysis, "iss")), { mono: true }),
-    definitionRow("目标受众", formatAudience(findEntry(analysis, "aud")?.value), { mono: true }),
+    definitionRow("目标受众", formatAudience(findEntry(analysis, "aud")?.value)),
     sensitiveDefinitionRow("客户端", client, nodes, revealRegistry),
     definitionRow("密钥标识", formatOverviewEntryValue(findEntry(analysis, "kid")), { mono: true }),
   ]);
@@ -213,14 +220,25 @@ function renderPermissions(analysis, nodes, state) {
   }
 
   const visible = filterPermissions(analysis.permissions, state.permissionFilter);
-  replace(nodes.permissionList, visible.length > 0 ? visible.map(permission => (
-    el("article", { className: "permission-row", dataset: { risk: permission.risk } }, [
-      el("div", { className: "permission-row__main" }, [
-        el("strong", { text: permission.label }),
-        el("code", { text: permission.scope }),
+  const groups = groupPermissionsForDisplay(visible);
+  replace(nodes.permissionList, groups.length > 0 ? groups.map(group => (
+    el("section", { className: "permission-group" }, [
+      el("header", { className: "permission-group__heading" }, [
+        el("h3", { text: group.label }),
+        el("span", { text: `${group.items.length} 项` }),
       ]),
-      el("p", { text: permission.description }),
-      el("span", { className: "risk-label", text: permission.riskLabel }),
+      el("div", { className: "permission-group__list" }, group.items.map(permission => (
+        el("article", { className: "permission-row", dataset: { risk: permission.risk } }, [
+          el("div", { className: "permission-row__main" }, [
+            el("div", { className: "permission-row__heading" }, [
+              el("strong", { text: permission.label }),
+              el("span", { className: "risk-label", text: permission.riskLabel }),
+            ]),
+            el("code", { text: permission.scope }),
+          ]),
+          el("p", { text: permission.description }),
+        ])
+      ))),
     ])
   )) : [el("p", { className: "empty-state", text: "当前筛选下没有权限项目。" })]);
   nodes.permissionNotice.textContent = PERMISSION_HEURISTIC_NOTICE;
@@ -246,6 +264,7 @@ function renderRevealButton(entry, valueNode, nodes, revealRegistry) {
   function conceal() {
     revealed = false;
     valueNode.textContent = MASK;
+    valueNode.classList.add("masked");
     button.setAttribute("aria-pressed", "false");
     replace(button, [icon(Eye), label]);
     label.textContent = "显示 10 秒";
@@ -259,6 +278,7 @@ function renderRevealButton(entry, valueNode, nodes, revealRegistry) {
     }
     revealed = true;
     valueNode.textContent = formatKnownTime(entry.key, entry.value);
+    valueNode.classList.remove("masked");
     button.setAttribute("aria-pressed", "true");
     replace(button, [icon(EyeOff), label]);
     revealRegistry.show(entry.path, {
