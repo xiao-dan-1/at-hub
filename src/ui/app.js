@@ -1,9 +1,39 @@
 import { analyzeToken } from "../core/analyze.js";
-import { PERMISSION_HEURISTIC_NOTICE } from "../core/permissions.js";
+import { filterPermissions, PERMISSION_HEURISTIC_NOTICE } from "../core/permissions.js";
 import { formatKnownTime } from "../core/time.js";
+import { CircleAlert, Eye, EyeOff, Info, createElement as createLucideElement } from "lucide";
 import { copyText, el, formatValue, replace } from "./dom.js";
+import { createRevealRegistry } from "./reveal.js";
 
 const MASK = "••••••••";
+const CATEGORY_LABELS = {
+  all: "全部字段",
+  account: "账号",
+  authentication: "认证",
+  permissions: "权限",
+  time: "时间",
+  security: "安全",
+  other: "其他",
+};
+const PERMISSION_FILTERS = [
+  ["all", "全部"],
+  ["high", "高风险"],
+  ["write", "写入"],
+  ["identity", "身份"],
+];
+
+export function filterInspectorEntries(entries, { query = "", category = "all" } = {}) {
+  const normalizedQuery = query.trim().toLowerCase();
+  return entries.filter(entry => {
+    if (category !== "all" && entry.category !== category) return false;
+    if (!normalizedQuery) return true;
+    const haystack = [entry.label, entry.key, entry.path, entry.namespace, entry.searchPreview]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(normalizedQuery);
+  });
+}
 
 function formatRemaining(status, nowMilliseconds = Date.now()) {
   if (!status.claims.exp.valid) return "未声明到期时间";
@@ -34,6 +64,16 @@ export function formatOverviewEntryValue(entry) {
   return formatValue(entry.value);
 }
 
+function icon(iconNode, label = "") {
+  const node = createLucideElement(iconNode);
+  node.setAttribute("width", "16");
+  node.setAttribute("height", "16");
+  node.setAttribute("stroke-width", "2");
+  if (label) node.setAttribute("aria-label", label);
+  else node.setAttribute("aria-hidden", "true");
+  return node;
+}
+
 function statusItem(label, value, state = "neutral") {
   return el("div", { className: "status-item", dataset: { state } }, [
     el("span", { className: "status-item__label", text: label }),
@@ -61,7 +101,9 @@ function renderOverview(analysis, nodes) {
 
   replace(nodes.warningList, analysis.warnings.slice(0, 3).map(warning => (
     el("div", { className: "warning-row", dataset: { level: warning.level } }, [
-      el("span", { className: "warning-row__icon", attrs: { "aria-hidden": "true" }, text: warning.level === "danger" ? "!" : "i" }),
+      el("span", { className: "warning-row__icon", attrs: { "aria-hidden": "true" } }, [
+        icon(warning.level === "danger" ? CircleAlert : Info),
+      ]),
       el("span", { text: warning.message }),
     ])
   )));
@@ -93,8 +135,24 @@ function renderOverview(analysis, nodes) {
   ]);
 }
 
-function renderPermissions(analysis, nodes) {
-  replace(nodes.permissionList, analysis.permissions.map(permission => (
+function renderPermissions(analysis, nodes, state) {
+  replace(nodes.permissionFilters, PERMISSION_FILTERS.map(([filter, label]) => (
+    el("button", {
+      className: "segment-button",
+      text: label,
+      attrs: { type: "button", "aria-pressed": String(state.permissionFilter === filter) },
+      dataset: { filter },
+    })
+  )));
+  for (const button of nodes.permissionFilters.querySelectorAll("button")) {
+    button.addEventListener("click", () => {
+      state.permissionFilter = button.dataset.filter;
+      renderPermissions(analysis, nodes, state);
+    });
+  }
+
+  const visible = filterPermissions(analysis.permissions, state.permissionFilter);
+  replace(nodes.permissionList, visible.length > 0 ? visible.map(permission => (
     el("article", { className: "permission-row", dataset: { risk: permission.risk } }, [
       el("div", { className: "permission-row__main" }, [
         el("strong", { text: permission.label }),
@@ -103,26 +161,143 @@ function renderPermissions(analysis, nodes) {
       el("p", { text: permission.description }),
       el("span", { className: "risk-label", text: permission.risk === "high" ? "高风险" : permission.risk === "medium" ? "需留意" : permission.risk === "low" ? "低风险" : "未解释" }),
     ])
-  )));
+  )) : [el("p", { className: "empty-state", text: "当前筛选下没有权限项目。" })]);
   nodes.permissionNotice.textContent = PERMISSION_HEURISTIC_NOTICE;
 }
 
-function renderInspectorPreview(analysis, nodes) {
+function entryType(value) {
+  if (Array.isArray(value)) return "数组";
+  if (value === null) return "null";
+  if (typeof value === "object") return "对象";
+  if (typeof value === "boolean") return "布尔值";
+  if (typeof value === "number") return "数字";
+  return "字符串";
+}
+
+function renderRevealButton(entry, valueNode, nodes, revealRegistry) {
+  let revealed = false;
+  const label = el("span", { text: "显示 10 秒" });
+  const button = el("button", {
+    className: "reveal-button",
+    attrs: { type: "button", "aria-pressed": "false", "aria-label": `临时显示 ${entry.label}` },
+  }, [icon(Eye), label]);
+
+  function conceal() {
+    revealed = false;
+    valueNode.textContent = MASK;
+    button.setAttribute("aria-pressed", "false");
+    replace(button, [icon(Eye), label]);
+    label.textContent = "显示 10 秒";
+    nodes.revealStatus.textContent = `${entry.label} 已重新隐藏`;
+  }
+
+  button.addEventListener("click", () => {
+    if (revealed) {
+      revealRegistry.hide(entry.path);
+      return;
+    }
+    revealed = true;
+    valueNode.textContent = formatKnownTime(entry.key, entry.value);
+    button.setAttribute("aria-pressed", "true");
+    replace(button, [icon(EyeOff), label]);
+    nodes.revealStatus.textContent = `${entry.label} 已临时显示`;
+    revealRegistry.show(entry.path, {
+      onTick(seconds) { label.textContent = seconds > 0 ? `${seconds} 秒` : "正在隐藏"; },
+      onHide: conceal,
+    });
+  });
+  return button;
+}
+
+function renderInspectorDetail(entry, nodes, revealRegistry) {
+  if (!entry) {
+    replace(nodes.inspectorDetail, [el("p", { className: "empty-state", text: "没有匹配的字段。" })]);
+    return;
+  }
+
+  const isComplex = Array.isArray(entry.value) || (entry.value !== null && typeof entry.value === "object");
+  const valueNode = el("pre", {
+    className: `detail-value${entry.sensitive ? " detail-value--masked" : ""}${isComplex ? " detail-value--code" : ""}`,
+    text: entry.sensitive ? MASK : formatKnownTime(entry.key, entry.value),
+  });
+  const valueHeaderChildren = [el("h3", { text: "字段值" })];
+  if (entry.sensitive) valueHeaderChildren.push(renderRevealButton(entry, valueNode, nodes, revealRegistry));
+
+  replace(nodes.inspectorDetail, [
+    el("header", { className: "detail-heading" }, [
+      el("div", {}, [
+        el("span", { className: "detail-namespace", text: entry.namespace }),
+        el("h2", { text: entry.label }),
+        el("p", { text: entry.description }),
+      ]),
+      entry.known ? null : el("span", { className: "unknown-label", text: "未解释字段" }),
+    ]),
+    el("dl", { className: "detail-metadata" }, [
+      definitionRow("原始 key", entry.key, { mono: true }),
+      definitionRow("完整路径", entry.path, { mono: true }),
+      definitionRow("值类型", entryType(entry.value)),
+      definitionRow("敏感状态", entry.sensitive ? "默认遮罩" : "公开声明"),
+    ]),
+    el("section", { className: "detail-value-section" }, [
+      el("div", { className: "detail-value-heading" }, valueHeaderChildren),
+      valueNode,
+    ]),
+  ]);
+}
+
+function renderInspector(analysis, nodes, state, revealRegistry) {
   const categories = ["all", ...new Set(analysis.entries.map(entry => entry.category))];
   replace(nodes.inspectorCategory, categories.map(category => (
-    el("option", { text: category === "all" ? "全部字段" : category, attrs: { value: category } })
+    el("option", { text: CATEGORY_LABELS[category] ?? category, attrs: { value: category } })
   )));
+  nodes.inspectorCategory.value = state.inspectorCategory;
   replace(nodes.inspectorCategories, categories.map(category => (
-    el("button", { className: "category-button", text: category === "all" ? "全部字段" : category, attrs: { type: "button" }, dataset: { category } })
-  )));
-  replace(nodes.inspectorFields, analysis.entries.slice(0, 12).map(entry => (
-    el("button", { className: "field-button", attrs: { type: "button" } }, [
-      el("strong", { text: entry.label }),
-      el("span", { className: "mono", text: entry.key }),
+    el("button", {
+      className: "category-button",
+      attrs: { type: "button", "aria-pressed": String(state.inspectorCategory === category) },
+      dataset: { category },
+    }, [
+      el("span", { text: CATEGORY_LABELS[category] ?? category }),
+      el("span", { className: "category-count", text: category === "all" ? analysis.entries.length : analysis.entries.filter(entry => entry.category === category).length }),
     ])
   )));
-  nodes.inspectorCount.textContent = `${analysis.entries.length} 个字段`;
-  nodes.inspectorDetail.textContent = "选择一个字段查看完整路径与详情。";
+  for (const button of nodes.inspectorCategories.querySelectorAll("button")) {
+    button.addEventListener("click", () => {
+      revealRegistry.clear();
+      state.inspectorCategory = button.dataset.category;
+      state.selectedPath = null;
+      renderInspector(analysis, nodes, state, revealRegistry);
+    });
+  }
+
+  const visible = filterInspectorEntries(analysis.entries, {
+    query: state.inspectorQuery,
+    category: state.inspectorCategory,
+  });
+  if (!visible.some(entry => entry.path === state.selectedPath)) state.selectedPath = visible[0]?.path ?? null;
+
+  replace(nodes.inspectorFields, visible.map(entry => (
+    el("button", {
+      className: "field-button",
+      attrs: { type: "button", "aria-current": entry.path === state.selectedPath ? "true" : "false" },
+      dataset: { path: entry.path },
+    }, [
+      el("strong", { text: entry.label }),
+      el("span", { className: "field-button__meta" }, [
+        el("span", { className: "mono", text: entry.key }),
+        entry.sensitive ? el("span", { className: "sensitive-mark", text: "已遮罩" }) : null,
+      ]),
+    ])
+  )));
+  for (const button of nodes.inspectorFields.querySelectorAll("button")) {
+    button.addEventListener("click", () => {
+      revealRegistry.clear();
+      state.selectedPath = button.dataset.path;
+      renderInspector(analysis, nodes, state, revealRegistry);
+    });
+  }
+  nodes.inspectorCount.textContent = `${visible.length} / ${analysis.entries.length} 个字段`;
+  renderInspectorDetail(visible.find(entry => entry.path === state.selectedPath) ?? null, nodes, revealRegistry);
   nodes.rawJson.textContent = JSON.stringify(analysis.redacted, null, 2);
 }
 
@@ -133,8 +308,9 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
   const errorBox = documentRef.getElementById("errorBox");
   const nodes = Object.fromEntries([
     "statusStrip", "warningList", "accountSummary", "authenticationSummary", "securitySummary",
-    "permissionList", "permissionNotice", "inspectorCategory", "inspectorCategories",
-    "inspectorFields", "inspectorCount", "inspectorDetail", "rawJson",
+    "permissionFilters", "permissionList", "permissionNotice", "inspectorSearch", "inspectorCategory",
+    "inspectorCategories", "inspectorFields", "inspectorCount", "inspectorDetail", "rawJson",
+    "revealStatus",
   ].map(id => [id, documentRef.getElementById(id)]));
   const panels = {
     overview: documentRef.getElementById("overviewPanel"),
@@ -142,7 +318,15 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
     inspector: documentRef.getElementById("inspectorPanel"),
   };
   const tabs = [...documentRef.querySelectorAll('[role="tab"]')];
-  const state = { analysis: null, activeTab: "overview" };
+  const revealRegistry = createRevealRegistry();
+  const state = {
+    analysis: null,
+    activeTab: "overview",
+    permissionFilter: "all",
+    inspectorCategory: "all",
+    inspectorQuery: "",
+    selectedPath: null,
+  };
 
   function setError(message = "") {
     errorBox.textContent = message;
@@ -168,7 +352,13 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
   }
 
   function clearAll({ focus = true } = {}) {
+    revealRegistry.clear();
     state.analysis = null;
+    state.permissionFilter = "all";
+    state.inspectorCategory = "all";
+    state.inspectorQuery = "";
+    state.selectedPath = null;
+    nodes.inspectorSearch.value = "";
     input.value = "";
     setError();
     inputSurface.hidden = false;
@@ -185,8 +375,8 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
       input.value = "";
       state.analysis = analysis;
       renderOverview(analysis, nodes);
-      renderPermissions(analysis, nodes);
-      renderInspectorPreview(analysis, nodes);
+      renderPermissions(analysis, nodes, state);
+      renderInspector(analysis, nodes, state, revealRegistry);
       inputSurface.hidden = true;
       resultArea.hidden = false;
       activateTab("overview");
@@ -215,6 +405,20 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
     }
   });
   input.addEventListener("input", () => setError());
+  nodes.inspectorSearch.addEventListener("input", () => {
+    if (!state.analysis) return;
+    revealRegistry.clear();
+    state.inspectorQuery = nodes.inspectorSearch.value;
+    state.selectedPath = null;
+    renderInspector(state.analysis, nodes, state, revealRegistry);
+  });
+  nodes.inspectorCategory.addEventListener("change", () => {
+    if (!state.analysis) return;
+    revealRegistry.clear();
+    state.inspectorCategory = nodes.inspectorCategory.value;
+    state.selectedPath = null;
+    renderInspector(state.analysis, nodes, state, revealRegistry);
+  });
 
   for (const tab of tabs) {
     tab.addEventListener("click", () => activateTab(tab.dataset.tab));

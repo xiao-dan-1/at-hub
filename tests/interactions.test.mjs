@@ -1,59 +1,81 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadCore } from "./helpers/load-core.mjs";
+import { filterInspectorEntries } from "../src/ui/app.js";
+import { copyText } from "../src/ui/dom.js";
+import { createRevealRegistry } from "../src/ui/reveal.js";
 
-const core = loadCore();
-const { copyText, createRevealRegistry } = core;
-
-test("reveal registry hides a value after exactly ten seconds", () => {
-  let scheduled = null;
+test("reveal registry counts down from ten and conceals on expiry", () => {
+  let intervalCallback = null;
+  let timeoutCallback = null;
+  const ticks = [];
   const hidden = [];
   const registry = createRevealRegistry({
+    setIntervalFn(callback, delay) {
+      assert.equal(delay, 1000);
+      intervalCallback = callback;
+      return 11;
+    },
+    clearIntervalFn() {},
     setTimeoutFn(callback, delay) {
-      scheduled = { callback, delay };
-      return 7;
+      assert.equal(delay, 10_000);
+      timeoutCallback = callback;
+      return 12;
     },
     clearTimeoutFn() {},
   });
 
-  registry.show("payload.email", () => hidden.push("payload.email"));
-  assert.equal(scheduled.delay, 10_000);
-  scheduled.callback();
+  registry.show("payload.email", {
+    onTick: seconds => ticks.push(seconds),
+    onHide: () => hidden.push("payload.email"),
+  });
+  intervalCallback();
+  intervalCallback();
+  timeoutCallback();
+
+  assert.deepEqual(ticks, [10, 9, 8]);
   assert.deepEqual(hidden, ["payload.email"]);
 });
 
-test("reveal registry clears every outstanding timer", () => {
-  const cleared = [];
+test("reveal registry clears every active field and timer", () => {
+  const clearedIntervals = [];
+  const clearedTimeouts = [];
+  const hidden = [];
   let nextId = 0;
   const registry = createRevealRegistry({
-    setTimeoutFn() {
-      nextId += 1;
-      return nextId;
-    },
-    clearTimeoutFn(id) {
-      cleared.push(id);
-    },
+    setIntervalFn() { nextId += 1; return nextId; },
+    clearIntervalFn(id) { clearedIntervals.push(id); },
+    setTimeoutFn() { nextId += 1; return nextId; },
+    clearTimeoutFn(id) { clearedTimeouts.push(id); },
   });
 
-  registry.show("one", () => {});
-  registry.show("two", () => {});
+  registry.show("one", { onTick() {}, onHide: () => hidden.push("one") });
+  registry.show("two", { onTick() {}, onHide: () => hidden.push("two") });
   registry.clear();
-  assert.deepEqual(cleared, [1, 2]);
+
+  assert.deepEqual(clearedIntervals, [1, 3]);
+  assert.deepEqual(clearedTimeouts, [2, 4]);
+  assert.deepEqual(hidden, ["one", "two"]);
+});
+
+test("inspector search matches semantics and paths without indexing sensitive values", () => {
+  const entries = [
+    { path: "payload.plan", key: "chatgpt_plan_type", label: "JWT 声明的套餐", category: "account", searchPreview: "plus", sensitive: false },
+    { path: "payload.profile.email", key: "email", label: "邮箱", category: "account", searchPreview: "", sensitive: true },
+    { path: "payload.scp", key: "scp", label: "权限范围", category: "permissions", searchPreview: "openid", sensitive: false },
+  ];
+
+  assert.deepEqual(filterInspectorEntries(entries, { query: "套餐", category: "all" }).map(entry => entry.key), ["chatgpt_plan_type"]);
+  assert.deepEqual(filterInspectorEntries(entries, { query: "payload.scp", category: "all" }).map(entry => entry.key), ["scp"]);
+  assert.deepEqual(filterInspectorEntries(entries, { query: "person@example.test", category: "all" }), []);
+  assert.deepEqual(filterInspectorEntries(entries, { query: "", category: "permissions" }).map(entry => entry.key), ["scp"]);
 });
 
 test("copyText prefers the Clipboard API", async () => {
   const written = [];
   await copyText("safe redacted text", {
-    navigatorRef: {
-      clipboard: {
-        async writeText(value) {
-          written.push(value);
-        },
-      },
-    },
+    navigatorRef: { clipboard: { async writeText(value) { written.push(value); } } },
     documentRef: null,
   });
-
   assert.deepEqual(written, ["safe redacted text"]);
 });
 
@@ -66,30 +88,16 @@ test("copyText falls back to a temporary local textarea", async () => {
     style: {},
     value: "",
     setAttribute() {},
-    select() {
-      selected = true;
-    },
-    remove() {
-      removed = true;
-    },
+    select() { selected = true; },
+    remove() { removed = true; },
   };
   const documentRef = {
-    body: {
-      appendChild(element) {
-        appended = element;
-      },
-    },
-    createElement() {
-      return textarea;
-    },
-    execCommand(value) {
-      command = value;
-      return true;
-    },
+    body: { appendChild(element) { appended = element; } },
+    createElement() { return textarea; },
+    execCommand(value) { command = value; return true; },
   };
 
   const mode = await copyText("safe redacted text", { navigatorRef: null, documentRef });
-
   assert.equal(mode, "fallback");
   assert.equal(appended, textarea);
   assert.equal(textarea.value, "safe redacted text");
