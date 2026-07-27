@@ -18,7 +18,7 @@ export function createRevealRegistry({
     return true;
   }
 
-  function show(key, { onTick, onHide }) {
+  function show(key, { onTick, onHide, onShow }) {
     clear();
     let remaining = Math.ceil(delay / interval);
     onTick(remaining);
@@ -28,6 +28,7 @@ export function createRevealRegistry({
     }, interval);
     const timeoutId = setTimeoutFn(() => hide(key), delay);
     active.set(key, { intervalId, timeoutId, onHide });
+    onShow?.();
   }
 
   function clear() {

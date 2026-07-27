@@ -52,6 +52,26 @@ test("reveal registry conceals the active field before registering another", () 
   assert.deepEqual(events, ["one hidden", "two registered"]);
 });
 
+test("reveal registry announces the new field after concealing the previous field", () => {
+  const events = [];
+  let nextId = 0;
+  const registry = createRevealRegistry({
+    setIntervalFn() { nextId += 1; return nextId; },
+    clearIntervalFn() {},
+    setTimeoutFn() { nextId += 1; return nextId; },
+    clearTimeoutFn() {},
+  });
+
+  registry.show("one", { onTick() {}, onHide: () => events.push("one hidden") });
+  registry.show("two", {
+    onTick: () => events.push("two ticked"),
+    onHide() {},
+    onShow: () => events.push("two shown"),
+  });
+
+  assert.deepEqual(events, ["one hidden", "two ticked", "two shown"]);
+});
+
 test("reveal registry clears every active field and timer", () => {
   const clearedIntervals = [];
   const clearedTimeouts = [];

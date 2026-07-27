@@ -261,10 +261,10 @@ function renderRevealButton(entry, valueNode, nodes, revealRegistry) {
     valueNode.textContent = formatKnownTime(entry.key, entry.value);
     button.setAttribute("aria-pressed", "true");
     replace(button, [icon(EyeOff), label]);
-    nodes.revealStatus.textContent = `${entry.label} 已临时显示`;
     revealRegistry.show(entry.path, {
       onTick(seconds) { label.textContent = seconds > 0 ? `${seconds} 秒` : "正在隐藏"; },
       onHide: conceal,
+      onShow() { nodes.revealStatus.textContent = `${entry.label} 已临时显示`; },
     });
   });
   return button;
