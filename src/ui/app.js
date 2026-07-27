@@ -75,9 +75,11 @@ export function formatOverviewEntryValue(entry) {
 }
 
 export function selectOverviewWarnings(warnings) {
-  return OVERVIEW_WARNING_ORDER
-    .flatMap(code => warnings.filter(warning => warning.code === code))
-    .slice(0, 3);
+  const priorityCodes = new Set(OVERVIEW_WARNING_ORDER);
+  const prioritized = OVERVIEW_WARNING_ORDER
+    .flatMap(code => warnings.filter(warning => warning.code === code));
+  const remaining = warnings.filter(warning => !priorityCodes.has(warning.code));
+  return [...prioritized, ...remaining].slice(0, 3);
 }
 
 function icon(iconNode, label = "") {

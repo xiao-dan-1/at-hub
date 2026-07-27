@@ -53,6 +53,21 @@ test("overview warnings keep the three product-critical messages in priority ord
   ]);
 });
 
+test("overview warnings fill unused slots with other actionable diagnostics", () => {
+  const visible = selectOverviewWarnings([
+    { code: "SIGNATURE_UNVERIFIED" },
+    { code: "ALG_NONE" },
+    { code: "INVALID_TIME_CLAIM" },
+    { code: "MISSING_TIME" },
+  ]);
+
+  assert.deepEqual(visible.map(warning => warning.code), [
+    "SIGNATURE_UNVERIFIED",
+    "ALG_NONE",
+    "INVALID_TIME_CLAIM",
+  ]);
+});
+
 test("overview exposes an absolute Beijing expiry alongside remaining time", () => {
   assert.equal(formatExpiry({ claims: { exp: { valid: true, beijing: "2033-05-18 11:33:20 +08:00" } } }), "2033-05-18 11:33:20 +08:00");
   assert.equal(formatExpiry({ claims: { exp: { valid: false } } }), "未声明");
