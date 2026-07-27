@@ -1,16 +1,13 @@
 import { Buffer } from "node:buffer";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadCore, makeJwt, toPlain } from "./helpers/load-core.mjs";
-
-const core = loadCore();
-const {
+import { makeJwt } from "./helpers/make-jwt.mjs";
+import { normalizeInput, parseJwt } from "../src/core/jwt.js";
+import {
   evaluateTimeStatus,
   formatBeijingTime,
   formatTimeClaimValue,
-  normalizeInput,
-  parseJwt,
-} = core;
+} from "../src/core/time.js";
 
 test("normalizeInput trims whitespace and an optional Bearer prefix", () => {
   assert.equal(normalizeInput("  Bearer abc.def.sig  "), "abc.def.sig");
@@ -24,9 +21,9 @@ test("parseJwt decodes UTF-8 JSON objects", () => {
   );
   const result = parseJwt(token, 2_000_000_000_000);
 
-  assert.deepEqual(toPlain(result.header), { alg: "RS256", typ: "JWT" });
-  assert.deepEqual(toPlain(result.payload), { name: "虚构用户", plan: "free" });
-  assert.deepEqual(toPlain(result.signature), { present: true, verified: false });
+  assert.deepEqual(result.header, { alg: "RS256", typ: "JWT" });
+  assert.deepEqual(result.payload, { name: "虚构用户", plan: "free" });
+  assert.deepEqual(result.signature, { present: true, verified: false });
 });
 
 test("parseJwt rejects empty or malformed segment counts", () => {

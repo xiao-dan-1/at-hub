@@ -1,9 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { loadCore, makeJwt, toPlain } from "./helpers/load-core.mjs";
-
-const core = loadCore();
-const { buildSections, isSensitiveKey, parseJwt, redactDeep } = core;
+import { makeJwt } from "./helpers/make-jwt.mjs";
+import { parseJwt } from "../src/core/jwt.js";
+import {
+  buildSections,
+  isSensitiveKey,
+  redactDeep,
+} from "../src/core/redaction.js";
 
 test("isSensitiveKey identifies personal and identifier fields", () => {
   assert.equal(isSensitiveKey("email"), true);
@@ -34,7 +37,7 @@ test("redactDeep masks nested sensitive values without changing public values", 
     scp: ["openid", "profile"],
   };
 
-  assert.deepEqual(toPlain(redactDeep(source)), {
+  assert.deepEqual(redactDeep(source), {
     profile: { email: "[REDACTED]", email_verified: true, name: "[REDACTED]" },
     auth: {
       user_id: "[REDACTED]",
