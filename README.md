@@ -1,31 +1,47 @@
-# AT 本地解析器
+# AT Inspector
 
-一个只在浏览器本地解码单个 JWT 形式 AT 的静态工具。它展示 Header、Payload、时间状态、权限和脱敏 JSON。
+一个只在当前浏览器页面中解析单个 JWT 形式 ChatGPT Access Token（AT）的本地工具。它把原始声明整理成可读的账号、认证、时间与权限信息，并提供默认脱敏的高级字段检查器。
 
 ## 使用
 
-1. 双击 `index.html`。
-2. 粘贴一个三段式 JWT，或带有 `Bearer ` 前缀的值。
-3. 点击“本地解析”。
-4. 查看分类结果；敏感字段默认遮盖，可临时显示 10 秒。
-5. 点击“清空全部”或按 `Esc` 移除当前结果。
+1. 双击 `index.html`（位于根目录）。
+2. 粘贴三段式 JWT，也可以包含 `Bearer ` 前缀。
+3. 点击“本地解析”。解析成功后，输入内容会立即从页面清除。
+4. 在“概览”查看时间、安全提示和账号摘要；在“权限”查看 scope 的本地解释；在“高级检查器”搜索或按类别检查完整声明路径。
+5. 敏感字段默认遮罩，只能临时显示 10 秒；复制操作始终输出脱敏 JSON。
+6. 点击“重新解析”“清空全部”，或按 `Esc` 清除当前结果。
 
 最终用户不需要安装 Node.js，也不需要启动服务器。
 
 ## 安全边界
 
-- 页面不发起网络请求，不使用 Cookie 或浏览器持久化存储。
-- 工具只解码 JWT，不验证签名、撤销状态或服务器可用性。
-- 时间状态只依据 JWT 声明和本机时钟。
-- JavaScript 不能保证立即擦除浏览器引擎底层内存，只会清除页面内容和可访问引用。
-- 不要把真实 token 粘贴到聊天、Issue、截图、日志或测试代码中。
+- 页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。
+- 工具只解码 JWT，不验证签名、撤销状态或服务器可用性。页面显示“在声明时间窗口内”也不等于 token 可用。
+- 权限风险来自本项目维护的本地规则和启发式提示，不是 OpenAI 官方权限评级，也不证明服务器一定接受相应 scope。
+- ChatGPT/OpenAI 的非标准 claim 可能随签发流程变化或过时；未知字段会保留在高级检查器中，不会被擅自解释成风险。
+- 时间判断只依据 JWT 声明和本机时钟，界面以北京时间显示。
+- JavaScript 无法保证立即擦除浏览器引擎底层内存；工具会清除页面内容、计时器和可访问引用。
+- 不要把真实 token 粘贴到聊天、Issue、截图、日志、测试代码或版本库中。AT 泄露后应立即注销相关会话并更新凭据。
 
-## 开发验证
+## 开发
 
-需要 Node.js 20 或更高版本。项目不依赖第三方 npm 包。
+需要 Node.js `^20.19.0` 或 `>=22.12.0`。
 
 ```powershell
-node --test tests/parser.test.mjs tests/redaction.test.mjs tests/page.test.mjs tests/interactions.test.mjs tests/readme.test.mjs tests/repo-safety.test.mjs
+npm install
+npm run dev
 ```
 
-所有测试数据均由代码生成，不包含真实账号或 token。
+开发服务器默认位于 `http://127.0.0.1:5173/`。
+
+```powershell
+npm test
+npm run build
+npm run release
+```
+
+- `npm test` 先重新构建，再运行全部解析、脱敏、语义、交互、发布与仓库安全测试。
+- `npm run build` 在 `dist/index.html` 生成无外部运行时资源的单文件版本。
+- `npm run release` 验证构建产物后，将它发布为根目录可双击使用的 `index.html`。
+
+源码位于 `src/`：`core/` 保存不依赖 DOM 的解析与解释逻辑，`ui/` 负责界面和交互。所有测试 token 都由代码生成，不包含真实账号或凭据。

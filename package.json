@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "release": "npm run build && node scripts/publish-singlefile.mjs",
-    "test": "node --test tests/*.test.mjs"
+    "test": "npm run build && node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "lucide": "1.27.0",

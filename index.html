@@ -5,845 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; img-src data:; font-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
-  <style>
-    :root {
-      color-scheme: light dark;
-      --bg: #f2f5f3;
-      --surface: #ffffff;
-      --surface-subtle: #f8faf9;
-      --text: #17211c;
-      --muted: #647169;
-      --line: #d9e1dc;
-      --accent: #087f5b;
-      --accent-strong: #056647;
-      --accent-soft: #e3f5ed;
-      --warning: #8b5707;
-      --warning-soft: #fff5df;
-      --danger: #b42318;
-      --danger-soft: #fff0ee;
-      --shadow: 0 22px 60px rgba(31, 48, 39, 0.1);
-      --radius: 20px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    * { box-sizing: border-box; }
-    html { min-height: 100%; background: var(--bg); }
-    body {
-      min-height: 100vh;
-      margin: 0;
-      color: var(--text);
-      background: var(--bg);
-    }
-    button, textarea { font: inherit; }
-    button { color: inherit; }
-
-    .skip-link {
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      z-index: 10;
-      padding: 10px 14px;
-      color: white;
-      background: var(--accent-strong);
-      border-radius: 10px;
-      transform: translateY(-150%);
-    }
-    .skip-link:focus { transform: translateY(0); }
-    .app-shell { width: min(1040px, calc(100% - 32px)); margin: 0 auto; padding: 64px 0 44px; }
-    .hero { max-width: 760px; margin-bottom: 32px; }
-    h1 { margin: 0; font-size: clamp(2.45rem, 7vw, 4.2rem); line-height: 1; letter-spacing: -0.055em; }
-    h2 { margin: 0; font-size: 1.35rem; letter-spacing: -0.025em; }
-    .hero-copy { max-width: 680px; margin: 18px 0; color: var(--muted); font-size: 1.04rem; line-height: 1.75; }
-    .local-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      padding: 10px 13px;
-      color: var(--accent-strong);
-      background: var(--accent-soft);
-      border: 1px solid rgba(8, 127, 91, 0.2);
-      border-radius: 13px;
-      font-size: 0.87rem;
-      font-weight: 750;
-    }
-    .local-badge span { font-size: 0.58rem; }
-    .unverified-label { margin: 0; color: var(--muted); font-size: 0.88rem; font-weight: 700; }
-    .panel {
-      padding: 28px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-    .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
-    textarea {
-      width: 100%;
-      min-height: 190px;
-      resize: vertical;
-      padding: 18px;
-      color: var(--text);
-      background: var(--surface-subtle);
-      border: 1px solid var(--line);
-      border-radius: 15px;
-      font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-      font-size: 0.88rem;
-      line-height: 1.65;
-      outline: none;
-    }
-    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(8, 127, 91, 0.13); }
-    .input-help, footer { color: var(--muted); font-size: 0.88rem; line-height: 1.65; }
-    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
-    .button {
-      min-height: 44px;
-      padding: 10px 17px;
-      border: 1px solid transparent;
-      border-radius: 11px;
-      cursor: pointer;
-      font-size: 0.92rem;
-      font-weight: 760;
-    }
-    .button.primary { color: white; background: var(--accent); }
-    .button.primary:hover { background: var(--accent-strong); }
-    .button.secondary { background: transparent; border-color: var(--line); }
-    .button.secondary:hover { background: rgba(127, 145, 135, 0.1); }
-    .button.compact { min-height: 36px; padding: 7px 11px; font-size: 0.82rem; }
-    .shortcut { margin-left: auto; color: var(--muted); font-size: 0.8rem; }
-    .message { margin-top: 16px; padding: 13px 15px; border-radius: 12px; line-height: 1.55; }
-    .message.error { color: var(--danger); background: var(--danger-soft); border: 1px solid rgba(180, 35, 24, 0.2); }
-    .result-stack { margin-top: 42px; }
-    .result-heading { margin: 0 0 18px; }
-    .summary-grid, .section-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .summary-card, .claim-card {
-      padding: 18px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-    }
-    .summary-label { color: var(--muted); font-size: 0.76rem; font-weight: 760; letter-spacing: 0.08em; text-transform: uppercase; }
-    .summary-value { display: block; margin-top: 8px; font-size: 1rem; font-weight: 760; overflow-wrap: anywhere; }
-    .summary-card[data-state="within_window"] { border-color: rgba(8, 127, 91, 0.42); }
-    .summary-card[data-state="expired"], .summary-card[data-state="not_yet_valid"] { border-color: rgba(180, 35, 24, 0.42); }
-    .warning-list { display: grid; gap: 9px; margin: 14px 0; }
-    .warning-item { padding: 12px 14px; color: var(--warning); background: var(--warning-soft); border-radius: 12px; line-height: 1.5; }
-    .section-grid { margin-top: 14px; align-items: start; }
-    .claim-card h3 { margin: 0 0 13px; font-size: 1rem; }
-    .field-list { display: grid; gap: 0; margin: 0; }
-    .field-row { display: grid; grid-template-columns: minmax(120px, 0.9fr) minmax(0, 1.4fr) auto; gap: 12px; align-items: start; padding: 11px 0; border-top: 1px solid var(--line); }
-    .field-row:first-child { border-top: 0; }
-    .field-key { color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.78rem; overflow-wrap: anywhere; }
-    .field-value { margin: 0; font-family: "Cascadia Code", Consolas, monospace; font-size: 0.82rem; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
-    .reveal-button { min-height: 32px; padding: 5px 9px; background: transparent; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; font-size: 0.76rem; }
-    .json-panel { margin-top: 14px; }
-    summary { cursor: pointer; font-weight: 780; }
-    .json-toolbar { display: flex; align-items: center; gap: 12px; margin: 16px 0 10px; }
-    pre { max-height: 520px; margin: 0; padding: 18px; overflow: auto; background: #101713; color: #dce9e1; border-radius: 14px; font-size: 0.78rem; line-height: 1.6; }
-    footer { margin-top: 24px; padding: 4px 4px 0; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-    :focus-visible { outline: 3px solid rgba(8, 127, 91, 0.55); outline-offset: 3px; }
-    [hidden] { display: none !important; }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0e1511;
-        --surface: #17211c;
-        --surface-subtle: #121b16;
-        --text: #edf5f0;
-        --muted: #9eaaa3;
-        --line: #334139;
-        --accent: #48c79b;
-        --accent-strong: #76dab7;
-        --accent-soft: rgba(44, 159, 120, 0.16);
-        --warning: #ffc66d;
-        --warning-soft: rgba(181, 111, 0, 0.16);
-        --danger: #ff8d83;
-        --danger-soft: rgba(180, 35, 24, 0.15);
-        --shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
-      }
-    }
-
-    @media (max-width: 700px) {
-      .app-shell { width: min(100% - 20px, 1040px); padding-top: 38px; }
-      .panel { padding: 20px; border-radius: 17px; }
-      .section-heading { flex-direction: column; }
-      .summary-grid, .section-grid { grid-template-columns: 1fr; }
-      .field-row { grid-template-columns: 1fr auto; }
-      .field-key { grid-column: 1 / -1; }
-      .shortcut { width: 100%; margin-left: 0; }
-    }
-  </style>
-  <title>AT 本地解析器</title>
+  <title>AT Inspector</title>
+  <script type="module" crossorigin>(function(){let e=document.createElement(`link`).relList;if(e&&e.supports&&e.supports(`modulepreload`))return;for(let e of document.querySelectorAll(`link[rel="modulepreload"]`))n(e);new MutationObserver(e=>{for(let t of e)if(t.type===`childList`)for(let e of t.addedNodes)e.tagName===`LINK`&&e.rel===`modulepreload`&&n(e)}).observe(document,{childList:!0,subtree:!0});function t(e){let t={};return e.integrity&&(t.integrity=e.integrity),e.referrerPolicy&&(t.referrerPolicy=e.referrerPolicy),e.crossOrigin===`use-credentials`?t.credentials=`include`:e.crossOrigin===`anonymous`?t.credentials=`omit`:t.credentials=`same-origin`,t}function n(e){if(e.ep)return;e.ep=!0;let n=t(e);fetch(e.href,n)}})();var e={xmlns:`http://www.w3.org/2000/svg`,width:24,height:24,viewBox:`0 0 24 24`,fill:`none`,stroke:`currentColor`,"stroke-width":2,"stroke-linecap":`round`,"stroke-linejoin":`round`},t=([e,n,r])=>{let i=document.createElementNS(`http://www.w3.org/2000/svg`,e);return Object.keys(n).forEach(e=>{i.setAttribute(e,String(n[e]))}),r?.length&&r.forEach(e=>{let n=t(e);i.appendChild(n)}),i},n=(n,r={})=>t([`svg`,{...e,...r},n]),r=e=>{for(let t in e)if(t.startsWith(`aria-`)||t===`role`||t===`title`)return!0;return!1},i=(...e)=>e.filter((e,t,n)=>!!e&&e.trim()!==``&&n.indexOf(e)===t).join(` `).trim(),a=e=>e.replace(/^([A-Z])|[\s-_]+(\w)/g,(e,t,n)=>n?n.toUpperCase():t.toLowerCase()),o=e=>{let t=a(e);return t.charAt(0).toUpperCase()+t.slice(1)},s=e=>Array.from(e.attributes).reduce((e,t)=>(e[t.name]=t.value,e),{}),c=e=>typeof e==`string`?e:!e||!e.class?``:e.class&&typeof e.class==`string`?e.class.split(` `):e.class&&Array.isArray(e.class)?e.class:``,l=(t,{nameAttr:a,icons:l,attrs:u})=>{let d=t.getAttribute(a);if(d==null)return;let f=l[o(d)];if(!f)return console.warn(`${t.outerHTML} icon name was not found in the provided icons object.`);let p=s(t),m=r(p)?{}:{"aria-hidden":`true`},h={...e,"data-lucide":d,...m,...u,...p},g=c(p),_=c(u),v=i(`lucide`,`lucide-${d}`,...g,..._);v&&Object.assign(h,{class:v});let y=n(f,h);return t.parentNode?.replaceChild(y,t)},u=[[`circle`,{cx:`12`,cy:`12`,r:`10`}],[`line`,{x1:`12`,x2:`12`,y1:`8`,y2:`12`}],[`line`,{x1:`12`,x2:`12.01`,y1:`16`,y2:`16`}]],d=[[`rect`,{width:`14`,height:`14`,x:`8`,y:`8`,rx:`2`,ry:`2`}],[`path`,{d:`M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2`}]],f=[[`path`,{d:`M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49`}],[`path`,{d:`M14.084 14.158a3 3 0 0 1-4.242-4.242`}],[`path`,{d:`M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143`}],[`path`,{d:`m2 2 20 20`}]],p=[[`path`,{d:`M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0`}],[`circle`,{cx:`12`,cy:`12`,r:`3`}]],m=[[`path`,{d:`M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4`}],[`path`,{d:`M14 13.12c0 2.38 0 6.38-1 8.88`}],[`path`,{d:`M17.29 21.02c.12-.6.43-2.3.5-3.02`}],[`path`,{d:`M2 12a10 10 0 0 1 18-6`}],[`path`,{d:`M2 16h.01`}],[`path`,{d:`M21.8 16c.2-2 .131-5.354 0-6`}],[`path`,{d:`M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2`}],[`path`,{d:`M8.65 22c.21-.66.45-1.32.57-2`}],[`path`,{d:`M9 6.8a6 6 0 0 1 9 5.2v2`}]],h=[[`circle`,{cx:`12`,cy:`12`,r:`10`}],[`path`,{d:`M12 16v-4`}],[`path`,{d:`M12 8h.01`}]],g=[[`path`,{d:`M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z`}],[`circle`,{cx:`16.5`,cy:`7.5`,r:`.5`,fill:`currentColor`}]],_=[[`path`,{d:`M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8`}],[`path`,{d:`M3 3v5h5`}]],v=[[`path`,{d:`M3 7V5a2 2 0 0 1 2-2h2`}],[`path`,{d:`M17 3h2a2 2 0 0 1 2 2v2`}],[`path`,{d:`M21 17v2a2 2 0 0 1-2 2h-2`}],[`path`,{d:`M7 21H5a2 2 0 0 1-2-2v-2`}],[`circle`,{cx:`12`,cy:`12`,r:`3`}],[`path`,{d:`m16 16-1.9-1.9`}]],y=[[`path`,{d:`m21 21-4.34-4.34`}],[`circle`,{cx:`11`,cy:`11`,r:`8`}]],ee=[[`path`,{d:`M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z`}],[`path`,{d:`M12 8v4`}],[`path`,{d:`M12 16h.01`}]],b=[[`path`,{d:`M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z`}],[`path`,{d:`m9 12 2 2 4-4`}]],te=[[`path`,{d:`M10 11v6`}],[`path`,{d:`M14 11v6`}],[`path`,{d:`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6`}],[`path`,{d:`M3 6h18`}],[`path`,{d:`M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`}]],ne=[[`circle`,{cx:`12`,cy:`8`,r:`5`}],[`path`,{d:`M20 21a8 8 0 0 0-16 0`}]],x=({icons:e={},nameAttr:t=`data-lucide`,attrs:n={},root:r=document,inTemplates:i}={})=>{if(!Object.values(e).length)throw Error(`Please provide an icons object.
+If you want to use all the icons you can import it like:
+ \`import { createIcons, icons } from 'lucide';
+lucide.createIcons({icons});\``);if(r===void 0)throw Error("`createIcons()` only works in a browser environment.");if(Array.from(r.querySelectorAll(`[${t}]`)).forEach(r=>l(r,{nameAttr:t,icons:e,attrs:n})),i&&Array.from(r.querySelectorAll(`template`)).forEach(r=>x({icons:e,nameAttr:t,attrs:n,root:r.content,inTemplates:i})),t===`data-lucide`){let t=r.querySelectorAll(`[icon-name]`);t.length>0&&(console.warn(`[Lucide] Some icons were found with the now deprecated icon-name attribute. These will still be replaced for backwards compatibility, but will no longer be supported in v1.0 and you should switch to data-lucide`),Array.from(t).forEach(t=>l(t,{nameAttr:`icon-name`,icons:e,attrs:n})))}};function S(e){let t=String(e).toLowerCase();return[`email`,`name`,`sub`,`jti`,`session_id`].includes(t)||t.includes(`verified_identity`)||[`user`,`account`,`organization`,`org`,`workspace`].some(e=>t.includes(e))&&(t.includes(`uuid`)||t.includes(`identity`))?!0:/(?:^|_)(?:id|ids)$/u.test(t)}function C(e,t=``){return S(t)?Array.isArray(e)?e.map(()=>`[REDACTED]`):`[REDACTED]`:Array.isArray(e)?e.map(e=>C(e)):typeof e==`object`&&e?Object.fromEntries(Object.entries(e).map(([e,t])=>[e,C(t,e)])):e}var w=new Map([[`https://api.openai.com/auth`,`OpenAI Auth`],[`https://api.openai.com/profile`,`OpenAI Profile`]]),re={alg:{label:`签名算法`,description:`Header 声明的签名算法；本工具不会验证签名。`,category:`security`},typ:{label:`Token 类型`,description:`Header 声明的 token 类型。`,category:`security`},kid:{label:`密钥标识`,description:`签发方用于选择验证公钥的标识。`,category:`security`},iss:{label:`签发方`,description:`声明签发 token 的主体。`,category:`security`},aud:{label:`目标受众`,description:`声明 token 预期提供给哪些服务。`,category:`security`},client_id:{label:`客户端标识`,description:`申请该 token 的 OAuth 客户端标识。`,category:`security`},iat:{label:`签发时间`,description:`JWT 的签发时间声明。`,category:`time`,format:`numeric-date`},nbf:{label:`生效时间`,description:`JWT 在此时间之前不应生效。`,category:`time`,format:`numeric-date`},exp:{label:`到期时间`,description:`JWT 的到期时间声明。`,category:`time`,format:`numeric-date`},pwd_auth_time:{label:`密码认证时间`,description:`密码认证发生的时间声明。`,category:`authentication`,format:`known-time`},amr:{label:`认证方式`,description:`签发方记录的认证方法。`,category:`authentication`},email:{label:`邮箱`,description:`账号邮箱。`,category:`account`},email_verified:{label:`邮箱已验证`,description:`签发方声明邮箱是否完成验证。`,category:`authentication`},name:{label:`账号名称`,description:`账号显示名称。`,category:`account`},is_signup:{label:`注册流程`,description:`该会话是否来自注册流程。`,category:`authentication`},sl:{label:`安全级别标记`,description:`OpenAI 认证流程携带的安全级别布尔标记。`,category:`authentication`},chatgpt_plan_type:{label:`JWT 声明的套餐`,description:`Token 签发时记录的 ChatGPT 套餐，可能不是当前服务器状态。`,category:`account`},chatgpt_compute_residency:{label:`计算驻留策略`,description:`账号声明的计算数据驻留策略。`,category:`account`},scp:{label:`权限范围`,description:`Token 声明的 OAuth 权限范围。`,category:`permissions`},sub:{label:`主体标识`,description:`JWT 的主体标识。`,category:`account`},jti:{label:`Token 标识`,description:`JWT 的唯一标识。`,category:`security`},session_id:{label:`会话标识`,description:`认证会话标识。`,category:`authentication`},user_id:{label:`用户标识`,description:`账号用户标识。`,category:`account`},chatgpt_user_id:{label:`ChatGPT 用户标识`,description:`ChatGPT 用户标识。`,category:`account`},chatgpt_account_id:{label:`ChatGPT 账号标识`,description:`ChatGPT 账号或工作区标识。`,category:`account`},chatgpt_account_user_id:{label:`账号成员标识`,description:`ChatGPT 账号中的成员标识。`,category:`account`},verified_org_ids:{label:`已验证组织标识`,description:`账号已验证的组织标识列表。`,category:`account`},verified_ws_ids:{label:`已验证工作区标识`,description:`账号已验证的工作区标识列表。`,category:`account`}};function ie(e,t){if(w.has(e))return w.get(e);if(!/^https?:\/\//iu.test(e))return t;try{let t=new URL(e);return`${t.hostname}${t.pathname}`}catch{return t}}function ae(e){return S(e)?e.includes(`workspace`)||e.includes(`ws_`)?{label:`工作区标识`,description:`工作区相关标识。`,category:`account`}:e.includes(`organization`)||e.includes(`org`)?{label:`组织标识`,description:`组织相关标识。`,category:`account`}:e.includes(`account`)?{label:`账号标识`,description:`账号相关标识。`,category:`account`}:e.includes(`user`)?{label:`用户标识`,description:`用户相关标识。`,category:`account`}:{label:`敏感标识`,description:`默认遮罩的身份或会话标识。`,category:`account`}:null}function oe(e){let t=String(e).toLowerCase(),n=re[t]??ae(t);return n?{...n,known:!0}:{label:e,description:`尚未提供语义解释，已保留原始声明。`,category:`other`,known:!1}}function se(e){if(e===void 0)return``;if(typeof e==`string`)return e;try{return JSON.stringify(e)}catch{return String(e)}}function ce(e,t){let n=[];function r(e,t){if(typeof e==`object`&&e&&!Array.isArray(e)){for(let[n,i]of Object.entries(e)){let e=t.source===`payload`?ie(n,t.namespace):t.namespace;r(i,{source:t.source,namespace:e,path:[...t.path,n],key:n})}return}let i=oe(t.key),a=S(t.key);n.push({source:t.source,namespace:t.namespace,key:t.key,path:t.path.join(`.`),label:i.label,description:i.description,category:i.category,format:i.format??`default`,sensitive:a,known:i.known,value:e,searchPreview:a?``:se(e)})}return r(e,{source:`header`,namespace:`JWT Header`,path:[`header`],key:`header`}),r(t,{source:`payload`,namespace:`JWT Payload`,path:[`payload`],key:`payload`}),n}function T(e,t){return e.find(e=>e.key===t&&e.namespace===`OpenAI Auth`)??e.find(e=>e.key===t&&e.source===`payload`&&e.namespace===`JWT Payload`)??e.find(e=>e.key===t&&e.source===`payload`)??null}function le(e){return{plan:T(e,`chatgpt_plan_type`),residency:T(e,`chatgpt_compute_residency`),authentication:e.filter(e=>[`amr`,`email_verified`,`is_signup`,`pwd_auth_time`,`sl`].includes(e.key))}}function E(e){if(typeof e!=`number`||!Number.isFinite(e))return null;let t=new Date(e*1e3+480*60*1e3);return Number.isNaN(t.getTime())?null:`${t.toISOString().slice(0,19).replace(`T`,` `)} +08:00`}function D(e,t){if(!Object.prototype.hasOwnProperty.call(e,t))return{key:t,present:!1,valid:!1,raw:void 0};let n=e[t];if(typeof n!=`number`||!Number.isFinite(n))return{key:t,present:!0,valid:!1,raw:n};let r=n*1e3,i=E(n);return!Number.isFinite(r)||i===null?{key:t,present:!0,valid:!1,raw:n}:{key:t,present:!0,valid:!0,raw:n,milliseconds:r,beijing:i}}function O(e,t=Date.now()){let n={iat:D(e,`iat`),nbf:D(e,`nbf`),exp:D(e,`exp`)},r=Object.values(n).filter(e=>e.present&&!e.valid).map(e=>e.key);return n.nbf.valid&&t<n.nbf.milliseconds?{code:`not_yet_valid`,label:`尚未生效`,claims:n,invalidClaims:r}:n.exp.valid&&t>=n.exp.milliseconds?{code:`expired`,label:`已过期`,claims:n,invalidClaims:r}:n.nbf.valid||n.exp.valid?{code:`within_window`,label:`在声明时间窗口内`,claims:n,invalidClaims:r}:{code:`missing_time`,label:`缺少时间声明`,claims:n,invalidClaims:r}}function k(e){return typeof e==`string`?e:JSON.stringify(e,null,2)}function ue(e,t){let n=k(t);if(![`iat`,`nbf`,`exp`].includes(String(e).toLowerCase()))return n;let r=E(t);return r===null?n:`${n}\n北京时间：${r}`}function A(e,t){if(e!==`pwd_auth_time`||typeof t!=`number`||!Number.isFinite(t))return ue(e,t);let n=E(Math.abs(t)>=1e11?t/1e3:t);return n===null?k(t):`${t}\n北京时间：${n}`}var j=class extends Error{constructor(e,t){super(t),this.name=`ParserError`,this.code=e}};function de(e){return String(e??``).trim().replace(/^Bearer\s+/iu,``).trim()}function M(e,t){let n=t.toUpperCase();if(!/^[A-Za-z0-9_-]+={0,2}$/u.test(e))throw new j(`${n}_BASE64URL`,`${t} 不是合法的 Base64URL。`);let r=e.replace(/=+$/u,``);if(r.length%4==1)throw new j(`${n}_BASE64URL`,`${t} 不是合法的 Base64URL。`);let i=r.replace(/-/gu,`+`).replace(/_/gu,`/`).padEnd(Math.ceil(r.length/4)*4,`=`),a;try{a=atob(i)}catch{throw new j(`${n}_BASE64URL`,`${t} 不是合法的 Base64URL。`)}let o=Uint8Array.from(a,e=>e.charCodeAt(0)),s;try{s=new TextDecoder(`utf-8`,{fatal:!0}).decode(o)}catch{throw new j(`${n}_UTF8`,`${t} 不是合法的 UTF-8 文本。`)}let c;try{c=JSON.parse(s)}catch{throw new j(`${n}_JSON`,`${t} 不是合法的 JSON。`)}if(c===null||Array.isArray(c)||typeof c!=`object`)throw new j(`${n}_NOT_OBJECT`,`${t} 顶层必须是 JSON 对象。`);return c}function N(e){let t=de(e);if(!t)throw new j(`EMPTY_INPUT`,`请输入一个 AT。数据只会在当前页面内解析。`);let n=t.split(`.`);if(n.length!==3||n.some(e=>e.length===0))throw new j(`JWT_STRUCTURE`,`AT 必须是由两个点分隔的三段式 JWT。`);return{header:M(n[0],`Header`),payload:M(n[1],`Payload`),signature:{present:!0,verified:!1}}}var P=`风险级别仅用于本地阅读提示，不是 OpenAI 官方权限评级，也不证明服务器会授予该权限。`,F={"organization.write":{label:`组织写入`,description:`声明可执行组织范围的写入操作。`,risk:`high`,group:`write`},"organization.read":{label:`组织读取`,description:`声明可读取组织范围的信息。`,risk:`medium`,group:`read`},"model.request":{label:`模型调用`,description:`声明可向模型发起请求。`,risk:`medium`,group:`model`},"model.read":{label:`模型读取`,description:`声明可读取模型相关信息。`,risk:`low`,group:`read`},offline_access:{label:`离线访问`,description:`声明可在用户不活跃时继续访问授权资源。`,risk:`medium`,group:`identity`},openid:{label:`OpenID 身份`,description:`声明可读取 OpenID 身份。`,risk:`low`,group:`identity`},email:{label:`邮箱信息`,description:`声明可读取账号邮箱。`,risk:`low`,group:`identity`},profile:{label:`个人资料`,description:`声明可读取基础个人资料。`,risk:`low`,group:`identity`}},I={label:`未解释权限`,description:`本工具尚未提供该 scope 的语义解释。`,risk:`unknown`,group:`unknown`};function L(e){return Array.isArray(e)?[...new Set(e.filter(e=>typeof e==`string`&&e.trim()).map(e=>e.trim()))].map(e=>({scope:e,...F[e]??I})):[]}function R(e,t){return t===`high`?e.filter(e=>e.risk===`high`):t===`write`?e.filter(e=>e.group===`write`):t===`identity`?e.filter(e=>e.group===`identity`):e}var z=new Set([`RS256`,`RS384`,`RS512`,`PS256`,`PS384`,`PS512`,`ES256`,`ES384`,`ES512`,`EdDSA`,`HS256`,`HS384`,`HS512`]);function B(e,t,n){let r=[{code:`SIGNATURE_UNVERIFIED`,level:`warning`,message:`只完成了本地解码，未验证签名、撤销状态或服务器可用性。`}],i=typeof e.alg==`string`?e.alg:``;i?i.toLowerCase()===`none`?r.push({code:`ALG_NONE`,level:`danger`,message:`alg=none 不提供签名保护。`}):z.has(i)||r.push({code:`UNKNOWN_ALG`,level:`info`,message:`算法 ${i} 不在常见签名算法列表中。`}):r.push({code:`MISSING_ALG`,level:`warning`,message:`Header 缺少 alg 字段。`});for(let e of t.invalidClaims)r.push({code:`INVALID_TIME_CLAIM`,level:`warning`,message:`${e} 不是有效的 JWT NumericDate 数字。`});t.code===`expired`?r.push({code:`TOKEN_EXPIRED`,level:`danger`,message:`根据本机时间，该 token 已经过期。`}):t.code===`not_yet_valid`?r.push({code:`TOKEN_NOT_YET_VALID`,level:`warning`,message:`根据本机时间，该 token 尚未生效。`}):t.code===`missing_time`&&r.push({code:`MISSING_TIME`,level:`warning`,message:`Payload 缺少有效的 nbf 和 exp 时间声明。`});let a=n.filter(e=>e.risk===`high`).length;return a>0&&r.push({code:`HIGH_RISK_PERMISSIONS`,level:`danger`,message:`发现 ${a} 个本地规则标记的高风险写权限。`}),r}function V(e,t=Date.now()){let n=N(e),r=O(n.payload,t),i=ce(n.header,n.payload),a=le(i),o=L(T(i,`scp`)?.value);return{decoded:n,status:r,warnings:B(n.header,r,o),account:a,permissions:o,entries:i,redacted:{header:C(n.header),payload:C(n.payload),signature:n.signature}}}function H(e,t={},n=[]){let r=document.createElement(e);t.className&&(r.className=t.className),t.text!==void 0&&(r.textContent=String(t.text));for(let[e,n]of Object.entries(t.attrs??{}))n!=null&&r.setAttribute(e,String(n));for(let[e,n]of Object.entries(t.dataset??{}))r.dataset[e]=String(n);return r.append(...n.filter(Boolean)),r}function U(e,t=[]){return e.replaceChildren(...t.filter(Boolean)),e}function fe(e){return e==null||e===``?`未提供`:typeof e==`boolean`?e?`是`:`否`:typeof e==`string`?e:JSON.stringify(e,null,2)}async function pe(e,{navigatorRef:t=globalThis.navigator,documentRef:n=document}={}){if(t?.clipboard?.writeText)return await t.clipboard.writeText(e),`clipboard`;let r=n.createElement(`textarea`);r.value=e,r.setAttribute(`readonly`,``),Object.assign(r.style,{position:`fixed`,opacity:`0`,pointerEvents:`none`}),n.body.appendChild(r),r.select();let i=n.execCommand(`copy`);if(r.remove(),!i)throw Error(`当前浏览器不允许自动复制，请在高级检查器中手动选择脱敏 JSON。`);return`fallback`}function W({delay:e=1e4,interval:t=1e3,setIntervalFn:n=setInterval,clearIntervalFn:r=clearInterval,setTimeoutFn:i=setTimeout,clearTimeoutFn:a=clearTimeout}={}){let o=new Map;function s(e){let t=o.get(e);return t?(r(t.intervalId),a(t.timeoutId),o.delete(e),t.onHide(),!0):!1}function c(r,{onTick:a,onHide:c}){s(r);let l=Math.ceil(e/t);a(l);let u=n(()=>{l=Math.max(0,l-1),a(l)},t),d=i(()=>s(r),e);o.set(r,{intervalId:u,timeoutId:d,onHide:c})}function l(){for(let e of[...o.keys()])s(e)}return{clear:l,hide:s,show:c}}var G=`••••••••`,K={all:`全部字段`,account:`账号`,authentication:`认证`,permissions:`权限`,time:`时间`,security:`安全`,other:`其他`},me=[[`all`,`全部`],[`high`,`高风险`],[`write`,`写入`],[`identity`,`身份`]];function he(e,{query:t=``,category:n=`all`}={}){let r=t.trim().toLowerCase();return e.filter(e=>n!==`all`&&e.category!==n?!1:!r||[e.label,e.key,e.path,e.namespace,e.searchPreview].filter(Boolean).join(` `).toLowerCase().includes(r))}function ge(e,t=Date.now()){if(!e.claims.exp.valid)return`未声明到期时间`;let n=e.claims.exp.milliseconds-t;if(n<=0)return`已到期`;let r=Math.ceil(n/6e4),i=Math.floor(r/1440),a=Math.floor(r%1440/60),o=r%60;return i>0?`约 ${i} 天 ${a} 小时`:a>0?`约 ${a} 小时 ${o} 分钟`:`约 ${o} 分钟`}function q(e,t){return e.entries.find(e=>e.key===t&&e.namespace===`OpenAI Auth`)??e.entries.find(e=>e.key===t&&e.source===`payload`)??e.entries.find(e=>e.key===t)??null}function J(e){return e?e.sensitive?G:e.format===`numeric-date`||e.format===`known-time`?A(e.key,e.value):fe(e.value):`未提供`}function Y(e,t=``){let r=n(e);return r.setAttribute(`width`,`16`),r.setAttribute(`height`,`16`),r.setAttribute(`stroke-width`,`2`),t?r.setAttribute(`aria-label`,t):r.setAttribute(`aria-hidden`,`true`),r}function X(e,t,n=`neutral`){return H(`div`,{className:`status-item`,dataset:{state:n}},[H(`span`,{className:`status-item__label`,text:e}),H(`strong`,{className:`status-item__value`,text:t})])}function Z(e,t,{mono:n=!1,sensitive:r=!1}={}){return H(`div`,{className:`definition-row`},[H(`dt`,{text:e}),H(`dd`,{className:`${n?`mono`:``} ${r?`masked`:``}`.trim(),text:t})])}function _e(e,t){let n=e.decoded.header.alg??`未提供`,r=e.permissions.filter(e=>e.risk===`high`).length;U(t.statusStrip,[X(`时间状态`,e.status.label,e.status.code),X(`剩余时间`,ge(e.status)),X(`签名`,`未验证`,`warning`),X(`算法`,n),X(`高风险权限`,String(r),r?`danger`:`safe`)]),U(t.warningList,e.warnings.slice(0,3).map(e=>H(`div`,{className:`warning-row`,dataset:{level:e.level}},[H(`span`,{className:`warning-row__icon`,attrs:{"aria-hidden":`true`}},[Y(e.level===`danger`?u:h)]),H(`span`,{text:e.message})])));let i=e.account.plan,a=e.account.residency,o=q(e,`email`),s=q(e,`chatgpt_account_user_id`);U(t.accountSummary,[Z(`套餐`,i?.value??`未提供`),Z(`计算驻留`,a?.value??`未提供`,{mono:!0}),Z(`邮箱`,J(o),{sensitive:o?.sensitive}),Z(`账号成员`,J(s),{sensitive:s?.sensitive})]),U(t.authenticationSummary,[Z(`认证方式`,J(q(e,`amr`)),{mono:!0}),Z(`邮箱已验证`,J(q(e,`email_verified`))),Z(`注册流程`,J(q(e,`is_signup`))),Z(`密码认证时间`,J(q(e,`pwd_auth_time`)),{mono:!0})]);let c=q(e,`client_id`);U(t.securitySummary,[Z(`签发方`,J(q(e,`iss`)),{mono:!0}),Z(`目标受众`,J(q(e,`aud`)),{mono:!0}),Z(`客户端`,J(c),{sensitive:c?.sensitive}),Z(`密钥标识`,J(q(e,`kid`)),{mono:!0})])}function Q(e,t,n){U(t.permissionFilters,me.map(([e,t])=>H(`button`,{className:`segment-button`,text:t,attrs:{type:`button`,"aria-pressed":String(n.permissionFilter===e)},dataset:{filter:e}})));for(let r of t.permissionFilters.querySelectorAll(`button`))r.addEventListener(`click`,()=>{n.permissionFilter=r.dataset.filter,Q(e,t,n)});let r=R(e.permissions,n.permissionFilter);U(t.permissionList,r.length>0?r.map(e=>H(`article`,{className:`permission-row`,dataset:{risk:e.risk}},[H(`div`,{className:`permission-row__main`},[H(`strong`,{text:e.label}),H(`code`,{text:e.scope})]),H(`p`,{text:e.description}),H(`span`,{className:`risk-label`,text:e.risk===`high`?`高风险`:e.risk===`medium`?`需留意`:e.risk===`low`?`低风险`:`未解释`})])):[H(`p`,{className:`empty-state`,text:`当前筛选下没有权限项目。`})]),t.permissionNotice.textContent=P}function ve(e){return Array.isArray(e)?`数组`:e===null?`null`:typeof e==`object`?`对象`:typeof e==`boolean`?`布尔值`:typeof e==`number`?`数字`:`字符串`}function ye(e,t,n,r){let i=!1,a=H(`span`,{text:`显示 10 秒`}),o=H(`button`,{className:`reveal-button`,attrs:{type:`button`,"aria-pressed":`false`,"aria-label":`临时显示 ${e.label}`}},[Y(p),a]);function s(){i=!1,t.textContent=G,o.setAttribute(`aria-pressed`,`false`),U(o,[Y(p),a]),a.textContent=`显示 10 秒`,n.revealStatus.textContent=`${e.label} 已重新隐藏`}return o.addEventListener(`click`,()=>{if(i){r.hide(e.path);return}i=!0,t.textContent=A(e.key,e.value),o.setAttribute(`aria-pressed`,`true`),U(o,[Y(f),a]),n.revealStatus.textContent=`${e.label} 已临时显示`,r.show(e.path,{onTick(e){a.textContent=e>0?`${e} 秒`:`正在隐藏`},onHide:s})}),o}function be(e,t,n){if(!e){U(t.inspectorDetail,[H(`p`,{className:`empty-state`,text:`没有匹配的字段。`})]);return}let r=Array.isArray(e.value)||e.value!==null&&typeof e.value==`object`,i=H(`pre`,{className:`detail-value${e.sensitive?` detail-value--masked`:``}${r?` detail-value--code`:``}`,text:e.sensitive?G:A(e.key,e.value)}),a=[H(`h3`,{text:`字段值`})];e.sensitive&&a.push(ye(e,i,t,n)),U(t.inspectorDetail,[H(`header`,{className:`detail-heading`},[H(`div`,{},[H(`span`,{className:`detail-namespace`,text:e.namespace}),H(`h2`,{text:e.label}),H(`p`,{text:e.description})]),e.known?null:H(`span`,{className:`unknown-label`,text:`未解释字段`})]),H(`dl`,{className:`detail-metadata`},[Z(`原始 key`,e.key,{mono:!0}),Z(`完整路径`,e.path,{mono:!0}),Z(`值类型`,ve(e.value)),Z(`敏感状态`,e.sensitive?`默认遮罩`:`公开声明`)]),H(`section`,{className:`detail-value-section`},[H(`div`,{className:`detail-value-heading`},a),i])])}function $(e,t,n,r){let i=[`all`,...new Set(e.entries.map(e=>e.category))];U(t.inspectorCategory,i.map(e=>H(`option`,{text:K[e]??e,attrs:{value:e}}))),t.inspectorCategory.value=n.inspectorCategory,U(t.inspectorCategories,i.map(t=>H(`button`,{className:`category-button`,attrs:{type:`button`,"aria-pressed":String(n.inspectorCategory===t)},dataset:{category:t}},[H(`span`,{text:K[t]??t}),H(`span`,{className:`category-count`,text:t===`all`?e.entries.length:e.entries.filter(e=>e.category===t).length})])));for(let i of t.inspectorCategories.querySelectorAll(`button`))i.addEventListener(`click`,()=>{r.clear(),n.inspectorCategory=i.dataset.category,n.selectedPath=null,$(e,t,n,r)});let a=he(e.entries,{query:n.inspectorQuery,category:n.inspectorCategory});a.some(e=>e.path===n.selectedPath)||(n.selectedPath=a[0]?.path??null),U(t.inspectorFields,a.map(e=>H(`button`,{className:`field-button`,attrs:{type:`button`,"aria-current":e.path===n.selectedPath?`true`:`false`},dataset:{path:e.path}},[H(`strong`,{text:e.label}),H(`span`,{className:`field-button__meta`},[H(`span`,{className:`mono`,text:e.key}),e.sensitive?H(`span`,{className:`sensitive-mark`,text:`已遮罩`}):null])])));for(let i of t.inspectorFields.querySelectorAll(`button`))i.addEventListener(`click`,()=>{r.clear(),n.selectedPath=i.dataset.path,$(e,t,n,r)});t.inspectorCount.textContent=`${a.length} / ${e.entries.length} 个字段`,be(a.find(e=>e.path===n.selectedPath)??null,t,r),t.rawJson.textContent=JSON.stringify(e.redacted,null,2)}function xe(e=document,t=globalThis.navigator){let n=e.getElementById(`tokenInput`),r=e.getElementById(`inputSurface`),i=e.getElementById(`resultArea`),a=e.getElementById(`errorBox`),o=Object.fromEntries([`statusStrip`,`warningList`,`accountSummary`,`authenticationSummary`,`securitySummary`,`permissionFilters`,`permissionList`,`permissionNotice`,`inspectorSearch`,`inspectorCategory`,`inspectorCategories`,`inspectorFields`,`inspectorCount`,`inspectorDetail`,`rawJson`,`revealStatus`].map(t=>[t,e.getElementById(t)])),s={overview:e.getElementById(`overviewPanel`),permissions:e.getElementById(`permissionsPanel`),inspector:e.getElementById(`inspectorPanel`)},c=[...e.querySelectorAll(`[role="tab"]`)],l=W(),u={analysis:null,activeTab:`overview`,permissionFilter:`all`,inspectorCategory:`all`,inspectorQuery:``,selectedPath:null};function d(e=``){a.textContent=e,a.hidden=!e,e?(n.setAttribute(`aria-invalid`,`true`),n.setAttribute(`aria-describedby`,`inputHelp errorBox`)):(n.removeAttribute(`aria-invalid`),n.setAttribute(`aria-describedby`,`inputHelp`))}function f(e,{focus:t=!1}={}){u.activeTab=e;for(let n of c){let r=n.dataset.tab===e;n.setAttribute(`aria-selected`,String(r)),n.tabIndex=r?0:-1,r&&t&&n.focus()}for(let[t,n]of Object.entries(s))n.hidden=t!==e}function p({focus:e=!0}={}){l.clear(),u.analysis=null,u.permissionFilter=`all`,u.inspectorCategory=`all`,u.inspectorQuery=``,u.selectedPath=null,o.inspectorSearch.value=``,n.value=``,d(),r.hidden=!1,i.hidden=!0,f(`overview`),e&&n.focus()}function m(){let e=n.value;d();try{let t=V(e);n.value=``,u.analysis=t,_e(t,o),Q(t,o,u),$(t,o,u,l),r.hidden=!0,i.hidden=!1,f(`overview`),i.focus({preventScroll:!0})}catch(t){p({focus:!1}),n.value=e,d(t?.message??`解析失败，请确认输入是完整的三段式 JWT。`),n.focus()}}e.getElementById(`parseButton`).addEventListener(`click`,m),e.getElementById(`clearButton`).addEventListener(`click`,()=>p()),e.getElementById(`resultClearButton`).addEventListener(`click`,()=>p()),e.getElementById(`newParseButton`).addEventListener(`click`,()=>p()),e.getElementById(`copyButton`).addEventListener(`click`,async()=>{if(!u.analysis)return;let n=e.getElementById(`copyStatus`);try{await pe(JSON.stringify(u.analysis.redacted,null,2),{navigatorRef:t,documentRef:e}),n.textContent=`已复制脱敏 JSON`}catch(e){n.textContent=e.message,o.rawJson.focus()}}),n.addEventListener(`input`,()=>d()),o.inspectorSearch.addEventListener(`input`,()=>{u.analysis&&(l.clear(),u.inspectorQuery=o.inspectorSearch.value,u.selectedPath=null,$(u.analysis,o,u,l))}),o.inspectorCategory.addEventListener(`change`,()=>{u.analysis&&(l.clear(),u.inspectorCategory=o.inspectorCategory.value,u.selectedPath=null,$(u.analysis,o,u,l))});for(let e of c)e.addEventListener(`click`,()=>f(e.dataset.tab)),e.addEventListener(`keydown`,t=>{if(![`ArrowLeft`,`ArrowRight`].includes(t.key))return;t.preventDefault();let n=c.indexOf(e),r=t.key===`ArrowRight`?1:-1;f(c[(n+r+c.length)%c.length].dataset.tab,{focus:!0})});return e.addEventListener(`keydown`,e=>{e.key===`Escape`&&p()}),{activateTab:f,clearAll:p,handleParse:m,state:u}}x({icons:{Copy:d,Fingerprint:m,KeyRound:g,RotateCcw:_,ScanSearch:v,Search:y,ShieldAlert:ee,ShieldCheck:b,Trash2:te,UserRound:ne}}),xe();</script>
+  <style rel="stylesheet" crossorigin>:root{--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light dark;--bg:#f4f6f5;--surface:#fff;--surface-subtle:#f8faf9;--text:#18211c;--muted:#66726b;--line:#d8dfdb;--line-strong:#bcc8c1;--primary:#087f5b;--primary-strong:#056647;--primary-soft:#e7f5ef;--info:#245b9e;--info-soft:#edf5ff;--warning:#8b5707;--warning-soft:#fff6e3;--danger:#b42318;--danger-soft:#fff0ee;--code-bg:#101713;--code-text:#dce9e1;--radius:8px;--shadow:0 12px 32px #1b2a2214;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}@media (prefers-color-scheme:dark){:root{--lightningcss-light: ;--lightningcss-dark:initial}}*{box-sizing:border-box}html{background:var(--bg);min-height:100%}body{background:var(--bg);min-height:100vh;color:var(--text);margin:0;font-size:15px}button,textarea,input,select{font:inherit;letter-spacing:0}button{color:inherit}h1,h2,p{margin-top:0}h1{letter-spacing:0;margin-bottom:6px;font-size:1.35rem;line-height:1.25}h2{letter-spacing:0;margin-bottom:4px;font-size:1rem;line-height:1.35}p{color:var(--muted);line-height:1.6}.skip-link{z-index:20;color:#fff;background:var(--primary-strong);border-radius:6px;padding:8px 12px;position:fixed;top:8px;left:12px;transform:translateY(-160%)}.skip-link:focus{transform:translateY(0)}.app-bar{z-index:10;border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--bg) 92%, transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);height:56px;position:sticky;top:0}.app-bar__inner{justify-content:space-between;align-items:center;gap:20px;width:min(100% - 32px,1180px);height:100%;margin:0 auto;display:flex}.brand{color:var(--text);align-items:center;gap:10px;font-size:1rem;font-weight:780;text-decoration:none;display:inline-flex}.brand__mark{color:#fff;background:var(--primary);border-radius:7px;place-items:center;width:30px;height:30px;display:grid}.brand__mark svg{stroke-width:2px;width:17px;height:17px}.local-status{color:var(--muted);align-items:center;gap:8px;font-size:.8rem;font-weight:650;display:inline-flex}.local-status__dot{background:var(--primary);width:7px;height:7px;box-shadow:0 0 0 3px var(--primary-soft);border-radius:50%}.app-shell{width:min(100% - 32px,1180px);min-height:calc(100vh - 138px);margin:0 auto;padding:42px 0 56px}.input-surface{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);max-width:880px;box-shadow:var(--shadow);margin:7vh auto 0;padding:28px}.input-surface__heading,.result-toolbar,.panel-heading{justify-content:space-between;align-items:flex-start;gap:24px;display:flex}.input-surface__heading p,.result-toolbar p,.panel-heading p{margin-bottom:0}.privacy-note{color:var(--primary-strong);white-space:nowrap;align-items:center;gap:7px;font-size:.8rem;display:inline-flex}.privacy-note svg{width:15px;height:15px}textarea{resize:vertical;width:100%;min-height:184px;color:var(--text);background:var(--surface-subtle);border:1px solid var(--line-strong);border-radius:7px;outline:none;margin-top:24px;padding:16px;font-family:Cascadia Code,Consolas,monospace;font-size:.86rem;line-height:1.6}textarea:focus,input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent)}.input-help{margin:10px 0 0;font-size:.82rem}.input-actions,.result-actions{flex-wrap:wrap;align-items:center;gap:10px;margin-top:18px;display:flex}.button,.icon-button{cursor:pointer;border:1px solid #0000;border-radius:7px;justify-content:center;align-items:center;gap:8px;min-height:44px;font-size:.86rem;font-weight:720;display:inline-flex}.button{padding:9px 15px}.button svg,.icon-button svg{stroke-width:2px;width:17px;height:17px}.button--primary{color:#fff;background:var(--primary)}.button--primary:hover{background:var(--primary-strong)}.button--secondary,.icon-button{background:var(--surface);border-color:var(--line)}.button--secondary:hover,.icon-button:hover{background:var(--surface-subtle);border-color:var(--line-strong)}.icon-button{width:40px;min-height:40px;padding:0}.icon-button--danger:hover{color:var(--danger);border-color:color-mix(in srgb, var(--danger) 35%, var(--line));background:var(--danger-soft)}.keyboard-hint{color:var(--muted);margin-left:auto;font-size:.78rem}.error-box{color:var(--danger);background:var(--danger-soft);border:1px solid color-mix(in srgb, var(--danger) 28%, var(--line));border-radius:7px;margin-top:16px;padding:12px 14px;line-height:1.5}.result-area:focus{outline:none}.result-toolbar{align-items:center;padding-bottom:18px}.result-toolbar h1{font-size:1.18rem}.result-toolbar p{font-size:.82rem}.result-actions{margin-top:0}.tabs{border-bottom:1px solid var(--line);align-items:end;gap:26px;min-height:44px;display:flex}.tab{min-height:44px;color:var(--muted);cursor:pointer;background:0 0;border:0;padding:0 2px;font-size:.88rem;font-weight:700;position:relative}.tab[aria-selected=true]{color:var(--text)}.tab[aria-selected=true]:after{content:"";background:var(--primary);height:2px;position:absolute;bottom:-1px;left:0;right:0}.tab-panel{padding-top:22px}.status-strip{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);grid-template-columns:repeat(5,minmax(0,1fr));display:grid}.status-item{border-left:1px solid var(--line);min-width:0;padding:16px 18px}.status-item:first-child{border-left:0}.status-item__label{color:var(--muted);font-size:.72rem;font-weight:700;display:block}.status-item__value{overflow-wrap:anywhere;margin-top:7px;font-size:.92rem;display:block}.status-item[data-state=within_window] .status-item__value,.status-item[data-state=safe] .status-item__value{color:var(--primary-strong)}.status-item[data-state=danger] .status-item__value,.status-item[data-state=expired] .status-item__value{color:var(--danger)}.status-item[data-state=warning] .status-item__value,.status-item[data-state=not_yet_valid] .status-item__value{color:var(--warning)}.warning-list{gap:8px;margin-top:12px;display:grid}.warning-row{color:var(--warning);background:var(--warning-soft);border-left:3px solid color-mix(in srgb, var(--warning) 65%, transparent);border-radius:4px;align-items:center;gap:10px;padding:10px 12px;font-size:.84rem;display:flex}.warning-row[data-level=danger]{color:var(--danger);background:var(--danger-soft);border-left-color:var(--danger)}.warning-row__icon{border:1px solid;border-radius:50%;flex:0 0 19px;place-items:center;width:19px;height:19px;font-size:.7rem;font-weight:800;display:grid}.warning-row__icon svg{width:12px;height:12px}.overview-sections{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 34px;margin-top:28px;display:grid}.data-section{border-top:1px solid var(--line);min-width:0;padding:2px 0 24px}.data-section--wide{grid-column:1/-1}.section-title{align-items:center;gap:9px;padding:16px 0 9px;display:flex}.section-title h2{margin:0}.section-title svg{width:17px;height:17px;color:var(--primary);stroke-width:2px}.definition-list{margin:0}.definition-list--columns{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:34px;display:grid}.definition-row{border-top:1px solid color-mix(in srgb, var(--line) 72%, transparent);grid-template-columns:minmax(118px,.7fr) minmax(0,1.3fr);align-items:baseline;gap:16px;min-height:45px;padding:11px 0;display:grid}.definition-row:first-child{border-top:0}.definition-row dt{color:var(--muted);font-size:.78rem}.definition-row dd{overflow-wrap:anywhere;white-space:pre-wrap;min-width:0;margin:0;font-size:.88rem;font-weight:650}.mono{font-family:Cascadia Code,Consolas,monospace;font-size:.78rem!important}.masked{color:var(--primary-strong);letter-spacing:2px}.panel-heading{border-bottom:1px solid var(--line);align-items:end;padding-bottom:18px}.panel-heading p{font-size:.82rem}.segmented{background:var(--surface-subtle);border:1px solid var(--line);border-radius:7px;padding:3px;display:inline-flex}.segment-button{min-height:34px;color:var(--muted);cursor:pointer;background:0 0;border:0;border-radius:5px;padding:6px 11px;font-size:.78rem;font-weight:700}.segment-button[aria-pressed=true]{color:var(--text);background:var(--surface);box-shadow:0 1px 3px #18211c1a}.permission-list{margin-top:10px;display:grid}.permission-row{border-bottom:1px solid var(--line);grid-template-columns:minmax(190px,.8fr) minmax(0,1.4fr) auto;align-items:center;gap:22px;padding:15px 4px;display:grid}.permission-row__main{gap:4px;display:grid}.permission-row code{color:var(--muted);font-size:.74rem}.permission-row p{margin:0;font-size:.84rem}.risk-label{font-size:.76rem;font-weight:750}.permission-row[data-risk=high] .risk-label{color:var(--danger)}.permission-row[data-risk=medium] .risk-label{color:var(--warning)}.permission-row[data-risk=low] .risk-label{color:var(--primary-strong)}.panel-note{margin-top:16px;font-size:.78rem}.inspector-toolbar{grid-template-columns:minmax(240px,1fr) auto auto;align-items:center;gap:12px;display:grid}.search-field{background:var(--surface);border:1px solid var(--line);border-radius:7px;align-items:center;gap:10px;min-height:42px;padding:0 12px;display:flex}.search-field svg{width:16px;height:16px;color:var(--muted)}.search-field input{width:100%;color:var(--text);background:0 0;border:0;outline:0;padding:0;font-size:.84rem}.category-select{display:none}.result-count{color:var(--muted);font-size:.78rem}.inspector-layout{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);grid-template-columns:190px 280px minmax(0,1fr);min-height:480px;margin-top:14px;display:grid;overflow:hidden}.inspector-categories,.inspector-fields{border-right:1px solid var(--line);padding:10px;overflow:auto}.category-button,.field-button{text-align:left;cursor:pointer;background:0 0;border:0;border-radius:6px;width:100%;padding:10px}.category-button{color:var(--muted);justify-content:space-between;align-items:center;gap:8px;font-size:.8rem;display:flex}.category-button[aria-pressed=true]{color:var(--primary-strong);background:var(--primary-soft);font-weight:720}.category-count{font-variant-numeric:tabular-nums;font-size:.7rem}.category-button:hover,.field-button:hover{background:var(--surface-subtle)}.field-button{border-bottom:1px solid color-mix(in srgb, var(--line) 70%, transparent);border-radius:0;gap:4px;display:grid}.field-button[aria-current=true]{background:var(--surface-subtle);box-shadow:inset 2px 0 var(--primary)}.field-button strong{font-size:.82rem}.field-button span{color:var(--muted)}.field-button__meta{justify-content:space-between;align-items:center;gap:8px;min-width:0;display:flex}.sensitive-mark{font-size:.68rem;font-weight:720;color:var(--primary-strong)!important}.inspector-detail{min-width:0;color:var(--text);padding:24px;line-height:1.6}.detail-heading{border-bottom:1px solid var(--line);justify-content:space-between;align-items:flex-start;gap:18px;padding-bottom:18px;display:flex}.detail-heading h2{margin:3px 0 5px;font-size:1.05rem}.detail-heading p{margin:0;font-size:.82rem}.detail-namespace{color:var(--primary-strong);font-size:.72rem;font-weight:720}.unknown-label{color:var(--warning);white-space:nowrap;font-size:.72rem;font-weight:720}.detail-metadata{margin:12px 0 0}.detail-metadata .definition-row{grid-template-columns:95px minmax(0,1fr)}.detail-value-section{margin-top:18px}.detail-value-heading{justify-content:space-between;align-items:center;gap:12px;min-height:36px;display:flex}.detail-value-heading h3{margin:0;font-size:.82rem}.detail-value{max-height:260px;color:var(--text);background:var(--surface-subtle);border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere;border-radius:6px;padding:14px;font-size:.8rem}.detail-value--code{color:var(--code-text);background:var(--code-bg);border-color:#0000}.detail-value--masked{color:var(--primary-strong);background:var(--primary-soft);border-color:color-mix(in srgb, var(--primary) 25%, var(--line));letter-spacing:2px}.reveal-button{min-height:32px;color:var(--text);background:var(--surface);border:1px solid var(--line);cursor:pointer;border-radius:6px;align-items:center;gap:6px;padding:5px 9px;font-size:.72rem;font-weight:680;display:inline-flex}.reveal-button:hover{border-color:var(--line-strong);background:var(--surface-subtle)}.reveal-button svg{width:14px;height:14px}.empty-state{color:var(--muted);margin:0;padding:22px 4px;font-size:.84rem}.json-disclosure{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);margin-top:14px;padding:16px}.json-disclosure summary{cursor:pointer;font-weight:720}.json-toolbar{color:var(--muted);margin:12px 0 8px;font-size:.78rem}pre{max-height:520px;color:var(--code-text);background:var(--code-bg);border-radius:6px;margin:0;padding:16px;font-family:Cascadia Code,Consolas,monospace;font-size:.76rem;line-height:1.6;overflow:auto}.app-footer{width:min(100% - 32px,1180px);color:var(--muted);border-top:1px solid var(--line);margin:0 auto;padding:18px 0 30px;font-size:.78rem}.sr-only{clip:rect(0, 0, 0, 0);white-space:nowrap;border:0;width:1px;height:1px;margin:-1px;padding:0;position:absolute;overflow:hidden}:focus-visible{outline:3px solid color-mix(in srgb, var(--primary) 58%, transparent);outline-offset:3px}[hidden]{display:none!important}@media (prefers-color-scheme:dark){:root{--bg:#0e1511;--surface:#17211c;--surface-subtle:#121b16;--text:#edf5f0;--muted:#a1ada6;--line:#334139;--line-strong:#46564d;--primary:#48c79b;--primary-strong:#76dab7;--primary-soft:#48c79b21;--info:#8cbbf2;--info-soft:#245b9e2e;--warning:#ffc66d;--warning-soft:#b56f0029;--danger:#ff948b;--danger-soft:#b423182b;--code-bg:#0b120e;--code-text:#dce9e1;--shadow:0 16px 46px #00000047}}@media (width<=700px){.app-bar__inner,.app-shell,.app-footer{width:calc(100% - 20px)}.app-shell{padding-top:22px}.input-surface{margin-top:2vh;padding:20px}.input-surface__heading,.result-toolbar,.panel-heading{flex-direction:column;align-items:stretch;gap:12px}.privacy-note{white-space:normal}.keyboard-hint{width:100%;margin-left:0}.result-actions{width:100%}.result-actions .button{flex:1}.tabs{gap:20px;overflow-x:auto}.status-strip{grid-template-columns:1fr 1fr}.status-item{border-top:1px solid var(--line);border-left:0}.status-item:nth-child(2n){border-left:1px solid var(--line)}.status-item:nth-child(-n+2){border-top:0}.status-item:last-child{grid-column:1/-1}.overview-sections{grid-template-columns:1fr}.data-section--wide{grid-column:auto}.definition-list--columns{display:block}.definition-row{grid-template-columns:minmax(104px,.65fr) minmax(0,1.35fr)}.permission-row{grid-template-columns:1fr auto;gap:8px 16px}.permission-row p{grid-column:1/-1}.inspector-toolbar{grid-template-columns:1fr auto}.category-select{color:var(--muted);gap:4px;font-size:.72rem;display:grid}.category-select select{min-height:42px;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:7px}.result-count{grid-column:1/-1}.inspector-layout{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);min-height:430px}.inspector-categories{display:none}.inspector-detail{padding:18px}}@media (prefers-reduced-motion:reduce){*,:before,:after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
+/*$vite$:1*/</style>
 </head>
 <body>
   <a class="skip-link" href="#tokenInput">跳到 AT 输入框</a>
-  <main class="app-shell">
-    <header class="hero">
-      <h1>AT 本地解析器</h1>
-      <p class="hero-copy">读取 JWT Header 与 Payload，整理时间、权限和账号声明。</p>
-      <div class="local-badge" role="note">
-        <span aria-hidden="true">●</span>
-        所有解析均在本地完成，不上传、不保存
-      </div>
-    </header>
 
-    <section class="panel input-panel" aria-labelledby="inputHeading">
-      <div class="section-heading">
-        <div>
-          <h2 id="inputHeading">粘贴一个 AT</h2>
-        </div>
+  <header class="app-bar">
+    <div class="app-bar__inner">
+      <a class="brand" href="#top" aria-label="AT Inspector 首页">
+        <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
+        <span>AT Inspector</span>
+      </a>
+      <div class="local-status">
+        <span class="local-status__dot" aria-hidden="true"></span>
+        <span>本地运行 · 零上传</span>
       </div>
-      <label class="sr-only" for="tokenInput">ChatGPT access token</label>
+    </div>
+  </header>
+
+  <main id="top" class="app-shell">
+    <section id="inputSurface" class="input-surface" aria-labelledby="inputHeading">
+      <div class="input-surface__heading">
+        <div>
+          <h1 id="inputHeading">解析一个 AT</h1>
+          <p>在当前页面内读取 JWT 声明，不验证签名或服务器状态。</p>
+        </div>
+        <span class="privacy-note"><i data-lucide="key-round" aria-hidden="true"></i> 不保存历史</span>
+      </div>
       <textarea
         id="tokenInput"
-        rows="7"
+        aria-labelledby="inputHeading"
+        aria-describedby="inputHelp"
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
-        placeholder="在这里粘贴三段式 JWT；也可以包含 Bearer 前缀"
+        placeholder="粘贴三段式 JWT，也可以包含 Bearer 前缀"
       ></textarea>
-      <p class="input-help">解析成功后，输入框会立即清空。请勿把真实 token 分享到聊天、Issue 或日志中。</p>
-      <div class="actions">
-        <button class="button primary" id="parseButton" type="button">本地解析</button>
-        <button class="button secondary" id="clearButton" type="button">清空全部</button>
-        <span class="shortcut">按 Esc 随时清空</span>
+      <p id="inputHelp" class="input-help">解析成功后输入会立即清空。请勿把真实 AT 分享到聊天、Issue 或日志。</p>
+      <div class="input-actions">
+        <button id="parseButton" class="button button--primary" type="button">
+          <i data-lucide="scan-search" aria-hidden="true"></i><span>本地解析</span>
+        </button>
+        <button id="clearButton" class="button button--secondary" type="button">
+          <i data-lucide="trash-2" aria-hidden="true"></i><span>清空</span>
+        </button>
+        <span class="keyboard-hint">Esc 清空全部</span>
       </div>
-      <div id="errorBox" class="message error" role="alert" aria-live="assertive" hidden></div>
+      <div id="errorBox" class="error-box" role="alert" hidden></div>
     </section>
 
-    <section id="resultArea" class="result-stack" aria-labelledby="resultHeading" tabindex="-1" hidden>
-      <div class="section-heading result-heading">
+    <section id="resultArea" class="result-area" aria-labelledby="resultHeading" tabindex="-1" hidden>
+      <header class="result-toolbar">
         <div>
-          <h2 id="resultHeading">解析结果</h2>
+          <h1 id="resultHeading">AT 检查结果</h1>
+          <p>JWT 声明可能陈旧；结果不代表服务器接受该凭据。</p>
         </div>
-        <p class="unverified-label">已解码但未验签</p>
-      </div>
-      <div id="statusSummary" class="summary-grid" aria-live="polite"></div>
-      <div id="warningList" class="warning-list" aria-live="polite"></div>
-      <div id="sections" class="section-grid"></div>
-      <details class="panel json-panel">
-        <summary>查看脱敏 JSON</summary>
-        <div class="json-toolbar">
-          <button class="button secondary compact" id="copyButton" type="button">复制脱敏 JSON</button>
-          <span id="copyStatus" aria-live="polite"></span>
+        <div class="result-actions" aria-label="结果操作">
+          <button id="newParseButton" class="icon-button" type="button" title="重新解析" aria-label="重新解析">
+            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          </button>
+          <button id="copyButton" class="button button--secondary" type="button">
+            <i data-lucide="copy" aria-hidden="true"></i><span>复制脱敏 JSON</span>
+          </button>
+          <button id="resultClearButton" class="icon-button icon-button--danger" type="button" title="清空全部" aria-label="清空全部">
+            <i data-lucide="trash-2" aria-hidden="true"></i>
+          </button>
         </div>
-        <pre id="rawJson" tabindex="0"></pre>
-      </details>
+      </header>
+
+      <nav class="tabs" role="tablist" aria-label="检查结果视图">
+        <button id="overviewTab" class="tab" type="button" role="tab" aria-selected="true" aria-controls="overviewPanel" tabindex="0" data-tab="overview">概览</button>
+        <button id="permissionsTab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="permissionsPanel" tabindex="-1" data-tab="permissions">权限</button>
+        <button id="inspectorTab" class="tab" type="button" role="tab" aria-selected="false" aria-controls="inspectorPanel" tabindex="-1" data-tab="inspector">高级检查器</button>
+      </nav>
+
+      <section id="overviewPanel" class="tab-panel" role="tabpanel" aria-labelledby="overviewTab">
+        <div id="statusStrip" class="status-strip" aria-live="polite"></div>
+        <div id="warningList" class="warning-list"></div>
+        <div class="overview-sections">
+          <section class="data-section" aria-labelledby="accountHeading">
+            <div class="section-title"><i data-lucide="user-round" aria-hidden="true"></i><h2 id="accountHeading">账号</h2></div>
+            <dl id="accountSummary" class="definition-list"></dl>
+          </section>
+          <section class="data-section" aria-labelledby="authenticationHeading">
+            <div class="section-title"><i data-lucide="fingerprint" aria-hidden="true"></i><h2 id="authenticationHeading">认证</h2></div>
+            <dl id="authenticationSummary" class="definition-list"></dl>
+          </section>
+          <section class="data-section data-section--wide" aria-labelledby="securityHeading">
+            <div class="section-title"><i data-lucide="shield-alert" aria-hidden="true"></i><h2 id="securityHeading">安全上下文</h2></div>
+            <dl id="securitySummary" class="definition-list definition-list--columns"></dl>
+          </section>
+        </div>
+      </section>
+
+      <section id="permissionsPanel" class="tab-panel" role="tabpanel" aria-labelledby="permissionsTab" hidden>
+        <div class="panel-heading">
+          <div><h2>权限解释</h2><p>按本地规则解释 scope，不代表 OpenAI 官方评级。</p></div>
+          <div id="permissionFilters" class="segmented" aria-label="权限筛选"></div>
+        </div>
+        <div id="permissionList" class="permission-list"></div>
+        <p id="permissionNotice" class="panel-note"></p>
+      </section>
+
+      <section id="inspectorPanel" class="tab-panel" role="tabpanel" aria-labelledby="inspectorTab" hidden>
+        <div class="inspector-toolbar">
+          <label class="search-field" for="inspectorSearch">
+            <i data-lucide="search" aria-hidden="true"></i>
+            <input id="inspectorSearch" type="search" placeholder="搜索名称、key 或路径">
+          </label>
+          <label class="category-select" for="inspectorCategory">
+            <span>分类</span>
+            <select id="inspectorCategory"></select>
+          </label>
+          <span id="inspectorCount" class="result-count"></span>
+        </div>
+        <div class="inspector-layout">
+          <nav id="inspectorCategories" class="inspector-categories" aria-label="字段分类"></nav>
+          <div id="inspectorFields" class="inspector-fields" aria-label="字段列表"></div>
+          <section id="inspectorDetail" class="inspector-detail" aria-label="字段详情"></section>
+        </div>
+        <details class="json-disclosure">
+          <summary>脱敏 JSON</summary>
+          <div class="json-toolbar"><span>敏感值固定替换为 [REDACTED]</span></div>
+          <pre id="rawJson" tabindex="0"></pre>
+        </details>
+      </section>
+
+      <span id="copyStatus" class="sr-only" aria-live="polite"></span>
+      <span id="revealStatus" class="sr-only" aria-live="polite"></span>
     </section>
-
-    <footer>
-      <strong>安全边界：</strong>时间状态只基于 JWT 声明和本机时钟，不能证明签名有效、凭据未撤销或服务器会接受它。
-    </footer>
   </main>
-  <script id="app-script">
-  (() => {
-    "use strict";
 
-    class ParserError extends Error {
-      constructor(code, message) {
-        super(message);
-        this.name = "ParserError";
-        this.code = code;
-      }
-    }
-
-    function normalizeInput(input) {
-      return String(input ?? "")
-        .trim()
-        .replace(/^Bearer\s+/iu, "")
-        .trim();
-    }
-
-    function decodeJsonObject(segment, label) {
-      if (!/^[A-Za-z0-9_-]+={0,2}$/u.test(segment)) {
-        throw new ParserError(`${label.toUpperCase()}_BASE64URL`, `${label} 不是合法的 Base64URL。`);
-      }
-
-      const unpadded = segment.replace(/=+$/u, "");
-      if (unpadded.length % 4 === 1) {
-        throw new ParserError(`${label.toUpperCase()}_BASE64URL`, `${label} 不是合法的 Base64URL。`);
-      }
-
-      const standard = unpadded.replace(/-/gu, "+").replace(/_/gu, "/");
-      const padded = standard.padEnd(Math.ceil(standard.length / 4) * 4, "=");
-      let binary;
-
-      try {
-        binary = atob(padded);
-      } catch {
-        throw new ParserError(`${label.toUpperCase()}_BASE64URL`, `${label} 不是合法的 Base64URL。`);
-      }
-
-      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-      let text;
-
-      try {
-        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-      } catch {
-        throw new ParserError(`${label.toUpperCase()}_UTF8`, `${label} 不是合法的 UTF-8 文本。`);
-      }
-
-      let value;
-      try {
-        value = JSON.parse(text);
-      } catch {
-        throw new ParserError(`${label.toUpperCase()}_JSON`, `${label} 不是合法的 JSON。`);
-      }
-
-      if (value === null || Array.isArray(value) || typeof value !== "object") {
-        throw new ParserError(`${label.toUpperCase()}_NOT_OBJECT`, `${label} 顶层必须是 JSON 对象。`);
-      }
-
-      return value;
-    }
-
-    const COMMON_SIGNING_ALGORITHMS = new Set([
-      "RS256", "RS384", "RS512",
-      "PS256", "PS384", "PS512",
-      "ES256", "ES384", "ES512",
-      "EdDSA",
-      "HS256", "HS384", "HS512",
-    ]);
-
-    function parseNumericDate(payload, key) {
-      if (!Object.prototype.hasOwnProperty.call(payload, key)) {
-        return { key, present: false, valid: false, raw: undefined };
-      }
-
-      const raw = payload[key];
-      if (typeof raw !== "number" || !Number.isFinite(raw)) {
-        return { key, present: true, valid: false, raw };
-      }
-
-      const milliseconds = raw * 1000;
-      const beijing = formatBeijingTime(raw);
-      if (!Number.isFinite(milliseconds) || beijing === null) {
-        return { key, present: true, valid: false, raw };
-      }
-
-      return {
-        key,
-        present: true,
-        valid: true,
-        raw,
-        milliseconds,
-        beijing,
-      };
-    }
-
-    function formatBeijingTime(seconds) {
-      if (typeof seconds !== "number" || !Number.isFinite(seconds)) {
-        return null;
-      }
-
-      const shifted = new Date(seconds * 1000 + 8 * 60 * 60 * 1000);
-      if (Number.isNaN(shifted.getTime())) {
-        return null;
-      }
-
-      return `${shifted.toISOString().slice(0, 19).replace("T", " ")} +08:00`;
-    }
-
-    function evaluateTimeStatus(payload, nowMilliseconds = Date.now()) {
-      const claims = {
-        iat: parseNumericDate(payload, "iat"),
-        nbf: parseNumericDate(payload, "nbf"),
-        exp: parseNumericDate(payload, "exp"),
-      };
-      const invalidClaims = Object.values(claims)
-        .filter((claim) => claim.present && !claim.valid)
-        .map((claim) => claim.key);
-
-      if (claims.nbf.valid && nowMilliseconds < claims.nbf.milliseconds) {
-        return { code: "not_yet_valid", label: "尚未生效", claims, invalidClaims };
-      }
-      if (claims.exp.valid && nowMilliseconds >= claims.exp.milliseconds) {
-        return { code: "expired", label: "已过期", claims, invalidClaims };
-      }
-      if (claims.nbf.valid || claims.exp.valid) {
-        return { code: "within_window", label: "在声明时间窗口内", claims, invalidClaims };
-      }
-      return { code: "missing_time", label: "缺少时间声明", claims, invalidClaims };
-    }
-
-    function buildWarnings(header, time) {
-      const warnings = [{
-        code: "SIGNATURE_UNVERIFIED",
-        message: "只完成了本地解码，未验证签名、撤销状态或服务器可用性。",
-      }];
-      const algorithm = typeof header.alg === "string" ? header.alg : "";
-
-      if (!algorithm) {
-        warnings.push({ code: "MISSING_ALG", message: "Header 缺少 alg 字段。" });
-      } else if (algorithm.toLowerCase() === "none") {
-        warnings.push({ code: "ALG_NONE", message: "alg=none 不提供签名保护。" });
-      } else if (!COMMON_SIGNING_ALGORITHMS.has(algorithm)) {
-        warnings.push({ code: "UNKNOWN_ALG", message: `算法 ${algorithm} 不在常见签名算法列表中。` });
-      }
-
-      for (const key of time.invalidClaims) {
-        warnings.push({
-          code: "INVALID_TIME_CLAIM",
-          message: `${key} 不是有效的 JWT NumericDate 数字。`,
-        });
-      }
-
-      if (time.code === "expired") {
-        warnings.push({ code: "TOKEN_EXPIRED", message: "根据本机时间，该 token 已经过期。" });
-      } else if (time.code === "not_yet_valid") {
-        warnings.push({ code: "TOKEN_NOT_YET_VALID", message: "根据本机时间，该 token 尚未生效。" });
-      } else if (time.code === "missing_time") {
-        warnings.push({ code: "MISSING_TIME", message: "Payload 缺少有效的 nbf 和 exp 时间声明。" });
-      }
-
-      return warnings;
-    }
-
-    const SECTION_DEFINITIONS = [
-      { id: "identity", title: "账号与身份" },
-      { id: "authentication", title: "认证信息" },
-      { id: "permissions", title: "权限" },
-      { id: "time", title: "时间" },
-      { id: "security", title: "安全信息" },
-      { id: "other", title: "其他字段" },
-    ];
-
-    function isSensitiveKey(key) {
-      const normalized = String(key).toLowerCase();
-      if (["email", "name", "sub", "jti", "session_id"].includes(normalized)) {
-        return true;
-      }
-      if (normalized.includes("verified_identity")) {
-        return true;
-      }
-      const identitySubject = ["user", "account", "organization", "org", "workspace"]
-        .some((fragment) => normalized.includes(fragment));
-      if (identitySubject && (normalized.includes("uuid") || normalized.includes("identity"))) {
-        return true;
-      }
-      return /(?:^|_)(?:id|ids)$/u.test(normalized);
-    }
-
-    function redactDeep(value, key = "") {
-      if (isSensitiveKey(key)) {
-        if (Array.isArray(value)) {
-          return value.map(() => "[REDACTED]");
-        }
-        return "[REDACTED]";
-      }
-
-      if (Array.isArray(value)) {
-        return value.map((item) => redactDeep(item));
-      }
-      if (value !== null && typeof value === "object") {
-        return Object.fromEntries(
-          Object.entries(value).map(([childKey, childValue]) => [
-            childKey,
-            redactDeep(childValue, childKey),
-          ]),
-        );
-      }
-      return value;
-    }
-
-    function flattenEntries(value, path = [], output = []) {
-      const key = path.at(-1) ?? "";
-      const sensitive = isSensitiveKey(key);
-      const isObject = value !== null && typeof value === "object";
-      const isPrimitiveArray = Array.isArray(value)
-        && value.every((item) => item === null || typeof item !== "object");
-
-      if (!isObject || sensitive || isPrimitiveArray || Object.keys(value).length === 0) {
-        output.push({
-          key,
-          path: path.join("."),
-          sensitive,
-          value,
-        });
-        return output;
-      }
-
-      for (const [childKey, childValue] of Object.entries(value)) {
-        flattenEntries(childValue, [...path, childKey], output);
-      }
-      return output;
-    }
-
-    function categorizeEntry(entry) {
-      const key = entry.key.toLowerCase();
-      const path = entry.path.toLowerCase();
-
-      if (["iat", "nbf", "exp"].includes(key)) {
-        return "time";
-      }
-      if (key === "scp" || key.includes("scope") || key.includes("permission")) {
-        return "permissions";
-      }
-      if (path.startsWith("header.") || ["iss", "aud", "client_id"].includes(key)) {
-        return "security";
-      }
-      if (["amr", "email_verified", "is_signup", "pwd_auth_time", "sl"].includes(key)
-        || path.includes(".auth.")) {
-        return "authentication";
-      }
-      if (entry.sensitive
-        || path.includes("profile")
-        || key.includes("plan")
-        || key.includes("residency")
-        || key.includes("user")
-        || key.includes("account")
-        || key.includes("organization")
-        || key.includes("workspace")) {
-        return "identity";
-      }
-      return "other";
-    }
-
-    function buildSections(header, payload) {
-      const entries = [
-        ...flattenEntries(header, ["header"]),
-        ...flattenEntries(payload, ["payload"]),
-      ];
-
-      return SECTION_DEFINITIONS.map((definition) => ({
-        ...definition,
-        entries: entries.filter((entry) => categorizeEntry(entry) === definition.id),
-      }));
-    }
-
-    function createRevealRegistry({
-      setTimeoutFn = setTimeout,
-      clearTimeoutFn = clearTimeout,
-      delay = 10_000,
-    } = {}) {
-      const timers = new Map();
-
-      function hide(key) {
-        if (!timers.has(key)) {
-          return;
-        }
-        clearTimeoutFn(timers.get(key));
-        timers.delete(key);
-      }
-
-      function show(key, onHide) {
-        hide(key);
-        const timerId = setTimeoutFn(() => {
-          timers.delete(key);
-          onHide();
-        }, delay);
-        timers.set(key, timerId);
-      }
-
-      function clear() {
-        for (const timerId of timers.values()) {
-          clearTimeoutFn(timerId);
-        }
-        timers.clear();
-      }
-
-      return Object.freeze({ clear, hide, show });
-    }
-
-    async function copyText(text, {
-      navigatorRef = typeof navigator === "undefined" ? null : navigator,
-      documentRef = typeof document === "undefined" ? null : document,
-    } = {}) {
-      if (navigatorRef?.clipboard?.writeText) {
-        try {
-          await navigatorRef.clipboard.writeText(text);
-          return "clipboard";
-        } catch {
-          // Continue to the local textarea fallback.
-        }
-      }
-
-      if (!documentRef?.body || typeof documentRef.execCommand !== "function") {
-        throw new Error("当前浏览器不允许自动复制，请手动选择脱敏 JSON。");
-      }
-
-      const textarea = documentRef.createElement("textarea");
-      textarea.value = text;
-      textarea.setAttribute("readonly", "");
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      documentRef.body.appendChild(textarea);
-      textarea.select();
-      const copied = documentRef.execCommand("copy");
-      textarea.remove();
-
-      if (!copied) {
-        throw new Error("当前浏览器不允许自动复制，请手动选择脱敏 JSON。");
-      }
-      return "fallback";
-    }
-
-    function formatDisplayValue(value) {
-      if (typeof value === "string") {
-        return value;
-      }
-      return JSON.stringify(value, null, 2);
-    }
-
-    function formatTimeClaimValue(key, value) {
-      const original = formatDisplayValue(value);
-      if (!["iat", "nbf", "exp"].includes(String(key).toLowerCase())) {
-        return original;
-      }
-      const beijing = formatBeijingTime(value);
-      return beijing === null ? original : `${original}\n北京时间：${beijing}`;
-    }
-
-    function parseJwt(input, nowMilliseconds = Date.now()) {
-      const normalized = normalizeInput(input);
-      if (!normalized) {
-        throw new ParserError("EMPTY_INPUT", "请输入一个 AT。数据只会在当前页面内解析。");
-      }
-
-      const parts = normalized.split(".");
-      if (parts.length !== 3 || parts.some((part) => part.length === 0)) {
-        throw new ParserError("JWT_STRUCTURE", "AT 必须是由两个点分隔的三段式 JWT。");
-      }
-
-      const header = decodeJsonObject(parts[0], "Header");
-      const payload = decodeJsonObject(parts[1], "Payload");
-      const time = evaluateTimeStatus(payload, nowMilliseconds);
-      const warnings = buildWarnings(header, time);
-      const otherSection = buildSections(header, payload)
-        .find((section) => section.id === "other");
-
-      if (otherSection.entries.length > 0) {
-        warnings.push({
-          code: "UNKNOWN_CLAIMS",
-          message: `发现 ${otherSection.entries.length} 个未分类声明，已保留在“其他字段”中。`,
-        });
-      }
-
-      return {
-        header,
-        payload,
-        signature: { present: true, verified: false },
-        time,
-        warnings,
-      };
-    }
-
-    function boot(documentRef) {
-      const input = documentRef.getElementById("tokenInput");
-      const parseButton = documentRef.getElementById("parseButton");
-      const clearButton = documentRef.getElementById("clearButton");
-      const errorBox = documentRef.getElementById("errorBox");
-      const resultArea = documentRef.getElementById("resultArea");
-      const statusSummary = documentRef.getElementById("statusSummary");
-      const warningList = documentRef.getElementById("warningList");
-      const sectionsRoot = documentRef.getElementById("sections");
-      const rawJson = documentRef.getElementById("rawJson");
-      const copyButton = documentRef.getElementById("copyButton");
-      const copyStatus = documentRef.getElementById("copyStatus");
-      const revealRegistry = createRevealRegistry();
-      let redactedResult = null;
-
-      function makeElement(tagName, className, text) {
-        const element = documentRef.createElement(tagName);
-        if (className) {
-          element.className = className;
-        }
-        if (text !== undefined) {
-          element.textContent = text;
-        }
-        return element;
-      }
-
-      function setError(message = "") {
-        errorBox.textContent = message;
-        errorBox.hidden = message.length === 0;
-      }
-
-      function resetResult() {
-        revealRegistry.clear();
-        redactedResult = null;
-        resultArea.hidden = true;
-        statusSummary.replaceChildren();
-        warningList.replaceChildren();
-        sectionsRoot.replaceChildren();
-        rawJson.textContent = "";
-        copyStatus.textContent = "";
-      }
-
-      function clearAll({ focus = true } = {}) {
-        input.value = "";
-        setError();
-        resetResult();
-        if (focus) {
-          input.focus();
-        }
-      }
-
-      function addSummary(label, value, state = "") {
-        const card = makeElement("div", "summary-card");
-        if (state) {
-          card.dataset.state = state;
-        }
-        card.append(
-          makeElement("span", "summary-label", label),
-          makeElement("strong", "summary-value", value),
-        );
-        statusSummary.appendChild(card);
-      }
-
-      function renderSummary(result) {
-        const { claims } = result.time;
-        addSummary("JWT 结构", "三段式 · Signature 未验证");
-        addSummary("签名算法", String(result.header.alg ?? "未提供"));
-        addSummary("签发时间", claims.iat.valid ? claims.iat.beijing : "未提供或格式错误");
-        addSummary("到期时间", claims.exp.valid ? claims.exp.beijing : "未提供或格式错误");
-        addSummary("时间状态", result.time.label, result.time.code);
-      }
-
-      function renderWarnings(warnings) {
-        warningList.replaceChildren();
-        for (const warning of warnings) {
-          const item = makeElement("div", "warning-item", `⚠ ${warning.message}`);
-          warningList.appendChild(item);
-        }
-      }
-
-      function createFieldRow(entry) {
-        const row = makeElement("div", "field-row");
-        const key = makeElement("div", "field-key", entry.path);
-        const value = makeElement("pre", "field-value");
-        row.append(key, value);
-
-        if (!entry.sensitive) {
-          value.textContent = formatTimeClaimValue(entry.key, entry.value);
-          return row;
-        }
-
-        let revealed = false;
-        const button = makeElement("button", "reveal-button", "显示 10 秒");
-        button.type = "button";
-        button.setAttribute("aria-label", `临时显示 ${entry.path}`);
-
-        function conceal() {
-          revealed = false;
-          value.textContent = "••••••••";
-          button.textContent = "显示 10 秒";
-          button.setAttribute("aria-pressed", "false");
-        }
-
-        conceal();
-        button.addEventListener("click", () => {
-          if (revealed) {
-            revealRegistry.hide(entry.path);
-            conceal();
-            return;
-          }
-
-          revealed = true;
-          value.textContent = formatTimeClaimValue(entry.key, entry.value);
-          button.textContent = "立即隐藏";
-          button.setAttribute("aria-pressed", "true");
-          revealRegistry.show(entry.path, conceal);
-        });
-        row.appendChild(button);
-        return row;
-      }
-
-      function renderSections(result) {
-        sectionsRoot.replaceChildren();
-        for (const section of buildSections(result.header, result.payload)) {
-          if (section.entries.length === 0) {
-            continue;
-          }
-          const card = makeElement("section", "claim-card");
-          card.appendChild(makeElement("h3", "", section.title));
-          const list = makeElement("div", "field-list");
-          for (const entry of section.entries) {
-            list.appendChild(createFieldRow(entry));
-          }
-          card.appendChild(list);
-          sectionsRoot.appendChild(card);
-        }
-      }
-
-      function handleParse() {
-        setError();
-        resetResult();
-
-        try {
-          const result = parseJwt(input.value);
-          input.value = "";
-          redactedResult = {
-            header: redactDeep(result.header),
-            payload: redactDeep(result.payload),
-            signature: result.signature,
-          };
-          renderSummary(result);
-          renderWarnings(result.warnings);
-          renderSections(result);
-          rawJson.textContent = JSON.stringify(redactedResult, null, 2);
-          resultArea.hidden = false;
-          resultArea.focus();
-        } catch (error) {
-          const message = error instanceof ParserError
-            ? error.message
-            : "解析失败，请确认输入是完整的三段式 JWT。";
-          setError(message);
-        }
-      }
-
-      parseButton.addEventListener("click", handleParse);
-      clearButton.addEventListener("click", () => clearAll());
-      copyButton.addEventListener("click", async () => {
-        if (!redactedResult) {
-          return;
-        }
-        const text = JSON.stringify(redactedResult, null, 2);
-        try {
-          await copyText(text, { documentRef, navigatorRef: globalThis.navigator });
-          copyStatus.textContent = "已复制脱敏 JSON";
-        } catch (error) {
-          copyStatus.textContent = error.message;
-          rawJson.focus();
-          const selection = globalThis.getSelection?.();
-          if (selection) {
-            const range = documentRef.createRange();
-            range.selectNodeContents(rawJson);
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-        }
-      });
-      documentRef.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-          clearAll();
-        }
-      });
-    }
-
-    globalThis.ATParserCore = Object.freeze({
-      ParserError,
-      boot,
-      buildSections,
-      buildWarnings,
-      categorizeEntry,
-      copyText,
-      createRevealRegistry,
-      decodeJsonObject,
-      evaluateTimeStatus,
-      flattenEntries,
-      formatBeijingTime,
-      formatDisplayValue,
-      formatTimeClaimValue,
-      isSensitiveKey,
-      normalizeInput,
-      parseJwt,
-      parseNumericDate,
-      redactDeep,
-    });
-
-    if (typeof document !== "undefined") {
-      boot(document);
-    }
-  })();
-  </script>
+  <footer class="app-footer">解码不等于验证。AT 泄露后应立即注销相关会话或更新凭据。</footer>
 </body>
 </html>
