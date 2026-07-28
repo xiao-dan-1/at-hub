@@ -79,26 +79,23 @@ test("remaining time omits a zero hour unit", () => {
   assert.equal(ui.formatRemaining?.(status, now), "约 1 天");
 });
 
-test("minimal overview model keeps only the necessary first-screen facts", () => {
+test("AT summary model keeps one-card facts without masking email or surfacing risk", () => {
   const model = ui.buildMinimalOverviewModel?.(makeOverviewAnalysis(), modelNow);
 
   assert.equal(model?.email?.label, "账号邮箱");
-  assert.equal(model?.email?.value, "••••••••");
-  assert.equal(model?.email?.entry.value, "person@example.test");
-  assert.equal(model?.plan.label, "JWT 声明的套餐");
+  assert.equal(model?.email?.value, "person@example.test");
+  assert.equal(model?.plan.label, "chatgpt_plan_type");
   assert.equal(model?.plan.value, "plus");
-  assert.equal(
-    model?.validity.value,
-    "在声明时间窗口内 · 2033-05-18 11:33:20 +08:00 · 剩余约 1 天",
-  );
-  assert.deepEqual(model?.permissionSummary.items, ["模型调用", "离线访问", "组织写入 1 个高风险"]);
+  assert.equal(model?.validity.label, "剩余时间");
+  assert.equal(model?.validity.value, "约 1 天");
+  assert.equal(model?.permissionSummary, undefined);
   assert.equal(model?.quietNotice, "只完成本地解码，未验证签名、撤销状态或服务器可用性。");
 });
 
-test("minimal overview warnings stay quiet for normal technical facts", () => {
+test("overview does not surface permission or risk warnings", () => {
   const warnings = ui.selectOverviewWarnings?.(makeOverviewAnalysis().warnings);
 
-  assert.deepEqual(warnings?.map(warning => warning.code), ["HIGH_RISK_PERMISSIONS"]);
+  assert.deepEqual(warnings?.map(warning => warning.code), []);
 });
 
 test("permissions are grouped into stable product-facing sections", () => {
@@ -122,7 +119,7 @@ test("permission rendering keeps risk beside the permission name", () => {
   assert.match(app, /permission-row__heading[\s\S]*risk-label/u);
 });
 
-test("overview warnings keep the three product-critical messages in priority order", () => {
+test("overview warnings stay empty even when analysis contains risk diagnostics", () => {
   const visible = selectOverviewWarnings([
     { code: "SIGNATURE_UNVERIFIED" },
     { code: "UNKNOWN_ALG" },
@@ -131,44 +128,26 @@ test("overview warnings keep the three product-critical messages in priority ord
     { code: "INVALID_TIME_CLAIM" },
   ]);
 
-  assert.deepEqual(visible.map(warning => warning.code), [
-    "HIGH_RISK_PERMISSIONS",
-    "TOKEN_EXPIRED",
-    "INVALID_TIME_CLAIM",
-  ]);
+  assert.deepEqual(visible.map(warning => warning.code), []);
 });
 
-test("overview warnings fill unused slots with other actionable diagnostics", () => {
-  const visible = selectOverviewWarnings([
-    { code: "SIGNATURE_UNVERIFIED" },
-    { code: "ALG_NONE" },
-    { code: "INVALID_TIME_CLAIM" },
-    { code: "MISSING_TIME" },
-  ]);
-
-  assert.deepEqual(visible.map(warning => warning.code), [
-    "ALG_NONE",
-    "INVALID_TIME_CLAIM",
-    "MISSING_TIME",
-  ]);
-});
-
-test("overview exposes an absolute Beijing expiry alongside remaining time", () => {
+test("overview exposes only remaining time from the validity model", () => {
   assert.equal(formatExpiry({ claims: { exp: { valid: true, beijing: "2033-05-18 11:33:20 +08:00" } } }), "2033-05-18 11:33:20 +08:00");
   assert.equal(formatExpiry({ claims: { exp: { valid: false } } }), "未声明");
   assert.match(app, /buildMinimalOverviewModel\(analysis\)/u);
-  assert.match(app, /minimal-card/u);
+  assert.match(app, /at-summary-card/u);
   assert.doesNotMatch(app, /definitionRow\("签发方"/u);
   assert.doesNotMatch(app, /definitionRow\("目标受众"/u);
   assert.doesNotMatch(app, /definitionRow\("密钥标识"/u);
+  assert.doesNotMatch(app, /model\.permissionSummary/u);
 });
 
-test("overview sensitive values use the shared ten-second reveal control", () => {
-  assert.match(app, /model\.email\.entry/u);
+test("overview shows account email directly while deeper sensitive fields keep reveal controls", () => {
+  assert.doesNotMatch(app, /model\.email\.entry/u);
   assert.doesNotMatch(app, /sensitiveDefinitionRow\("账号成员"/u);
   assert.doesNotMatch(app, /sensitiveDefinitionRow\("客户端"/u);
   assert.match(app, /renderRevealButton\(/u);
-  assert.match(app, /JWT 声明的套餐/u);
+  assert.match(app, /chatgpt_plan_type/u);
   assert.match(app, /classList\.remove\("masked"\)/u);
   assert.match(app, /classList\.add\("masked"\)/u);
 });

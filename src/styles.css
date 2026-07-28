@@ -78,15 +78,20 @@ textarea:focus, input:focus, select:focus { border-color: var(--primary); box-sh
 .tab[aria-selected="true"] { color: var(--text); }
 .tab[aria-selected="true"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; content: ""; background: var(--primary); }
 .tab-panel { padding-top: 22px; }
-.overview-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.minimal-card { display: grid; min-width: 0; min-height: 118px; align-content: space-between; gap: 14px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-.minimal-card__label { color: var(--muted); font-size: 0.72rem; font-weight: 740; }
-.minimal-card__value { min-width: 0; font-size: 0.95rem; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
-.minimal-card__hint { color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
-.minimal-card__sensitive { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
-.minimal-card[data-state="within_window"] .minimal-card__value, .minimal-card[data-state="safe"] .minimal-card__value { color: var(--primary-strong); }
-.minimal-card[data-state="danger"] .minimal-card__value, .minimal-card[data-state="expired"] .minimal-card__value { color: var(--danger); }
-.minimal-card[data-state="warning"] .minimal-card__value, .minimal-card[data-state="not_yet_valid"] .minimal-card__value, .minimal-card[data-state="missing_time"] .minimal-card__value { color: var(--warning); }
+.overview-cards { display: block; }
+.at-summary-card { width: min(100%, 780px); padding: 22px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 94%, var(--primary-soft)), var(--surface)); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(27, 42, 34, 0.05); }
+.at-summary-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.at-summary-card__eyebrow { color: var(--muted); font-size: 0.72rem; font-weight: 740; letter-spacing: 0.02em; }
+.at-summary-card h2 { margin: 4px 0 0; font-size: 1rem; line-height: 1.35; }
+.at-summary-card__badge { flex: 0 0 auto; padding: 5px 9px; color: var(--primary-strong); background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); border-radius: 999px; font-size: 0.72rem; font-weight: 740; }
+.at-summary-fields { display: grid; grid-template-columns: 1.25fr 0.8fr 0.95fr; gap: 14px 22px; margin: 0; }
+.at-summary-field { min-width: 0; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--line) 74%, transparent); }
+.at-summary-field dt { color: var(--muted); font-size: 0.72rem; font-weight: 740; }
+.at-summary-field dd { min-width: 0; margin: 7px 0 0; font-size: 0.96rem; font-weight: 720; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.at-summary-field[data-state="within_window"] dd { color: var(--primary-strong); }
+.at-summary-field[data-state="expired"] dd { color: var(--danger); }
+.at-summary-field[data-state="not_yet_valid"] dd, .at-summary-field[data-state="missing_time"] dd { color: var(--warning); }
+.at-summary-card__notice { padding-top: 14px; margin: 18px 0 0; color: var(--muted); border-top: 1px solid var(--line); font-size: 0.78rem; }
 .warning-list { display: grid; gap: 8px; margin-top: 12px; }
 .warning-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--warning); background: var(--warning-soft); border-left: 3px solid color-mix(in srgb, var(--warning) 65%, transparent); border-radius: 4px; font-size: 0.84rem; }
 .warning-row[data-level="danger"] { color: var(--danger); background: var(--danger-soft); border-left-color: var(--danger); }
@@ -219,9 +224,9 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .result-actions { width: 100%; }
   .result-actions .button { flex: 1; }
   .tabs { gap: 20px; overflow-x: auto; }
-  .overview-cards { grid-template-columns: 1fr; }
-  .minimal-card { min-height: 0; }
-  .minimal-card__sensitive { grid-template-columns: 1fr; }
+  .at-summary-card { padding: 18px; }
+  .at-summary-card__header { display: grid; gap: 10px; }
+  .at-summary-fields { grid-template-columns: 1fr; }
   .overview-sections { grid-template-columns: 1fr; }
   .data-section--wide { grid-column: auto; }
   .definition-list--columns { display: block; }

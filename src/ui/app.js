@@ -1,7 +1,7 @@
 import { analyzeToken } from "../core/analyze.js";
 import { filterPermissions, PERMISSION_HEURISTIC_NOTICE } from "../core/permissions.js";
 import { formatKnownTime } from "../core/time.js";
-import { CircleAlert, Eye, EyeOff, Info, createElement as createLucideElement } from "lucide";
+import { Eye, EyeOff, createElement as createLucideElement } from "lucide";
 import { copyText, el, formatValue, replace, selectTextContent } from "./dom.js";
 import { createRevealRegistry } from "./reveal.js";
 
@@ -21,15 +21,6 @@ const PERMISSION_FILTERS = [
   ["write", "写入"],
   ["identity", "身份"],
 ];
-const OVERVIEW_WARNING_ORDER = [
-  "HIGH_RISK_PERMISSIONS",
-  "TOKEN_EXPIRED",
-  "TOKEN_NOT_YET_VALID",
-  "ALG_NONE",
-  "INVALID_TIME_CLAIM",
-  "MISSING_TIME",
-];
-const QUIET_WARNING_CODES = new Set(["SIGNATURE_UNVERIFIED", "UNKNOWN_ALG"]);
 const AUTHENTICATION_METHOD_LABELS = {
   otp: "OTP",
   "urn:openai:amr:otp_email": "邮箱验证码",
@@ -99,17 +90,6 @@ export function groupPermissionsForDisplay(items) {
     .filter(group => group.items.length > 0);
 }
 
-export function summarizeKeyPermissions(permissions) {
-  const items = [];
-  if (permissions.some(permission => permission.scope === "model.request")) items.push("模型调用");
-  if (permissions.some(permission => permission.scope === "offline_access")) items.push("离线访问");
-  const highRiskCount = permissions.filter(permission => permission.risk === "high").length;
-  const organizationWriteCount = permissions.filter(permission => permission.scope === "organization.write").length;
-  if (organizationWriteCount > 0) items.push(`组织写入 ${organizationWriteCount} 个高风险`);
-  else if (highRiskCount > 0) items.push(`${highRiskCount} 个高风险权限`);
-  return items.length > 0 ? items : ["未声明关键权限"];
-}
-
 export function formatExpiry(status) {
   return status.claims.exp.valid ? status.claims.exp.beijing : "未声明";
 }
@@ -131,11 +111,8 @@ export function formatOverviewEntryValue(entry) {
 }
 
 export function selectOverviewWarnings(warnings) {
-  const order = new Map(OVERVIEW_WARNING_ORDER.map((code, index) => [code, index]));
-  return warnings
-    .filter(warning => !QUIET_WARNING_CODES.has(warning.code))
-    .sort((left, right) => (order.get(left.code) ?? 99) - (order.get(right.code) ?? 99))
-    .slice(0, 3);
+  void warnings;
+  return [];
 }
 
 export function buildMinimalOverviewModel(analysis, nowMilliseconds = Date.now()) {
@@ -144,22 +121,16 @@ export function buildMinimalOverviewModel(analysis, nowMilliseconds = Date.now()
   return {
     email: {
       label: "账号邮箱",
-      value: formatOverviewEntryValue(email),
-      entry: email,
+      value: email ? formatValue(email.value) : "未提供",
     },
     plan: {
-      label: "JWT 声明的套餐",
+      label: "chatgpt_plan_type",
       value: plan?.value ?? "未提供",
     },
     validity: {
-      label: "有效期",
-      value: formatValiditySummary(analysis.status, nowMilliseconds),
+      label: "剩余时间",
+      value: formatRemaining(analysis.status, nowMilliseconds),
       state: analysis.status.code,
-    },
-    permissionSummary: {
-      label: "关键权限",
-      items: summarizeKeyPermissions(analysis.permissions),
-      state: analysis.permissions.some(permission => permission.risk === "high") ? "danger" : "safe",
     },
     quietNotice: "只完成本地解码，未验证签名、撤销状态或服务器可用性。",
   };
@@ -175,10 +146,10 @@ function icon(iconNode, label = "") {
   return node;
 }
 
-function minimalCard(item, children, state = "neutral") {
-  return el("article", { className: "minimal-card", dataset: { state } }, [
-    el("span", { className: "minimal-card__label", text: item.label }),
-    ...children,
+function summaryField(item) {
+  return el("div", { className: "at-summary-field", dataset: { state: item.state ?? "neutral" } }, [
+    el("dt", { text: item.label }),
+    el("dd", { text: item.value }),
   ]);
 }
 
@@ -189,39 +160,28 @@ function definitionRow(label, value, { mono = false, sensitive = false } = {}) {
   ]);
 }
 
-function renderOverview(analysis, nodes, revealRegistry) {
+function renderOverview(analysis, nodes) {
   const model = buildMinimalOverviewModel(analysis);
-  const emailValue = el("span", { className: "sensitive-value masked", text: model.email.value });
   replace(nodes.overviewCards, [
-    minimalCard(model.email, [
-      model.email.entry?.sensitive
-        ? el("div", { className: "minimal-card__sensitive" }, [
-            emailValue,
-            renderRevealButton(model.email.entry, emailValue, nodes, revealRegistry),
-          ])
-        : el("strong", { className: "minimal-card__value", text: model.email.value }),
+    el("article", { className: "at-summary-card" }, [
+      el("header", { className: "at-summary-card__header" }, [
+        el("div", {}, [
+          el("span", { className: "at-summary-card__eyebrow", text: "AT 信息" }),
+          el("h2", { text: "单个 AT 摘要" }),
+        ]),
+        el("span", { className: "at-summary-card__badge", text: "本地解码" }),
+      ]),
+      el("dl", { className: "at-summary-fields" }, [
+        summaryField(model.email),
+        summaryField(model.plan),
+        summaryField(model.validity),
+      ]),
+      el("p", { className: "at-summary-card__notice", text: model.quietNotice }),
     ]),
-    minimalCard(model.plan, [
-      el("strong", { className: "minimal-card__value", text: model.plan.value }),
-      el("span", { className: "minimal-card__hint", text: "来自 JWT 声明，可能不是实时套餐" }),
-    ]),
-    minimalCard(model.validity, [
-      el("strong", { className: "minimal-card__value", text: model.validity.value }),
-    ], model.validity.state),
-    minimalCard(model.permissionSummary, [
-      el("strong", { className: "minimal-card__value", text: model.permissionSummary.items.join("、") }),
-    ], model.permissionSummary.state),
   ]);
 
-  replace(nodes.warningList, selectOverviewWarnings(analysis.warnings).map(warning => (
-    el("div", { className: "warning-row", dataset: { level: warning.level } }, [
-      el("span", { className: "warning-row__icon", attrs: { "aria-hidden": "true" } }, [
-        icon(warning.level === "danger" ? CircleAlert : Info),
-      ]),
-      el("span", { text: warning.message }),
-    ])
-  )));
-  nodes.overviewNotice.textContent = model.quietNotice;
+  replace(nodes.warningList, []);
+  nodes.overviewNotice.textContent = "";
 }
 
 function renderPermissions(analysis, nodes, state) {
