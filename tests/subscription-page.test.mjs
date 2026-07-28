@@ -83,7 +83,15 @@ test("subscription finished dock hides redundant visual-only helper chrome", () 
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*position:\s*absolute/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*clip:\s*rect\(0,\s*0,\s*0,\s*0\)/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*gap:\s*0 12px/u);
+});
+
+test("subscription finished input row drops the extra outer card", () => {
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*background:\s*transparent/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border:\s*0/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border-radius:\s*0/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*padding:\s*0/u);
 });
 
 test("subscription raw JSON disclosure stays visually subordinate to the result card", () => {
@@ -91,6 +99,13 @@ test("subscription raw JSON disclosure stays visually subordinate to the result 
   assert.match(css, /\.subscription-json\s*\{[^}]*border:\s*0/u);
   assert.match(css, /\.subscription-json\s*\{[^}]*border-top:\s*1px solid/u);
   assert.match(css, /\.subscription-json summary\s*\{[^}]*font-size:\s*0\.82rem/u);
+});
+
+test("inactive subscription status reads as neutral instead of warning", () => {
+  assert.match(css, /\.subscription-status-pill\s*\{[^}]*color:\s*var\(--muted\)/u);
+  assert.match(css, /\.subscription-status-pill\s*\{[^}]*background:\s*color-mix\(in srgb,\s*var\(--surface-subtle\)/u);
+  assert.doesNotMatch(css, /\.subscription-status-pill\s*\{[^}]*var\(--warning\)/u);
+  assert.match(css, /\.subscription-status-pill\[data-active="true"\]\s*\{[^}]*color:\s*var\(--primary-strong\)/u);
 });
 
 test("subscription mobile layout gives long metric values room", () => {
