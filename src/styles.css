@@ -211,24 +211,24 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-shell[data-has-result="true"] .network-boundary { display: none; margin-top: 8px; padding: 8px 10px; font-size: 0.76rem; }
 .network-boundary { margin: 10px 0 0; padding: 10px 12px; color: var(--muted); background: color-mix(in srgb, var(--primary-soft) 56%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)); border-radius: 7px; font-size: 0.8rem; line-height: 1.55; }
 .subscription-result { display: block; }
-.subscription-card { display: grid; gap: 14px; padding: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 98%, var(--primary-soft)), var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)); border-radius: 14px; box-shadow: 0 18px 38px rgba(27, 42, 34, 0.07); }
-.subscription-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 4px 2px 0; }
+.subscription-card { display: grid; gap: 16px; padding: 20px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 99%, var(--primary-soft)), var(--surface) 44%); border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--line)); border-radius: 16px; box-shadow: 0 22px 50px rgba(27, 42, 34, 0.06); }
+.subscription-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 2px 2px 0; }
 .subscription-card__identity { min-width: 0; }
 .subscription-card__identity h2 { margin: 0; font-size: 1.45rem; line-height: 1.1; letter-spacing: -0.03em; }
 .subscription-card__account { margin: 8px 0 0; color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.78rem; line-height: 1.45; overflow-wrap: anywhere; }
 .subscription-status-pill { display: inline-flex; min-height: 30px; flex: 0 0 auto; align-items: center; justify-content: center; padding: 5px 11px; color: var(--warning); background: color-mix(in srgb, var(--warning-soft) 72%, var(--surface)); border: 1px solid color-mix(in srgb, var(--warning) 20%, var(--line)); border-radius: 999px; font-size: 0.76rem; font-weight: 780; white-space: nowrap; }
 .subscription-status-pill[data-active="true"] { color: var(--primary-strong); background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 28%, var(--line)); }
 .subscription-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; overflow: visible; background: transparent; border: 0; border-radius: 0; }
-.subscription-metric { min-width: 0; padding: 11px 12px; background: color-mix(in srgb, var(--surface-subtle) 76%, var(--surface)); border: 1px solid color-mix(in srgb, var(--line) 72%, transparent); border-radius: 10px; }
+.subscription-metric { min-width: 0; padding: 11px 12px; background: color-mix(in srgb, var(--surface-subtle) 54%, var(--surface)); border: 1px solid color-mix(in srgb, var(--line) 62%, transparent); border-radius: 10px; }
 .subscription-metric span, .subscription-list-block > span, .subscription-facts dt { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 680; }
 .subscription-metric strong { display: block; margin-top: 6px; font-size: 0.84rem; font-weight: 720; overflow-wrap: anywhere; }
-.subscription-detail-panel { display: grid; gap: 0; align-items: start; padding: 2px 2px 0; background: transparent; border: 0; border-radius: 0; }
-.subscription-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0; padding: 12px 0; border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 68%, transparent); }
+.subscription-detail-panel { display: grid; gap: 0; align-items: start; padding: 10px 14px 8px; background: color-mix(in srgb, var(--surface-subtle) 58%, var(--surface)); border: 1px solid color-mix(in srgb, var(--line) 64%, transparent); border-radius: 12px; }
+.subscription-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0; padding: 0 0 10px; border-top: 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 68%, transparent); }
 .subscription-facts div { min-width: 0; padding: 0 12px 2px; border-left: 1px solid color-mix(in srgb, var(--line) 68%, transparent); }
 .subscription-facts div:first-child { padding-left: 0; border-left: 0; }
 .subscription-facts dd { margin: 4px 0 0; font-size: 0.82rem; font-weight: 680; overflow-wrap: anywhere; }
 .subscription-offers { display: grid; gap: 0; min-width: 0; padding-top: 0; }
-.subscription-list-block { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; min-width: 0; padding: 9px 0; border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent); }
+.subscription-list-block { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: start; min-width: 0; padding: 8px 0; border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent); }
 .subscription-list-block:first-child { border-top: 0; }
 .subscription-list-block div { display: flex; flex-wrap: wrap; gap: 7px; }
 .subscription-tag { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 8px; color: var(--primary-strong); background: color-mix(in srgb, var(--primary-soft) 72%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent); border-radius: 999px; font-size: 0.7rem; font-family: "Cascadia Code", Consolas, monospace; }
