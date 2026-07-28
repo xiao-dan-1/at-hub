@@ -65,3 +65,73 @@ test("normalizeSubscriptionStatus prefers realtime subscription fields over JWT 
   assert.ok(model.raw.subscription);
   assert.doesNotMatch(JSON.stringify(model), /Bearer/u);
 });
+
+test("normalizeSubscriptionStatus keeps token expiry separate from free account subscription state", () => {
+  const freeToken = makeJwt(
+    { alg: "RS256" },
+    {
+      exp: Math.floor(Date.UTC(2033, 4, 27) / 1000),
+      "https://api.openai.com/profile": { email: "free@example.test" },
+      "https://api.openai.com/auth": { chatgpt_plan_type: "free" },
+    },
+  );
+
+  const model = normalizeSubscriptionStatus({
+    token: freeToken,
+    accountsResponse: {
+      accounts: {
+        default: {
+          account: {
+            account_id: "acc_free",
+            plan_type: "free",
+            has_previously_paid_subscription: false,
+          },
+          entitlement: {
+            has_active_subscription: false,
+            subscription_plan: "chatgptfreeplan",
+            expires_at: null,
+            applied_discounts: [],
+          },
+          last_active_subscription: {
+            will_renew: false,
+            purchase_origin_platform: "chatgpt_not_purchased",
+          },
+          eligible_promo_campaigns: {
+            plus: {
+              id: "plus-1-month-free",
+              metadata: {
+                plan_name: "chatgptplusplan",
+                title: "Try Plus free for 1 month",
+                discount: { percentage: 100 },
+              },
+            },
+          },
+          eligible_offers: {
+            offers: [
+              { id: "chatgptgoplan" },
+              { id: "chatgptplusplan" },
+            ],
+            default_offer_id: "chatgptplusplan",
+          },
+        },
+      },
+    },
+    subscriptionResponse: {},
+    nowMilliseconds: Date.UTC(2033, 4, 17),
+  });
+
+  assert.equal(model.ok, true);
+  assert.equal(model.has_active_subscription, false);
+  assert.equal(model.expires_at, null);
+  assert.equal(model.days_left, null);
+  assert.equal(model.token_expires_at, "2033-05-27T00:00:00.000Z");
+  assert.equal(model.token_days_left, 10);
+  assert.deepEqual(model.eligible_offers, ["chatgptgoplan", "chatgptplusplan"]);
+  assert.equal(model.default_offer_id, "chatgptplusplan");
+  assert.deepEqual(model.eligible_promos, [{
+    id: "plus-1-month-free",
+    plan_name: "chatgptplusplan",
+    title: "Try Plus free for 1 month",
+    discount: { percentage: 100 },
+  }]);
+});

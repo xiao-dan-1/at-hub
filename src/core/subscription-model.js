@@ -71,6 +71,37 @@ function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+function firstNonEmptyArray(...values) {
+  return values.find(value => Array.isArray(value) && value.length > 0) ?? [];
+}
+
+function normalizeOfferIds(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map(item => (typeof item === "string" ? item : item?.id))
+      .filter(Boolean);
+  }
+  if (Array.isArray(value?.offers)) {
+    return value.offers
+      .map(item => (typeof item === "string" ? item : item?.id))
+      .filter(Boolean);
+  }
+  return [];
+}
+
+function normalizeEligiblePromos(value) {
+  if (!isPlainObject(value)) return [];
+  return Object.values(value)
+    .filter(isPlainObject)
+    .map(item => ({
+      id: item.id ?? null,
+      plan_name: item.metadata?.plan_name ?? null,
+      title: item.metadata?.title ?? null,
+      discount: item.metadata?.discount ?? null,
+    }))
+    .filter(item => item.id || item.plan_name || item.title);
+}
+
 export function normalizeSubscriptionStatus({
   token = "",
   accountsResponse = {},
@@ -87,11 +118,14 @@ export function normalizeSubscriptionStatus({
     subscriptionResponse.active_until,
     subscriptionResponse.expires_at,
     entitlement.expires_at,
-    jwt.expires_at_jwt,
   ));
+  const tokenExpiresAt = jwt.expires_at_jwt;
   const activeStart = toIsoDate(firstDefined(subscriptionResponse.active_start, entitlement.active_start));
   const renewsAt = toIsoDate(firstDefined(subscriptionResponse.renews_at, subscriptionResponse.next_invoice_at));
   const remaining = remainingFromIso(expiresAt, nowMilliseconds);
+  const tokenRemaining = remainingFromIso(tokenExpiresAt, nowMilliseconds);
+  const subscriptionEligibleOffers = normalizeOfferIds(subscriptionResponse.eligible_offers);
+  const accountEligibleOffers = normalizeOfferIds(accountRecord.eligible_offers);
 
   return {
     ok: true,
@@ -113,6 +147,9 @@ export function normalizeSubscriptionStatus({
     expires_at: expiresAt,
     renews_at: renewsAt,
     ...remaining,
+    token_expires_at: tokenExpiresAt,
+    token_days_left: tokenRemaining.days_left,
+    token_hours_left: tokenRemaining.hours_left,
     will_renew: Boolean(firstDefined(lastActiveSubscription.will_renew, subscriptionResponse.will_renew, false)),
     is_delinquent: Boolean(firstDefined(subscriptionResponse.is_delinquent, entitlement.is_delinquent, false)),
     is_gratis: Boolean(firstDefined(subscriptionResponse.is_gratis, entitlement.is_gratis, false)),
@@ -126,9 +163,17 @@ export function normalizeSubscriptionStatus({
       false,
     )),
     is_processor_stripe: Boolean(firstDefined(subscriptionResponse.is_processor_stripe, false)),
-    applied_discounts: normalizeArray(subscriptionResponse.applied_discounts),
-    eligible_offers: normalizeArray(subscriptionResponse.eligible_offers),
-    default_offer_id: firstDefined(subscriptionResponse.default_offer_id, entitlement.default_offer_id) ?? null,
+    applied_discounts: firstNonEmptyArray(
+      normalizeArray(subscriptionResponse.applied_discounts),
+      normalizeArray(entitlement.applied_discounts),
+    ),
+    eligible_offers: firstNonEmptyArray(subscriptionEligibleOffers, accountEligibleOffers),
+    eligible_promos: normalizeEligiblePromos(accountRecord.eligible_promo_campaigns),
+    default_offer_id: firstDefined(
+      subscriptionResponse.default_offer_id,
+      entitlement.default_offer_id,
+      accountRecord.eligible_offers?.default_offer_id,
+    ) ?? null,
     raw: {
       accounts: accountsResponse,
       subscription: subscriptionResponse,

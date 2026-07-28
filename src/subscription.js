@@ -74,7 +74,7 @@ function renderTagList(items, emptyText) {
     return `<span class="subscription-muted">${escapeHtml(emptyText)}</span>`;
   }
   return items
-    .map(item => `<span class="subscription-tag">${escapeHtml(typeof item === "string" ? item : item.promo_campaign_id ?? JSON.stringify(item))}</span>`)
+    .map(item => `<span class="subscription-tag">${escapeHtml(typeof item === "string" ? item : item.id ?? item.title ?? item.promo_campaign_id ?? JSON.stringify(item))}</span>`)
     .join("");
 }
 
@@ -132,12 +132,16 @@ export function renderSubscriptionResult(data) {
         <div><dt>订阅开始</dt><dd>${escapeHtml(formatDate(data.active_start))}</dd></div>
         <div><dt>订阅结束</dt><dd>${escapeHtml(formatDate(data.expires_at))}</dd></div>
         <div><dt>曾付费</dt><dd>${escapeHtml(formatBoolean(data.has_previously_paid_subscription))}</dd></div>
-        <div><dt>支付处理</dt><dd>${data.is_processor_stripe ? "Stripe" : "—"}</dd></div>
+        <div><dt>AT 有效期</dt><dd>${escapeHtml(formatRemaining({ days_left: data.token_days_left, hours_left: data.token_hours_left }))}</dd></div>
       </dl>
 
       <div class="subscription-list-block">
         <span>已应用优惠</span>
         <div>${renderTagList(data.applied_discounts, "暂无")}</div>
+      </div>
+      <div class="subscription-list-block">
+        <span>可用优惠</span>
+        <div>${renderTagList(data.eligible_promos, "暂无")}</div>
       </div>
       <div class="subscription-list-block">
         <span>可购买套餐</span>

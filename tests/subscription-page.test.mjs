@@ -22,6 +22,13 @@ test("subscription controller calls only the local subscription endpoint", () =>
   assert.match(js, /renderSubscriptionResult/u);
 });
 
+test("subscription result keeps subscription status and AT validity separate", () => {
+  assert.match(js, /剩余时间/u);
+  assert.match(js, /AT 有效期/u);
+  assert.match(js, /token_days_left/u);
+  assert.match(js, /eligible_promos/u);
+});
+
 test("subscription page has compact result cards matching current visual system", () => {
   assert.match(css, /\.subscription-card\s*\{/u);
   assert.match(css, /\.subscription-grid\s*\{/u);
