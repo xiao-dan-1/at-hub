@@ -1,7 +1,8 @@
-import { ProxyAgent } from "undici";
+import { ProxyAgent, fetch as undiciFetch } from "undici";
 
 export function createProxyFetch(proxyUrl, {
-  baseFetch = globalThis.fetch,
+  undiciFetch: compatibleFetch = undiciFetch,
+  baseFetch = compatibleFetch,
   ProxyAgentCtor = ProxyAgent,
 } = {}) {
   const dispatcher = new ProxyAgentCtor(proxyUrl);
