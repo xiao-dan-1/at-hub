@@ -75,7 +75,7 @@ test("subscription finished state keeps utility chrome lighter than the result",
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*max-height:\s*48px/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea\s*\{[^}]*max-height:\s*220px/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions\s*\{[^}]*margin-top:\s*0/u);
-  assert.match(css, /\.subscription-json\s*\{[^}]*padding:\s*12px 14px/u);
+  assert.match(css, /\.subscription-json\s*\{[^}]*padding:\s*10px 2px 0/u);
 });
 
 test("subscription finished dock hides redundant visual-only helper chrome", () => {
@@ -83,6 +83,13 @@ test("subscription finished dock hides redundant visual-only helper chrome", () 
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*clip:\s*rect\(0,\s*0,\s*0,\s*0\)/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*gap:\s*0 12px/u);
+});
+
+test("subscription raw JSON disclosure stays visually subordinate to the result card", () => {
+  assert.match(css, /\.subscription-json\s*\{[^}]*background:\s*transparent/u);
+  assert.match(css, /\.subscription-json\s*\{[^}]*border:\s*0/u);
+  assert.match(css, /\.subscription-json\s*\{[^}]*border-top:\s*1px solid/u);
+  assert.match(css, /\.subscription-json summary\s*\{[^}]*font-size:\s*0\.82rem/u);
 });
 
 test("subscription mobile layout gives long metric values room", () => {
