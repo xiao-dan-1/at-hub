@@ -202,12 +202,13 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-label { display: block; color: var(--text); font-size: 0.84rem; font-weight: 760; }
 .subscription-query textarea { min-height: 118px; margin-top: 10px; }
 .subscription-shell[data-has-result="true"] .subscription-query { padding: 14px 16px; box-shadow: none; }
-.subscription-shell[data-has-result="true"] .subscription-query textarea { min-height: 74px; margin-top: 8px; }
+.subscription-shell[data-has-result="true"] .subscription-query textarea { min-height: 58px; margin-top: 8px; }
 .subscription-shell[data-has-result="true"] .subscription-query:focus-within textarea { min-height: 118px; }
-.subscription-shell[data-has-result="true"] .network-boundary { margin-top: 8px; padding: 8px 10px; font-size: 0.76rem; }
+.subscription-shell[data-has-result="true"] .subscription-query .input-actions { margin-top: 10px; }
+.subscription-shell[data-has-result="true"] .network-boundary { display: none; margin-top: 8px; padding: 8px 10px; font-size: 0.76rem; }
 .network-boundary { margin: 10px 0 0; padding: 10px 12px; color: var(--muted); background: color-mix(in srgb, var(--primary-soft) 56%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)); border-radius: 7px; font-size: 0.8rem; line-height: 1.55; }
 .subscription-result { display: block; }
-.subscription-card { display: grid; gap: 15px; padding: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 98%, var(--primary-soft)), var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)); border-radius: 14px; box-shadow: 0 18px 38px rgba(27, 42, 34, 0.07); }
+.subscription-card { display: grid; gap: 14px; padding: 18px; background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 98%, var(--primary-soft)), var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)); border-radius: 14px; box-shadow: 0 18px 38px rgba(27, 42, 34, 0.07); }
 .subscription-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 2px 2px 0; }
 .subscription-card__identity { min-width: 0; }
 .subscription-card__identity h2 { margin: 0; font-size: 1.45rem; line-height: 1.1; letter-spacing: -0.03em; }
@@ -229,7 +230,8 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-list-block div { display: flex; flex-wrap: wrap; gap: 7px; }
 .subscription-tag { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 8px; color: var(--primary-strong); background: color-mix(in srgb, var(--primary-soft) 72%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent); border-radius: 999px; font-size: 0.7rem; font-family: "Cascadia Code", Consolas, monospace; }
 .subscription-muted { color: var(--muted); font-size: 0.82rem; }
-.subscription-json { margin-top: 0; }
+.subscription-json { margin-top: 0; padding: 12px 14px; background: color-mix(in srgb, var(--surface) 92%, var(--surface-subtle)); border-radius: 11px; }
+.subscription-json summary { color: var(--text); font-size: 0.86rem; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 58%, transparent); outline-offset: 3px; }
@@ -301,6 +303,13 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .inspector-categories { display: none; }
   .inspector-fields { max-height: 220px; border-right: 0; border-bottom: 1px solid var(--line); }
   .inspector-detail { padding: 18px; }
+}
+
+@media (max-width: 520px) {
+  .subscription-grid { grid-template-columns: 1fr; }
+  .subscription-metric { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--line) 74%, transparent); }
+  .subscription-metric:first-child { border-top: 0; }
+  .subscription-metric:nth-child(n + 3) { border-top: 1px solid color-mix(in srgb, var(--line) 74%, transparent); }
 }
 
 @media (prefers-reduced-motion: reduce) {

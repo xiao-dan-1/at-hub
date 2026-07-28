@@ -58,3 +58,15 @@ test("subscription input quiets down after a successful result while staying edi
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea/u);
 });
+
+test("subscription finished state keeps utility chrome lighter than the result", () => {
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.network-boundary\s*\{[^}]*display:\s*none/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*58px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions\s*\{[^}]*margin-top:\s*10px/u);
+  assert.match(css, /\.subscription-json\s*\{[^}]*padding:\s*12px 14px/u);
+});
+
+test("subscription mobile layout gives long metric values room", () => {
+  assert.match(css, /@media \(max-width: 520px\) \{[^}]*\.subscription-grid\s*\{\s*grid-template-columns:\s*1fr/u);
+  assert.match(css, /@media \(max-width: 520px\) \{[\s\S]*\.subscription-metric\s*\{[^}]*border-left:\s*0/u);
+});
