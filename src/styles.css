@@ -201,10 +201,13 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-query { max-width: none; margin: 0; padding: 18px; box-shadow: 0 6px 18px rgba(27, 42, 34, 0.035); }
 .subscription-label { display: block; color: var(--text); font-size: 0.84rem; font-weight: 760; }
 .subscription-query textarea { min-height: 118px; margin-top: 10px; }
-.subscription-shell[data-has-result="true"] .subscription-query { padding: 14px 16px; box-shadow: none; }
-.subscription-shell[data-has-result="true"] .subscription-query textarea { min-height: 58px; margin-top: 8px; }
-.subscription-shell[data-has-result="true"] .subscription-query:focus-within textarea { min-height: 118px; }
-.subscription-shell[data-has-result="true"] .subscription-query .input-actions { margin-top: 10px; }
+.subscription-shell[data-has-result="true"] { gap: 14px; }
+.subscription-shell[data-has-result="true"] .subscription-query { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px 12px; padding: 12px; background: color-mix(in srgb, var(--surface) 84%, transparent); border-color: color-mix(in srgb, var(--line) 72%, transparent); box-shadow: none; }
+.subscription-shell[data-has-result="true"] .subscription-label { grid-column: 1 / -1; color: var(--muted); font-size: 0.76rem; }
+.subscription-shell[data-has-result="true"] .subscription-query textarea { grid-column: 1; min-height: 48px; max-height: 48px; margin-top: 0; padding: 11px 12px; resize: none; font-size: 0.8rem; }
+.subscription-shell[data-has-result="true"] .subscription-query:focus-within textarea { min-height: 118px; max-height: 220px; resize: vertical; }
+.subscription-shell[data-has-result="true"] .subscription-query .input-actions { grid-column: 2; align-self: end; margin-top: 0; }
+.subscription-shell[data-has-result="true"] .subscription-query .keyboard-hint { width: 100%; margin-left: 0; font-size: 0.74rem; text-align: right; }
 .subscription-shell[data-has-result="true"] .network-boundary { display: none; margin-top: 8px; padding: 8px 10px; font-size: 0.76rem; }
 .network-boundary { margin: 10px 0 0; padding: 10px 12px; color: var(--muted); background: color-mix(in srgb, var(--primary-soft) 56%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)); border-radius: 7px; font-size: 0.8rem; line-height: 1.55; }
 .subscription-result { display: block; }
@@ -215,9 +218,8 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-card__account { margin: 8px 0 0; color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.78rem; line-height: 1.45; overflow-wrap: anywhere; }
 .subscription-status-pill { display: inline-flex; min-height: 30px; flex: 0 0 auto; align-items: center; justify-content: center; padding: 5px 11px; color: var(--warning); background: color-mix(in srgb, var(--warning-soft) 72%, var(--surface)); border: 1px solid color-mix(in srgb, var(--warning) 20%, var(--line)); border-radius: 999px; font-size: 0.76rem; font-weight: 780; white-space: nowrap; }
 .subscription-status-pill[data-active="true"] { color: var(--primary-strong); background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 28%, var(--line)); }
-.subscription-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; overflow: hidden; background: color-mix(in srgb, var(--surface-subtle) 72%, var(--surface)); border: 1px solid color-mix(in srgb, var(--line) 78%, transparent); border-radius: 11px; }
-.subscription-metric { min-width: 0; padding: 12px 14px; border-left: 1px solid color-mix(in srgb, var(--line) 74%, transparent); }
-.subscription-metric:first-child { border-left: 0; }
+.subscription-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; overflow: visible; background: transparent; border: 0; border-radius: 0; }
+.subscription-metric { min-width: 0; padding: 11px 12px; background: color-mix(in srgb, var(--surface-subtle) 76%, var(--surface)); border: 1px solid color-mix(in srgb, var(--line) 72%, transparent); border-radius: 10px; }
 .subscription-metric span, .subscription-list-block > span, .subscription-facts dt { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 680; }
 .subscription-metric strong { display: block; margin-top: 6px; font-size: 0.84rem; font-weight: 720; overflow-wrap: anywhere; }
 .subscription-detail-panel { display: grid; gap: 13px; align-items: start; padding: 13px 14px 14px; background: color-mix(in srgb, var(--surface-subtle) 80%, var(--surface)); border: 1px solid color-mix(in srgb, var(--line) 76%, transparent); border-radius: 12px; }
@@ -274,11 +276,15 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .result-actions .button { flex: 1; }
   .subscription-hero { align-items: stretch; flex-direction: column; gap: 10px; }
   .subscription-query { padding: 16px; }
+  .subscription-shell[data-has-result="true"] .subscription-query { grid-template-columns: 1fr; }
+  .subscription-shell[data-has-result="true"] .subscription-query textarea, .subscription-shell[data-has-result="true"] .subscription-query .input-actions { grid-column: 1; }
+  .subscription-shell[data-has-result="true"] .subscription-query textarea { min-height: 72px; max-height: 96px; }
+  .subscription-shell[data-has-result="true"] .subscription-query .input-actions { justify-content: flex-start; }
+  .subscription-shell[data-has-result="true"] .subscription-query .keyboard-hint { text-align: left; }
   .subscription-card { padding: 16px; }
   .subscription-card__top { flex-direction: column; gap: 12px; }
   .subscription-grid, .subscription-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .subscription-metric:nth-child(odd) { border-left: 0; }
-  .subscription-metric:nth-child(n + 3) { border-top: 1px solid color-mix(in srgb, var(--line) 74%, transparent); }
+  .subscription-facts div:nth-child(odd) { padding-left: 0; border-left: 0; }
   .subscription-detail-panel { grid-template-columns: 1fr; gap: 14px; }
   .subscription-offers { padding-top: 0; }
   .subscription-list-block { grid-template-columns: 1fr; gap: 8px; }
@@ -307,9 +313,6 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 
 @media (max-width: 520px) {
   .subscription-grid { grid-template-columns: 1fr; }
-  .subscription-metric { border-left: 0; border-top: 1px solid color-mix(in srgb, var(--line) 74%, transparent); }
-  .subscription-metric:first-child { border-top: 0; }
-  .subscription-metric:nth-child(n + 3) { border-top: 1px solid color-mix(in srgb, var(--line) 74%, transparent); }
 }
 
 @media (prefers-reduced-motion: reduce) {
