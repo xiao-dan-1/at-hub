@@ -125,11 +125,32 @@ export function startLocalServer({
   });
 }
 
+export function parseCliOptions(argv = process.argv, env = process.env) {
+  const options = {
+    host: env.AT_INSPECTOR_HOST ?? "127.0.0.1",
+    port: Number(env.AT_INSPECTOR_PORT ?? 5173),
+  };
+
+  for (let index = 2; index < argv.length; index += 1) {
+    const argument = argv[index];
+    const next = argv[index + 1];
+    if (argument === "--host" && next) {
+      options.host = next;
+      index += 1;
+    } else if (argument === "--port" && next) {
+      options.port = Number(next);
+      index += 1;
+    }
+  }
+
+  return options;
+}
+
 const isDirectRun = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isDirectRun) {
-  const port = Number(process.env.AT_INSPECTOR_PORT ?? 5173);
-  const server = await startLocalServer({ port });
+  const { host, port } = parseCliOptions();
+  const server = await startLocalServer({ host, port });
   const address = server.address();
   const displayPort = typeof address === "object" && address ? address.port : port;
-  console.log(`AT Inspector local service: http://127.0.0.1:${displayPort}/subscription`);
+  console.log(`AT Inspector local service: http://${host}:${displayPort}/subscription`);
 }
