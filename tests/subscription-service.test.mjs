@@ -62,6 +62,46 @@ test("createSubscriptionHandler maps upstream failures without returning the AT"
   assert.doesNotMatch(JSON.stringify(result), new RegExp(token, "u"));
 });
 
+test("createSubscriptionHandler treats missing subscription detail as a free account result", async () => {
+  const token = makeJwt(
+    { alg: "RS256" },
+    {
+      exp: Math.floor(Date.UTC(2033, 4, 27) / 1000),
+      "https://api.openai.com/profile": { email: "free@example.test" },
+    },
+  );
+  const handler = createSubscriptionHandler({
+    nowMilliseconds: Date.UTC(2033, 4, 17),
+    fetchFn: async url => {
+      if (String(url).includes("/accounts/check/")) {
+        return new Response(JSON.stringify({
+          accounts: {
+            default: {
+              account: { account_id: "acc_free", plan_type: "free" },
+              entitlement: { has_active_subscription: false, subscription_plan: "chatgptfreeplan" },
+              last_active_subscription: { will_renew: false, purchase_origin_platform: "chatgpt_not_purchased" },
+            },
+          },
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      return new Response(JSON.stringify({ detail: "Not Found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  const result = await handler({ token });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.email, "free@example.test");
+  assert.equal(result.account_id, "acc_free");
+  assert.equal(result.plan_type, "free");
+  assert.equal(result.subscription_plan, "chatgptfreeplan");
+  assert.equal(result.has_active_subscription, false);
+  assert.equal(result.subscription_lookup_status, 404);
+});
+
 test("createSubscriptionHandler identifies Cloudflare challenge responses separately", async () => {
   const token = makeJwt({ alg: "RS256" }, { exp: Math.floor(Date.UTC(2033, 4, 27) / 1000) });
   const handler = createSubscriptionHandler({

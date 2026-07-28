@@ -103,16 +103,28 @@ export function createSubscriptionHandler({
         fetchFn,
       );
       const accountId = readAccountId(accountsResponse);
-      const subscriptionResponse = accountId
-        ? await queryJson(buildUrl(origin, SUBSCRIPTIONS_PATH, { account_id: accountId }), normalized, fetchFn)
-        : {};
+      let subscriptionResponse = {};
+      let subscriptionLookupStatus = accountId ? null : "skipped";
+      if (accountId) {
+        try {
+          subscriptionResponse = await queryJson(buildUrl(origin, SUBSCRIPTIONS_PATH, { account_id: accountId }), normalized, fetchFn);
+          subscriptionLookupStatus = 200;
+        } catch (error) {
+          if (error?.status !== 404) throw error;
+          subscriptionLookupStatus = 404;
+        }
+      }
 
-      return normalizeSubscriptionStatus({
+      const model = normalizeSubscriptionStatus({
         token: normalized,
         accountsResponse,
         subscriptionResponse,
         nowMilliseconds,
       });
+      return {
+        ...model,
+        subscription_lookup_status: subscriptionLookupStatus,
+      };
     } catch (error) {
       return {
         ok: false,
