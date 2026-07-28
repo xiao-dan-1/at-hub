@@ -136,10 +136,11 @@ test("overview exposes only remaining time from the validity model", () => {
   assert.equal(formatExpiry({ claims: { exp: { valid: false } } }), "未声明");
   assert.match(app, /buildMinimalOverviewModel\(analysis\)/u);
   assert.match(app, /at-summary-card/u);
-  assert.match(app, /at-summary-card__identity/u);
+  assert.match(app, /at-summary-token/u);
+  assert.match(app, /at-summary-main/u);
   assert.match(app, /at-summary-email/u);
-  assert.match(app, /at-summary-metadata/u);
-  assert.match(app, /at-summary-stat/u);
+  assert.match(app, /at-summary-meta/u);
+  assert.match(app, /at-summary-meta-item/u);
   assert.doesNotMatch(app, /definitionRow\("签发方"/u);
   assert.doesNotMatch(app, /definitionRow\("目标受众"/u);
   assert.doesNotMatch(app, /definitionRow\("密钥标识"/u);
@@ -152,6 +153,12 @@ test("overview card removes decorative labels and badge copy", () => {
   assert.doesNotMatch(app, /本地解码/u);
   assert.doesNotMatch(app, /at-summary-card__eyebrow/u);
   assert.doesNotMatch(app, /at-summary-card__badge/u);
+  assert.doesNotMatch(app, /at-summary-card__notice/u);
+  assert.doesNotMatch(app, /at-summary-card__identity/u);
+  assert.doesNotMatch(app, /at-summary-stat/u);
+  assert.doesNotMatch(app, /http=200/u);
+  assert.doesNotMatch(app, /coupon/u);
+  assert.doesNotMatch(app, /详情/u);
 });
 
 test("overview shows account email directly while deeper sensitive fields keep reveal controls", () => {

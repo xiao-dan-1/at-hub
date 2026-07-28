@@ -61,9 +61,9 @@ test("V2 source is a compact tool rather than a marketing hero", () => {
 test("mobile result layouts keep the one-card overview and stack inspector detail", () => {
   assert.match(
     css,
-    /@media \(max-width: 700px\)[\s\S]*\.at-summary-card\s*\{[^}]*padding:\s*22px;[^}]*\}/u,
+    /@media \(max-width: 700px\)[\s\S]*\.at-summary-card\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*padding:\s*14px;[^}]*\}/u,
   );
-  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.at-summary-metadata\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*\}/u);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.at-summary-meta\s*\{[^}]*display:\s*grid;[^}]*\}/u);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.inspector-layout\s*\{[^}]*display:\s*block;[^}]*\}/u);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.inspector-fields\s*\{[^}]*border-bottom:\s*1px solid var\(--line\);[^}]*\}/u);
 });
@@ -80,19 +80,22 @@ test("informational warnings have a distinct blue treatment", () => {
 
 test("result styling supports stable sensitive values and open permission groups", () => {
   assert.match(css, /\.at-summary-card\s*\{/u);
-  assert.match(css, /\.at-summary-card__identity\s*\{/u);
+  assert.match(css, /\.at-summary-token\s*\{/u);
+  assert.match(css, /\.at-summary-main\s*\{/u);
   assert.match(css, /\.at-summary-email\s*\{/u);
-  assert.match(css, /\.at-summary-metadata\s*\{/u);
-  assert.match(css, /\.at-summary-stat\s*\{/u);
+  assert.match(css, /\.at-summary-meta\s*\{/u);
+  assert.match(css, /\.at-summary-meta-item\s*\{/u);
   assert.match(css, /\.permission-group\s*\{/u);
   assert.match(css, /\.permission-group__heading\s*\{/u);
   assert.match(css, /\.permission-row__heading\s*\{/u);
   assert.match(css, /\.inspector-layout\s*\{[^}]*height:\s*clamp\(/u);
 });
 
-test("summary card avoids table-like decoration", () => {
-  assert.match(css, /\.at-summary-card\s*\{[^}]*width:\s*min\(100%,\s*560px\);[^}]*background:\s*var\(--surface\);[^}]*border-radius:\s*16px;/u);
+test("summary card adopts a dark horizontal record strip", () => {
+  assert.match(css, /\.at-summary-card\s*\{[^}]*width:\s*min\(100%,\s*980px\);[^}]*min-height:\s*70px;[^}]*display:\s*grid;[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\);[^}]*background:\s*#111823;[^}]*border-radius:\s*10px;/u);
+  assert.match(css, /\.at-summary-token\s*\{[^}]*min-width:\s*92px;[^}]*border-radius:\s*999px;[^}]*color:\s*#2ff0aa;/u);
   assert.doesNotMatch(css, /\.at-summary-field\s*\{[^}]*border-top:/u);
+  assert.doesNotMatch(css, /at-summary-stat/u);
   assert.doesNotMatch(css, /at-summary-card__badge/u);
   assert.doesNotMatch(css, /linear-gradient\(180deg,[^;]*at-summary-card/u);
 });

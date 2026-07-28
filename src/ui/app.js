@@ -146,11 +146,8 @@ function icon(iconNode, label = "") {
   return node;
 }
 
-function summaryStat(item) {
-  return el("div", { className: "at-summary-stat", dataset: { state: item.state ?? "neutral" } }, [
-    el("dt", { text: item.label }),
-    el("dd", { text: item.value }),
-  ]);
+function summaryMetaItem(text, state = "neutral") {
+  return el("span", { className: "at-summary-meta-item", dataset: { state }, text });
 }
 
 function definitionRow(label, value, { mono = false, sensitive = false } = {}) {
@@ -164,15 +161,14 @@ function renderOverview(analysis, nodes) {
   const model = buildMinimalOverviewModel(analysis);
   replace(nodes.overviewCards, [
     el("article", { className: "at-summary-card", attrs: { "aria-label": "AT 摘要" } }, [
-      el("div", { className: "at-summary-card__identity" }, [
-        el("span", { className: "at-summary-label", text: model.email.label }),
+      el("span", { className: "at-summary-token", text: "AT" }),
+      el("div", { className: "at-summary-main" }, [
         el("strong", { className: "at-summary-email", text: model.email.value }),
+        el("div", { className: "at-summary-meta" }, [
+          summaryMetaItem(`${model.plan.label}=${model.plan.value}`),
+          summaryMetaItem(`剩余${model.validity.value}`, model.validity.state),
+        ]),
       ]),
-      el("dl", { className: "at-summary-metadata" }, [
-        summaryStat(model.plan),
-        summaryStat(model.validity),
-      ]),
-      el("p", { className: "at-summary-card__notice", text: model.quietNotice }),
     ]),
   ]);
 
