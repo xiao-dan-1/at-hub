@@ -124,7 +124,7 @@ export function buildMinimalOverviewModel(analysis, nowMilliseconds = Date.now()
       value: email ? formatValue(email.value) : "未提供",
     },
     plan: {
-      label: "chatgpt_plan_type",
+      label: "plan",
       value: plan?.value ?? "未提供",
     },
     validity: {
@@ -161,14 +161,13 @@ function renderOverview(analysis, nodes) {
   const model = buildMinimalOverviewModel(analysis);
   replace(nodes.overviewCards, [
     el("article", { className: "at-summary-card", attrs: { "aria-label": "AT 摘要" } }, [
-      el("span", { className: "at-summary-token", text: "AT" }),
       el("div", { className: "at-summary-main" }, [
         el("strong", { className: "at-summary-email", text: model.email.value }),
         el("div", { className: "at-summary-meta" }, [
           summaryMetaItem(`${model.plan.label}=${model.plan.value}`),
-          summaryMetaItem(`剩余${model.validity.value}`, model.validity.state),
         ]),
       ]),
+      el("span", { className: "at-summary-expiry", dataset: { state: model.validity.state }, text: `剩余${model.validity.value}` }),
     ]),
   ]);
 

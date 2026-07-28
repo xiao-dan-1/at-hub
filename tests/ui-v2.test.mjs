@@ -84,7 +84,7 @@ test("AT summary model keeps one-card facts without masking email or surfacing r
 
   assert.equal(model?.email?.label, "账号邮箱");
   assert.equal(model?.email?.value, "person@example.test");
-  assert.equal(model?.plan.label, "chatgpt_plan_type");
+  assert.equal(model?.plan.label, "plan");
   assert.equal(model?.plan.value, "plus");
   assert.equal(model?.validity.label, "剩余时间");
   assert.equal(model?.validity.value, "约 1 天");
@@ -136,11 +136,12 @@ test("overview exposes only remaining time from the validity model", () => {
   assert.equal(formatExpiry({ claims: { exp: { valid: false } } }), "未声明");
   assert.match(app, /buildMinimalOverviewModel\(analysis\)/u);
   assert.match(app, /at-summary-card/u);
-  assert.match(app, /at-summary-token/u);
   assert.match(app, /at-summary-main/u);
   assert.match(app, /at-summary-email/u);
   assert.match(app, /at-summary-meta/u);
   assert.match(app, /at-summary-meta-item/u);
+  assert.match(app, /at-summary-expiry/u);
+  assert.doesNotMatch(app, /at-summary-token/u);
   assert.doesNotMatch(app, /definitionRow\("签发方"/u);
   assert.doesNotMatch(app, /definitionRow\("目标受众"/u);
   assert.doesNotMatch(app, /definitionRow\("密钥标识"/u);
@@ -151,6 +152,7 @@ test("overview card removes decorative labels and badge copy", () => {
   assert.doesNotMatch(app, /AT 信息/u);
   assert.doesNotMatch(app, /单个 AT 摘要/u);
   assert.doesNotMatch(app, /本地解码/u);
+  assert.doesNotMatch(app, /at-summary-token/u);
   assert.doesNotMatch(app, /at-summary-card__eyebrow/u);
   assert.doesNotMatch(app, /at-summary-card__badge/u);
   assert.doesNotMatch(app, /at-summary-card__notice/u);
@@ -159,6 +161,7 @@ test("overview card removes decorative labels and badge copy", () => {
   assert.doesNotMatch(app, /http=200/u);
   assert.doesNotMatch(app, /coupon/u);
   assert.doesNotMatch(app, /详情/u);
+  assert.doesNotMatch(app, /chatgpt_plan_type=/u);
 });
 
 test("overview shows account email directly while deeper sensitive fields keep reveal controls", () => {
@@ -166,7 +169,7 @@ test("overview shows account email directly while deeper sensitive fields keep r
   assert.doesNotMatch(app, /sensitiveDefinitionRow\("账号成员"/u);
   assert.doesNotMatch(app, /sensitiveDefinitionRow\("客户端"/u);
   assert.match(app, /renderRevealButton\(/u);
-  assert.match(app, /chatgpt_plan_type/u);
+  assert.match(app, /label:\s*"plan"/u);
   assert.match(app, /classList\.remove\("masked"\)/u);
   assert.match(app, /classList\.add\("masked"\)/u);
 });

@@ -61,7 +61,7 @@ test("V2 source is a compact tool rather than a marketing hero", () => {
 test("mobile result layouts keep the one-card overview and stack inspector detail", () => {
   assert.match(
     css,
-    /@media \(max-width: 700px\)[\s\S]*\.at-summary-card\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*padding:\s*14px;[^}]*\}/u,
+    /@media \(max-width: 700px\)[\s\S]*\.at-summary-card\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*padding:\s*12px 14px;[^}]*\}/u,
   );
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.at-summary-meta\s*\{[^}]*display:\s*grid;[^}]*\}/u);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.inspector-layout\s*\{[^}]*display:\s*block;[^}]*\}/u);
@@ -80,11 +80,12 @@ test("informational warnings have a distinct blue treatment", () => {
 
 test("result styling supports stable sensitive values and open permission groups", () => {
   assert.match(css, /\.at-summary-card\s*\{/u);
-  assert.match(css, /\.at-summary-token\s*\{/u);
   assert.match(css, /\.at-summary-main\s*\{/u);
   assert.match(css, /\.at-summary-email\s*\{/u);
   assert.match(css, /\.at-summary-meta\s*\{/u);
   assert.match(css, /\.at-summary-meta-item\s*\{/u);
+  assert.match(css, /\.at-summary-expiry\s*\{/u);
+  assert.doesNotMatch(css, /\.at-summary-token\s*\{/u);
   assert.match(css, /\.permission-group\s*\{/u);
   assert.match(css, /\.permission-group__heading\s*\{/u);
   assert.match(css, /\.permission-row__heading\s*\{/u);
@@ -92,8 +93,9 @@ test("result styling supports stable sensitive values and open permission groups
 });
 
 test("summary card adopts a dark horizontal record strip", () => {
-  assert.match(css, /\.at-summary-card\s*\{[^}]*width:\s*min\(100%,\s*980px\);[^}]*min-height:\s*70px;[^}]*display:\s*grid;[^}]*grid-template-columns:\s*auto minmax\(0,\s*1fr\);[^}]*background:\s*#111823;[^}]*border-radius:\s*10px;/u);
-  assert.match(css, /\.at-summary-token\s*\{[^}]*min-width:\s*92px;[^}]*border-radius:\s*999px;[^}]*color:\s*#2ff0aa;/u);
+  assert.match(css, /\.at-summary-card\s*\{[^}]*width:\s*min\(100%,\s*920px\);[^}]*min-height:\s*58px;[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto;[^}]*background:\s*#101722;[^}]*border-radius:\s*9px;/u);
+  assert.match(css, /\.at-summary-expiry\s*\{[^}]*justify-self:\s*end;[^}]*white-space:\s*nowrap;/u);
+  assert.doesNotMatch(css, /\.at-summary-token\s*\{/u);
   assert.doesNotMatch(css, /\.at-summary-field\s*\{[^}]*border-top:/u);
   assert.doesNotMatch(css, /at-summary-stat/u);
   assert.doesNotMatch(css, /at-summary-card__badge/u);
