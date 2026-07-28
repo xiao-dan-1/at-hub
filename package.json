@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "start": "npm run build && node server/local-server.mjs",
+    "build": "node scripts/build-pages.mjs",
     "release": "npm run build && node scripts/publish-singlefile.mjs",
     "test": "npm run build && node --test tests/*.test.mjs"
   },
