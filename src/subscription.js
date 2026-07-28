@@ -100,16 +100,16 @@ export function renderSubscriptionResult(data) {
   const rawJson = escapeHtml(JSON.stringify(data.raw ?? {}, null, 2));
   resultArea.innerHTML = `
     <article class="subscription-card">
-      <div class="subscription-card__top">
+      <header class="subscription-card__top">
         <div class="subscription-card__identity">
           <p class="eyebrow">单个 AT</p>
           <h2>${escapeHtml(plan)}</h2>
-          <p>${escapeHtml(valueOrDash(data.email))}${data.account_id ? ` · ${escapeHtml(data.account_id)}` : ""}</p>
+          <p class="subscription-card__account">${escapeHtml(valueOrDash(data.email))}${data.account_id ? ` · ${escapeHtml(data.account_id)}` : ""}</p>
         </div>
         <span class="subscription-status-pill" data-active="${active ? "true" : "false"}">${active ? "有效订阅" : "无活跃订阅"}</span>
-      </div>
+      </header>
 
-      <div class="subscription-grid">
+      <section class="subscription-grid" aria-label="订阅概览">
         <div class="subscription-metric">
           <span>剩余时间</span>
           <strong>${escapeHtml(formatRemaining(data))}</strong>
@@ -126,27 +126,31 @@ export function renderSubscriptionResult(data) {
           <span>渠道</span>
           <strong>${escapeHtml(valueOrDash(data.purchase_origin_platform))}</strong>
         </div>
-      </div>
+      </section>
 
-      <dl class="subscription-facts">
-        <div><dt>订阅开始</dt><dd>${escapeHtml(formatDate(data.active_start))}</dd></div>
-        <div><dt>订阅结束</dt><dd>${escapeHtml(formatDate(data.expires_at))}</dd></div>
-        <div><dt>曾付费</dt><dd>${escapeHtml(formatBoolean(data.has_previously_paid_subscription))}</dd></div>
-        <div><dt>AT 有效期</dt><dd>${escapeHtml(formatRemaining({ days_left: data.token_days_left, hours_left: data.token_hours_left }))}</dd></div>
-      </dl>
+      <section class="subscription-detail-panel" aria-label="订阅详情">
+        <dl class="subscription-facts">
+          <div><dt>订阅开始</dt><dd>${escapeHtml(formatDate(data.active_start))}</dd></div>
+          <div><dt>订阅结束</dt><dd>${escapeHtml(formatDate(data.expires_at))}</dd></div>
+          <div><dt>曾付费</dt><dd>${escapeHtml(formatBoolean(data.has_previously_paid_subscription))}</dd></div>
+          <div><dt>AT 有效期</dt><dd>${escapeHtml(formatRemaining({ days_left: data.token_days_left, hours_left: data.token_hours_left }))}</dd></div>
+        </dl>
 
-      <div class="subscription-list-block">
-        <span>已应用优惠</span>
-        <div>${renderTagList(data.applied_discounts, "暂无")}</div>
-      </div>
-      <div class="subscription-list-block">
-        <span>可用优惠</span>
-        <div>${renderTagList(data.eligible_promos, "暂无")}</div>
-      </div>
-      <div class="subscription-list-block">
-        <span>可购买套餐</span>
-        <div>${renderTagList(data.eligible_offers, "未返回")}</div>
-      </div>
+        <div class="subscription-offers">
+          <div class="subscription-list-block">
+            <span>已应用优惠</span>
+            <div>${renderTagList(data.applied_discounts, "暂无")}</div>
+          </div>
+          <div class="subscription-list-block">
+            <span>可用优惠</span>
+            <div>${renderTagList(data.eligible_promos, "暂无")}</div>
+          </div>
+          <div class="subscription-list-block">
+            <span>可购买套餐</span>
+            <div>${renderTagList(data.eligible_offers, "未返回")}</div>
+          </div>
+        </div>
+      </section>
 
       <details class="json-disclosure subscription-json">
         <summary>查看原始 JSON</summary>

@@ -35,3 +35,12 @@ test("subscription page has compact result cards matching current visual system"
   assert.match(css, /\.subscription-status-pill/u);
   assert.match(css, /\.network-boundary/u);
 });
+
+test("subscription result card separates header, metrics, details, and offers", () => {
+  assert.match(js, /subscription-card__account/u);
+  assert.match(js, /subscription-detail-panel/u);
+  assert.match(js, /subscription-offers/u);
+  assert.match(css, /\.subscription-card__account/u);
+  assert.match(css, /\.subscription-detail-panel\s*\{/u);
+  assert.match(css, /\.subscription-offers\s*\{/u);
+});
