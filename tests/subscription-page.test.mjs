@@ -52,13 +52,14 @@ test("subscription detail area reads as one quiet panel instead of split widgets
   assert.match(css, /\.subscription-query\s*\{[^}]*box-shadow:\s*0 6px 18px/u);
 });
 
-test("subscription result avoids redundant labels while keeping secondary detail grouped", () => {
+test("subscription result avoids redundant labels while keeping secondary detail as an open ledger", () => {
   assert.doesNotMatch(js, /<p class="eyebrow">单个 AT<\/p>/u);
-  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*background:\s*color-mix/u);
-  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*border:\s*1px solid/u);
-  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*border-radius:\s*12px/u);
-  assert.match(css, /\.subscription-facts\s*\{[^}]*border-top:\s*0/u);
+  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*background:\s*transparent/u);
+  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*border:\s*0/u);
+  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*padding:\s*0 2px/u);
+  assert.match(css, /\.subscription-facts\s*\{[^}]*border-top:\s*1px solid/u);
   assert.match(css, /\.subscription-facts\s*\{[^}]*border-bottom:\s*1px solid/u);
+  assert.match(css, /\.subscription-facts div\s*\{[^}]*border-left:\s*0/u);
 });
 
 test("subscription input quiets down after a successful result while staying editable", () => {
