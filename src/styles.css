@@ -202,12 +202,12 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-label { display: block; color: var(--text); font-size: 0.84rem; font-weight: 760; }
 .subscription-query textarea { min-height: 118px; margin-top: 10px; }
 .subscription-shell[data-has-result="true"] { gap: 14px; }
-.subscription-shell[data-has-result="true"] .subscription-query { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px 12px; padding: 12px; background: color-mix(in srgb, var(--surface) 84%, transparent); border-color: color-mix(in srgb, var(--line) 72%, transparent); box-shadow: none; }
-.subscription-shell[data-has-result="true"] .subscription-label { grid-column: 1 / -1; color: var(--muted); font-size: 0.76rem; }
+.subscription-shell[data-has-result="true"] .subscription-query { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0 12px; padding: 12px; background: color-mix(in srgb, var(--surface) 84%, transparent); border-color: color-mix(in srgb, var(--line) 72%, transparent); box-shadow: none; }
+.subscription-shell[data-has-result="true"] .subscription-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .subscription-shell[data-has-result="true"] .subscription-query textarea { grid-column: 1; min-height: 48px; max-height: 48px; margin-top: 0; padding: 11px 12px; resize: none; font-size: 0.8rem; }
 .subscription-shell[data-has-result="true"] .subscription-query:focus-within textarea { min-height: 118px; max-height: 220px; resize: vertical; }
 .subscription-shell[data-has-result="true"] .subscription-query .input-actions { grid-column: 2; align-self: end; margin-top: 0; }
-.subscription-shell[data-has-result="true"] .subscription-query .keyboard-hint { width: 100%; margin-left: 0; font-size: 0.74rem; text-align: right; }
+.subscription-shell[data-has-result="true"] .subscription-query .keyboard-hint { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .subscription-shell[data-has-result="true"] .network-boundary { display: none; margin-top: 8px; padding: 8px 10px; font-size: 0.76rem; }
 .network-boundary { margin: 10px 0 0; padding: 10px 12px; color: var(--muted); background: color-mix(in srgb, var(--primary-soft) 56%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--line)); border-radius: 7px; font-size: 0.8rem; line-height: 1.55; }
 .subscription-result { display: block; }

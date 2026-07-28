@@ -77,6 +77,13 @@ test("subscription finished state keeps utility chrome lighter than the result",
   assert.match(css, /\.subscription-json\s*\{[^}]*padding:\s*12px 14px/u);
 });
 
+test("subscription finished dock hides redundant visual-only helper chrome", () => {
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*position:\s*absolute/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*clip:\s*rect\(0,\s*0,\s*0,\s*0\)/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*gap:\s*0 12px/u);
+});
+
 test("subscription mobile layout gives long metric values room", () => {
   assert.match(css, /@media \(max-width: 520px\) \{[^}]*\.subscription-grid\s*\{\s*grid-template-columns:\s*1fr/u);
   assert.match(css, /\.subscription-metric\s*\{[^}]*border-radius:\s*10px/u);
