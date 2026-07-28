@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createProxyFetch, redactProxyUrl } from "./proxy-fetch.mjs";
 import { createSubscriptionHandler } from "./subscription-service.mjs";
 
 const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -129,6 +130,7 @@ export function parseCliOptions(argv = process.argv, env = process.env) {
   const options = {
     host: env.AT_INSPECTOR_HOST ?? "127.0.0.1",
     port: Number(env.AT_INSPECTOR_PORT ?? 5173),
+    proxy: env.AT_INSPECTOR_PROXY ?? env.HTTPS_PROXY ?? env.HTTP_PROXY ?? "",
   };
 
   for (let index = 2; index < argv.length; index += 1) {
@@ -140,6 +142,9 @@ export function parseCliOptions(argv = process.argv, env = process.env) {
     } else if (argument === "--port" && next) {
       options.port = Number(next);
       index += 1;
+    } else if (argument === "--proxy" && next) {
+      options.proxy = next;
+      index += 1;
     }
   }
 
@@ -148,9 +153,14 @@ export function parseCliOptions(argv = process.argv, env = process.env) {
 
 const isDirectRun = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isDirectRun) {
-  const { host, port } = parseCliOptions();
-  const server = await startLocalServer({ host, port });
+  const { host, port, proxy } = parseCliOptions();
+  const server = await startLocalServer({
+    host,
+    port,
+    fetchFn: proxy ? createProxyFetch(proxy) : undefined,
+  });
   const address = server.address();
   const displayPort = typeof address === "object" && address ? address.port : port;
-  console.log(`AT Inspector local service: http://${host}:${displayPort}/subscription`);
+  const proxyNote = proxy ? ` via proxy ${redactProxyUrl(proxy)}` : "";
+  console.log(`AT Inspector local service: http://${host}:${displayPort}/subscription${proxyNote}`);
 }

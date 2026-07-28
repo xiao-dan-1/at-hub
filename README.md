@@ -28,6 +28,20 @@ AT 只发送到本机 `/api/subscription`，再由本机服务请求 ChatGPT 订
 
 如需临时用本机局域网 IPv4 访问，可运行 `npm start -- --host 0.0.0.0`，再打开形如 `http://10.100.9.181:5173/subscription` 的地址；验证后建议切回默认 `127.0.0.1`。
 
+如果你的网络访问 ChatGPT 必须走本机 HTTP 代理，可以显式指定代理端口，例如：
+
+```powershell
+npm start -- --proxy http://127.0.0.1:7890
+```
+
+也可以组合局域网监听与代理：
+
+```powershell
+npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
+```
+
+`--proxy` 只影响本地服务访问 ChatGPT 的上游请求；浏览器访问 `127.0.0.1` 或本机 IPv4 的这段仍是本机连接。
+
 ## 安全边界
 
 - 根目录 `index.html` 离线解析页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。
