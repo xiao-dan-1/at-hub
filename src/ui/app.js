@@ -132,7 +132,7 @@ export function buildMinimalOverviewModel(analysis, nowMilliseconds = Date.now()
       value: formatRemaining(analysis.status, nowMilliseconds),
       state: analysis.status.code,
     },
-    quietNotice: "只完成本地解码，未验证签名、撤销状态或服务器可用性。",
+    quietNotice: "只在当前页面读取 JWT 声明，未验证签名、撤销状态或服务器可用性。",
   };
 }
 
@@ -146,8 +146,8 @@ function icon(iconNode, label = "") {
   return node;
 }
 
-function summaryField(item) {
-  return el("div", { className: "at-summary-field", dataset: { state: item.state ?? "neutral" } }, [
+function summaryStat(item) {
+  return el("div", { className: "at-summary-stat", dataset: { state: item.state ?? "neutral" } }, [
     el("dt", { text: item.label }),
     el("dd", { text: item.value }),
   ]);
@@ -163,18 +163,14 @@ function definitionRow(label, value, { mono = false, sensitive = false } = {}) {
 function renderOverview(analysis, nodes) {
   const model = buildMinimalOverviewModel(analysis);
   replace(nodes.overviewCards, [
-    el("article", { className: "at-summary-card" }, [
-      el("header", { className: "at-summary-card__header" }, [
-        el("div", {}, [
-          el("span", { className: "at-summary-card__eyebrow", text: "AT 信息" }),
-          el("h2", { text: "单个 AT 摘要" }),
-        ]),
-        el("span", { className: "at-summary-card__badge", text: "本地解码" }),
+    el("article", { className: "at-summary-card", attrs: { "aria-label": "AT 摘要" } }, [
+      el("div", { className: "at-summary-card__identity" }, [
+        el("span", { className: "at-summary-label", text: model.email.label }),
+        el("strong", { className: "at-summary-email", text: model.email.value }),
       ]),
-      el("dl", { className: "at-summary-fields" }, [
-        summaryField(model.email),
-        summaryField(model.plan),
-        summaryField(model.validity),
+      el("dl", { className: "at-summary-metadata" }, [
+        summaryStat(model.plan),
+        summaryStat(model.validity),
       ]),
       el("p", { className: "at-summary-card__notice", text: model.quietNotice }),
     ]),

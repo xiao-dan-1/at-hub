@@ -89,7 +89,7 @@ test("AT summary model keeps one-card facts without masking email or surfacing r
   assert.equal(model?.validity.label, "剩余时间");
   assert.equal(model?.validity.value, "约 1 天");
   assert.equal(model?.permissionSummary, undefined);
-  assert.equal(model?.quietNotice, "只完成本地解码，未验证签名、撤销状态或服务器可用性。");
+  assert.equal(model?.quietNotice, "只在当前页面读取 JWT 声明，未验证签名、撤销状态或服务器可用性。");
 });
 
 test("overview does not surface permission or risk warnings", () => {
@@ -136,10 +136,22 @@ test("overview exposes only remaining time from the validity model", () => {
   assert.equal(formatExpiry({ claims: { exp: { valid: false } } }), "未声明");
   assert.match(app, /buildMinimalOverviewModel\(analysis\)/u);
   assert.match(app, /at-summary-card/u);
+  assert.match(app, /at-summary-card__identity/u);
+  assert.match(app, /at-summary-email/u);
+  assert.match(app, /at-summary-metadata/u);
+  assert.match(app, /at-summary-stat/u);
   assert.doesNotMatch(app, /definitionRow\("签发方"/u);
   assert.doesNotMatch(app, /definitionRow\("目标受众"/u);
   assert.doesNotMatch(app, /definitionRow\("密钥标识"/u);
   assert.doesNotMatch(app, /model\.permissionSummary/u);
+});
+
+test("overview card removes decorative labels and badge copy", () => {
+  assert.doesNotMatch(app, /AT 信息/u);
+  assert.doesNotMatch(app, /单个 AT 摘要/u);
+  assert.doesNotMatch(app, /本地解码/u);
+  assert.doesNotMatch(app, /at-summary-card__eyebrow/u);
+  assert.doesNotMatch(app, /at-summary-card__badge/u);
 });
 
 test("overview shows account email directly while deeper sensitive fields keep reveal controls", () => {
