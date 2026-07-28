@@ -123,6 +123,7 @@ export function createSubscriptionHandler({
       });
       return {
         ...model,
+        status: 200,
         subscription_lookup_status: subscriptionLookupStatus,
       };
     } catch (error) {

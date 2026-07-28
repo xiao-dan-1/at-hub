@@ -37,6 +37,7 @@ test("createSubscriptionHandler calls accounts/check then subscriptions without 
   const result = await handler({ token });
 
   assert.equal(result.ok, true);
+  assert.equal(result.status, 200);
   assert.equal(result.account_id, "acc_123");
   assert.equal(result.subscription_plan, "chatgptfreeplan");
   assert.equal(calls.length, 2);

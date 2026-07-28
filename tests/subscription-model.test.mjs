@@ -83,6 +83,7 @@ test("normalizeSubscriptionStatus keeps token expiry separate from free account 
         default: {
           account: {
             account_id: "acc_free",
+            account_owner_id: "user_free",
             plan_type: "free",
             has_previously_paid_subscription: false,
           },
@@ -96,6 +97,7 @@ test("normalizeSubscriptionStatus keeps token expiry separate from free account 
             will_renew: false,
             purchase_origin_platform: "chatgpt_not_purchased",
           },
+          is_eligible_for_yearly_plus_subscription: true,
           eligible_promo_campaigns: {
             plus: {
               id: "plus-1-month-free",
@@ -122,8 +124,18 @@ test("normalizeSubscriptionStatus keeps token expiry separate from free account 
 
   assert.equal(model.ok, true);
   assert.equal(model.has_active_subscription, false);
+  assert.equal(model.user_id, "user_free");
+  assert.equal(model.subscription_id, null);
   assert.equal(model.expires_at, null);
+  assert.equal(model.expires_at_ms, null);
   assert.equal(model.days_left, null);
+  assert.equal(model.cancels_at, null);
+  assert.equal(model.cancels_at_ms, null);
+  assert.equal(model.cancellation_outcome, null);
+  assert.equal(model.is_processor_stripe, null);
+  assert.equal(model.is_eligible_for_yearly_plus_subscription, true);
+  assert.equal(model.seats_entitled, null);
+  assert.equal(model.seats_in_use, null);
   assert.equal(model.token_expires_at, "2033-05-27T00:00:00.000Z");
   assert.equal(model.token_days_left, 10);
   assert.deepEqual(model.eligible_offers, ["chatgptgoplan", "chatgptplusplan"]);
