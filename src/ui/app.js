@@ -22,11 +22,14 @@ const PERMISSION_FILTERS = [
   ["identity", "身份"],
 ];
 const OVERVIEW_WARNING_ORDER = [
-  "SIGNATURE_UNVERIFIED",
   "HIGH_RISK_PERMISSIONS",
   "TOKEN_EXPIRED",
   "TOKEN_NOT_YET_VALID",
+  "ALG_NONE",
+  "INVALID_TIME_CLAIM",
+  "MISSING_TIME",
 ];
+const QUIET_WARNING_CODES = new Set(["SIGNATURE_UNVERIFIED", "UNKNOWN_ALG"]);
 const AUTHENTICATION_METHOD_LABELS = {
   otp: "OTP",
   "urn:openai:amr:otp_email": "邮箱验证码",
@@ -62,6 +65,11 @@ export function formatRemaining(status, nowMilliseconds = Date.now()) {
   return `约 ${minutes} 分钟`;
 }
 
+export function formatValiditySummary(status, nowMilliseconds = Date.now()) {
+  if (!status.claims.exp.valid) return `${status.label} · ${formatRemaining(status, nowMilliseconds)}`;
+  return `${status.label} · ${formatExpiry(status)} · 剩余${formatRemaining(status, nowMilliseconds)}`;
+}
+
 export function formatAuthenticationMethods(values) {
   const items = Array.isArray(values) ? values : values == null ? [] : [values];
   const labels = items
@@ -91,6 +99,17 @@ export function groupPermissionsForDisplay(items) {
     .filter(group => group.items.length > 0);
 }
 
+export function summarizeKeyPermissions(permissions) {
+  const items = [];
+  if (permissions.some(permission => permission.scope === "model.request")) items.push("模型调用");
+  if (permissions.some(permission => permission.scope === "offline_access")) items.push("离线访问");
+  const highRiskCount = permissions.filter(permission => permission.risk === "high").length;
+  const organizationWriteCount = permissions.filter(permission => permission.scope === "organization.write").length;
+  if (organizationWriteCount > 0) items.push(`组织写入 ${organizationWriteCount} 个高风险`);
+  else if (highRiskCount > 0) items.push(`${highRiskCount} 个高风险权限`);
+  return items.length > 0 ? items : ["未声明关键权限"];
+}
+
 export function formatExpiry(status) {
   return status.claims.exp.valid ? status.claims.exp.beijing : "未声明";
 }
@@ -112,11 +131,38 @@ export function formatOverviewEntryValue(entry) {
 }
 
 export function selectOverviewWarnings(warnings) {
-  const priorityCodes = new Set(OVERVIEW_WARNING_ORDER);
-  const prioritized = OVERVIEW_WARNING_ORDER
-    .flatMap(code => warnings.filter(warning => warning.code === code));
-  const remaining = warnings.filter(warning => !priorityCodes.has(warning.code));
-  return [...prioritized, ...remaining].slice(0, 3);
+  const order = new Map(OVERVIEW_WARNING_ORDER.map((code, index) => [code, index]));
+  return warnings
+    .filter(warning => !QUIET_WARNING_CODES.has(warning.code))
+    .sort((left, right) => (order.get(left.code) ?? 99) - (order.get(right.code) ?? 99))
+    .slice(0, 3);
+}
+
+export function buildMinimalOverviewModel(analysis, nowMilliseconds = Date.now()) {
+  const email = findEntry(analysis, "email");
+  const plan = analysis.account.plan;
+  return {
+    email: {
+      label: "账号邮箱",
+      value: formatOverviewEntryValue(email),
+      entry: email,
+    },
+    plan: {
+      label: "JWT 声明的套餐",
+      value: plan?.value ?? "未提供",
+    },
+    validity: {
+      label: "有效期",
+      value: formatValiditySummary(analysis.status, nowMilliseconds),
+      state: analysis.status.code,
+    },
+    permissionSummary: {
+      label: "关键权限",
+      items: summarizeKeyPermissions(analysis.permissions),
+      state: analysis.permissions.some(permission => permission.risk === "high") ? "danger" : "safe",
+    },
+    quietNotice: "只完成本地解码，未验证签名、撤销状态或服务器可用性。",
+  };
 }
 
 function icon(iconNode, label = "") {

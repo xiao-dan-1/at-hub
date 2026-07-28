@@ -1,11 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { analyzeToken } from "../src/core/analyze.js";
 import * as ui from "../src/ui/app.js";
 import { formatExpiry, formatOverviewEntryValue, selectOverviewWarnings } from "../src/ui/app.js";
+import { makeJwt } from "./helpers/make-jwt.mjs";
 
 const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/ui/app.js", import.meta.url), "utf8");
+const modelNow = Date.UTC(2033, 4, 17, 3, 33, 20);
+
+function makeOverviewAnalysis(overrides = {}) {
+  const token = makeJwt(
+    { alg: "RS256", kid: "synthetic-key", typ: "JWT" },
+    {
+      iss: "https://auth.openai.com",
+      aud: ["https://api.openai.com/v1"],
+      exp: Math.floor((modelNow + 24 * 60 * 60 * 1000) / 1000),
+      nbf: Math.floor((modelNow - 60_000) / 1000),
+      iat: Math.floor((modelNow - 120_000) / 1000),
+      scp: ["openid", "email", "profile", "offline_access", "model.request", "organization.write"],
+      "https://api.openai.com/auth": {
+        email: "person@example.test",
+        chatgpt_plan_type: "plus",
+      },
+      ...overrides,
+    },
+  );
+  return analyzeToken(token, modelNow);
+}
 
 test("result navigation defines three keyboard-addressable tabs", () => {
   for (const [id, panel, label] of [
@@ -53,6 +76,28 @@ test("remaining time omits a zero hour unit", () => {
   assert.equal(ui.formatRemaining?.(status, now), "约 1 天");
 });
 
+test("minimal overview model keeps only the necessary first-screen facts", () => {
+  const model = ui.buildMinimalOverviewModel?.(makeOverviewAnalysis(), modelNow);
+
+  assert.equal(model?.email?.label, "账号邮箱");
+  assert.equal(model?.email?.value, "••••••••");
+  assert.equal(model?.email?.entry.value, "person@example.test");
+  assert.equal(model?.plan.label, "JWT 声明的套餐");
+  assert.equal(model?.plan.value, "plus");
+  assert.equal(
+    model?.validity.value,
+    "在声明时间窗口内 · 2033-05-18 11:33:20 +08:00 · 剩余约 1 天",
+  );
+  assert.deepEqual(model?.permissionSummary.items, ["模型调用", "离线访问", "组织写入 1 个高风险"]);
+  assert.equal(model?.quietNotice, "只完成本地解码，未验证签名、撤销状态或服务器可用性。");
+});
+
+test("minimal overview warnings stay quiet for normal technical facts", () => {
+  const warnings = ui.selectOverviewWarnings?.(makeOverviewAnalysis().warnings);
+
+  assert.deepEqual(warnings?.map(warning => warning.code), ["HIGH_RISK_PERMISSIONS"]);
+});
+
 test("permissions are grouped into stable product-facing sections", () => {
   const groups = ui.groupPermissionsForDisplay?.([
     { scope: "organization.write", displayGroup: "组织" },
@@ -84,9 +129,9 @@ test("overview warnings keep the three product-critical messages in priority ord
   ]);
 
   assert.deepEqual(visible.map(warning => warning.code), [
-    "SIGNATURE_UNVERIFIED",
     "HIGH_RISK_PERMISSIONS",
     "TOKEN_EXPIRED",
+    "INVALID_TIME_CLAIM",
   ]);
 });
 
@@ -99,9 +144,9 @@ test("overview warnings fill unused slots with other actionable diagnostics", ()
   ]);
 
   assert.deepEqual(visible.map(warning => warning.code), [
-    "SIGNATURE_UNVERIFIED",
     "ALG_NONE",
     "INVALID_TIME_CLAIM",
+    "MISSING_TIME",
   ]);
 });
 
