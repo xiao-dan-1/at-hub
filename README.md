@@ -42,6 +42,8 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 `--proxy` 只影响本地服务访问 ChatGPT 的上游请求；浏览器访问 `127.0.0.1` 或本机 IPv4 的这段仍是本机连接。
 
+如果已经开启 TUN 模式，优先使用默认 `npm start`。某些 HTTP 代理端口会让 Node 请求触发 Cloudflare challenge，此时显式 `--proxy` 反而会失败。
+
 ## 安全边界
 
 - 根目录 `index.html` 离线解析页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。

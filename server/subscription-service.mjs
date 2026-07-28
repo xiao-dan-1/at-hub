@@ -4,6 +4,16 @@ import { normalizeSubscriptionStatus, selectDefaultAccountRecord } from "../src/
 const DEFAULT_ORIGIN = "https://chatgpt.com";
 const ACCOUNTS_CHECK_PATH = "/backend-api/accounts/check/v4-2023-04-27";
 const SUBSCRIPTIONS_PATH = "/backend-api/subscriptions";
+const UPSTREAM_HEADERS = {
+  accept: "application/json, text/plain, */*",
+  "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
+  origin: DEFAULT_ORIGIN,
+  referer: `${DEFAULT_ORIGIN}/`,
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+  "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+};
 
 class SubscriptionQueryError extends Error {
   constructor(code, message, status = 500) {
@@ -45,16 +55,23 @@ export async function queryJson(url, token, fetchFn) {
   const response = await fetchFn(url, {
     method: "GET",
     headers: {
-      accept: "application/json",
+      ...UPSTREAM_HEADERS,
       authorization: `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    const code = response.status === 401 || response.status === 403
+    const isCloudflareChallenge = response.status === 403
+      && response.headers.get("cf-mitigated") === "challenge";
+    const code = isCloudflareChallenge
+      ? "upstream-cloudflare-challenge"
+      : response.status === 401 || response.status === 403
       ? "upstream-auth-failed"
       : "upstream-http-error";
-    throw new SubscriptionQueryError(code, `上游查询失败（HTTP ${response.status}）。`, response.status);
+    const message = isCloudflareChallenge
+      ? "上游返回 Cloudflare challenge；请求已到达 ChatGPT，但被网页防护拦截。"
+      : `上游查询失败（HTTP ${response.status}）。`;
+    throw new SubscriptionQueryError(code, message, response.status);
   }
 
   return readJsonResponse(response);
