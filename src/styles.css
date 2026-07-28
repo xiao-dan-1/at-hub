@@ -78,20 +78,22 @@ textarea:focus, input:focus, select:focus { border-color: var(--primary); box-sh
 .tab[aria-selected="true"] { color: var(--text); }
 .tab[aria-selected="true"]::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; content: ""; background: var(--primary); }
 .tab-panel { padding-top: 22px; }
-.status-strip { display: grid; grid-template-columns: 1.25fr 1.65fr 1fr 0.8fr 0.8fr 0.8fr; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
-.status-item { min-width: 0; padding: 16px 18px; border-left: 1px solid var(--line); }
-.status-item:first-child { border-left: 0; }
-.status-item__label { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700; }
-.status-item__value { display: block; margin-top: 7px; font-size: 0.92rem; overflow-wrap: anywhere; }
-.status-item[data-state="within_window"] .status-item__value, .status-item[data-state="safe"] .status-item__value { color: var(--primary-strong); }
-.status-item[data-state="danger"] .status-item__value, .status-item[data-state="expired"] .status-item__value { color: var(--danger); }
-.status-item[data-state="warning"] .status-item__value, .status-item[data-state="not_yet_valid"] .status-item__value { color: var(--warning); }
+.overview-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.minimal-card { display: grid; min-width: 0; min-height: 118px; align-content: space-between; gap: 14px; padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.minimal-card__label { color: var(--muted); font-size: 0.72rem; font-weight: 740; }
+.minimal-card__value { min-width: 0; font-size: 0.95rem; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.minimal-card__hint { color: var(--muted); font-size: 0.72rem; line-height: 1.4; }
+.minimal-card__sensitive { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.minimal-card[data-state="within_window"] .minimal-card__value, .minimal-card[data-state="safe"] .minimal-card__value { color: var(--primary-strong); }
+.minimal-card[data-state="danger"] .minimal-card__value, .minimal-card[data-state="expired"] .minimal-card__value { color: var(--danger); }
+.minimal-card[data-state="warning"] .minimal-card__value, .minimal-card[data-state="not_yet_valid"] .minimal-card__value, .minimal-card[data-state="missing_time"] .minimal-card__value { color: var(--warning); }
 .warning-list { display: grid; gap: 8px; margin-top: 12px; }
 .warning-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; color: var(--warning); background: var(--warning-soft); border-left: 3px solid color-mix(in srgb, var(--warning) 65%, transparent); border-radius: 4px; font-size: 0.84rem; }
 .warning-row[data-level="danger"] { color: var(--danger); background: var(--danger-soft); border-left-color: var(--danger); }
 .warning-row[data-level="info"] { color: var(--info); background: var(--info-soft); border-left-color: var(--info); }
 .warning-row__icon { display: grid; width: 19px; height: 19px; flex: 0 0 19px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font-size: 0.7rem; font-weight: 800; }
 .warning-row__icon svg { width: 12px; height: 12px; }
+.overview-notice { padding-top: 14px; margin: 18px 0 0; color: var(--muted); border-top: 1px solid var(--line); font-size: 0.78rem; }
 
 .overview-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 34px; margin-top: 28px; }
 .data-section { min-width: 0; padding: 2px 0 24px; border-top: 1px solid var(--line); }
@@ -217,10 +219,9 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .result-actions { width: 100%; }
   .result-actions .button { flex: 1; }
   .tabs { gap: 20px; overflow-x: auto; }
-  .status-strip { grid-template-columns: 1fr 1fr; }
-  .status-item { border-top: 1px solid var(--line); border-left: 0; }
-  .status-item:nth-child(even) { border-left: 1px solid var(--line); }
-  .status-item:nth-child(-n + 2) { border-top: 0; }
+  .overview-cards { grid-template-columns: 1fr; }
+  .minimal-card { min-height: 0; }
+  .minimal-card__sensitive { grid-template-columns: 1fr; }
   .overview-sections { grid-template-columns: 1fr; }
   .data-section--wide { grid-column: auto; }
   .definition-list--columns { display: block; }

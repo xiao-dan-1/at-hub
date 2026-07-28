@@ -15,7 +15,8 @@ test("V2 source exposes the complete accessible application structure", () => {
     "copyButton",
     "errorBox",
     "resultArea",
-    "statusStrip",
+    "overviewCards",
+    "overviewNotice",
     "overviewPanel",
     "permissionsPanel",
     "inspectorPanel",
@@ -57,10 +58,10 @@ test("V2 source is a compact tool rather than a marketing hero", () => {
   assert.match(html, /高级检查器/u);
 });
 
-test("mobile result layouts keep status metrics balanced and stack inspector detail", () => {
+test("mobile result layouts keep compact overview cards and stack inspector detail", () => {
   assert.match(
     css,
-    /@media \(max-width: 700px\)[\s\S]*\.status-strip\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr;[^}]*\}/u,
+    /@media \(max-width: 700px\)[\s\S]*\.overview-cards\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*\}/u,
   );
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.inspector-layout\s*\{[^}]*display:\s*block;[^}]*\}/u);
   assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.inspector-fields\s*\{[^}]*border-bottom:\s*1px solid var\(--line\);[^}]*\}/u);
@@ -77,7 +78,7 @@ test("informational warnings have a distinct blue treatment", () => {
 });
 
 test("result styling supports stable sensitive values and open permission groups", () => {
-  assert.match(css, /\.definition-row__sensitive\s*\{[^}]*grid-template-columns:/u);
+  assert.match(css, /\.minimal-card__sensitive\s*\{[^}]*grid-template-columns:/u);
   assert.match(css, /\.permission-group\s*\{/u);
   assert.match(css, /\.permission-group__heading\s*\{/u);
   assert.match(css, /\.permission-row__heading\s*\{/u);

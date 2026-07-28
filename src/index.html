@@ -80,22 +80,9 @@
       </nav>
 
       <section id="overviewPanel" class="tab-panel" role="tabpanel" aria-labelledby="overviewTab">
-        <div id="statusStrip" class="status-strip" aria-live="polite"></div>
+        <div id="overviewCards" class="overview-cards" aria-live="polite"></div>
         <div id="warningList" class="warning-list"></div>
-        <div class="overview-sections">
-          <section class="data-section" aria-labelledby="accountHeading">
-            <div class="section-title"><i data-lucide="user-round" aria-hidden="true"></i><h2 id="accountHeading">账号</h2></div>
-            <dl id="accountSummary" class="definition-list"></dl>
-          </section>
-          <section class="data-section" aria-labelledby="authenticationHeading">
-            <div class="section-title"><i data-lucide="fingerprint" aria-hidden="true"></i><h2 id="authenticationHeading">认证</h2></div>
-            <dl id="authenticationSummary" class="definition-list"></dl>
-          </section>
-          <section class="data-section data-section--wide" aria-labelledby="securityHeading">
-            <div class="section-title"><i data-lucide="shield-alert" aria-hidden="true"></i><h2 id="securityHeading">安全上下文</h2></div>
-            <dl id="securitySummary" class="definition-list definition-list--columns"></dl>
-          </section>
-        </div>
+        <p id="overviewNotice" class="overview-notice"></p>
       </section>
 
       <section id="permissionsPanel" class="tab-panel" role="tabpanel" aria-labelledby="permissionsTab" hidden>

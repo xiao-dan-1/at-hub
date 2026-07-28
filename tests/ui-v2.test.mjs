@@ -42,9 +42,12 @@ test("result navigation defines three keyboard-addressable tabs", () => {
   assert.match(app, /ArrowLeft|ArrowRight/u);
 });
 
-test("overview has dedicated regions for status, warnings, and semantic summaries", () => {
-  for (const id of ["statusStrip", "warningList", "accountSummary", "authenticationSummary", "securitySummary"]) {
+test("overview exposes a compact decision panel and keeps details out of the first screen", () => {
+  for (const id of ["overviewCards", "warningList", "overviewNotice"]) {
     assert.match(html, new RegExp(`id="${id}"`, "u"));
+  }
+  for (const removedId of ["accountSummary", "authenticationSummary", "securitySummary"]) {
+    assert.doesNotMatch(html, new RegExp(`id="${removedId}"`, "u"));
   }
 });
 
@@ -153,14 +156,17 @@ test("overview warnings fill unused slots with other actionable diagnostics", ()
 test("overview exposes an absolute Beijing expiry alongside remaining time", () => {
   assert.equal(formatExpiry({ claims: { exp: { valid: true, beijing: "2033-05-18 11:33:20 +08:00" } } }), "2033-05-18 11:33:20 +08:00");
   assert.equal(formatExpiry({ claims: { exp: { valid: false } } }), "未声明");
-  assert.match(app, /statusItem\("到期时间",\s*formatExpiry\(analysis\.status\)\)/u);
-  assert.match(app, /statusItem\("剩余时间",\s*formatRemaining\(analysis\.status\)\)/u);
+  assert.match(app, /buildMinimalOverviewModel\(analysis\)/u);
+  assert.match(app, /minimal-card/u);
+  assert.doesNotMatch(app, /definitionRow\("签发方"/u);
+  assert.doesNotMatch(app, /definitionRow\("目标受众"/u);
+  assert.doesNotMatch(app, /definitionRow\("密钥标识"/u);
 });
 
 test("overview sensitive values use the shared ten-second reveal control", () => {
-  assert.match(app, /sensitiveDefinitionRow\("邮箱"/u);
-  assert.match(app, /sensitiveDefinitionRow\("账号成员"/u);
-  assert.match(app, /sensitiveDefinitionRow\("客户端"/u);
+  assert.match(app, /model\.email\.entry/u);
+  assert.doesNotMatch(app, /sensitiveDefinitionRow\("账号成员"/u);
+  assert.doesNotMatch(app, /sensitiveDefinitionRow\("客户端"/u);
   assert.match(app, /renderRevealButton\(/u);
   assert.match(app, /JWT 声明的套餐/u);
   assert.match(app, /classList\.remove\("masked"\)/u);

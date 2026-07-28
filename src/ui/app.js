@@ -175,10 +175,10 @@ function icon(iconNode, label = "") {
   return node;
 }
 
-function statusItem(label, value, state = "neutral") {
-  return el("div", { className: "status-item", dataset: { state } }, [
-    el("span", { className: "status-item__label", text: label }),
-    el("strong", { className: "status-item__value", text: value }),
+function minimalCard(item, children, state = "neutral") {
+  return el("article", { className: "minimal-card", dataset: { state } }, [
+    el("span", { className: "minimal-card__label", text: item.label }),
+    ...children,
   ]);
 }
 
@@ -189,28 +189,28 @@ function definitionRow(label, value, { mono = false, sensitive = false } = {}) {
   ]);
 }
 
-function sensitiveDefinitionRow(label, entry, nodes, revealRegistry) {
-  if (!entry?.sensitive) return definitionRow(label, formatOverviewEntryValue(entry));
-  const valueNode = el("span", { className: "sensitive-value masked", text: MASK });
-  return el("div", { className: "definition-row" }, [
-    el("dt", { text: label }),
-    el("dd", { className: "definition-row__sensitive" }, [
-      valueNode,
-      renderRevealButton(entry, valueNode, nodes, revealRegistry),
-    ]),
-  ]);
-}
-
 function renderOverview(analysis, nodes, revealRegistry) {
-  const algorithm = analysis.decoded.header.alg ?? "未提供";
-  const highRiskCount = analysis.permissions.filter(item => item.risk === "high").length;
-  replace(nodes.statusStrip, [
-    statusItem("时间状态", analysis.status.label, analysis.status.code),
-    statusItem("到期时间", formatExpiry(analysis.status)),
-    statusItem("剩余时间", formatRemaining(analysis.status)),
-    statusItem("签名", "未验证", "warning"),
-    statusItem("算法", algorithm),
-    statusItem("高风险权限", String(highRiskCount), highRiskCount ? "danger" : "safe"),
+  const model = buildMinimalOverviewModel(analysis);
+  const emailValue = el("span", { className: "sensitive-value masked", text: model.email.value });
+  replace(nodes.overviewCards, [
+    minimalCard(model.email, [
+      model.email.entry?.sensitive
+        ? el("div", { className: "minimal-card__sensitive" }, [
+            emailValue,
+            renderRevealButton(model.email.entry, emailValue, nodes, revealRegistry),
+          ])
+        : el("strong", { className: "minimal-card__value", text: model.email.value }),
+    ]),
+    minimalCard(model.plan, [
+      el("strong", { className: "minimal-card__value", text: model.plan.value }),
+      el("span", { className: "minimal-card__hint", text: "来自 JWT 声明，可能不是实时套餐" }),
+    ]),
+    minimalCard(model.validity, [
+      el("strong", { className: "minimal-card__value", text: model.validity.value }),
+    ], model.validity.state),
+    minimalCard(model.permissionSummary, [
+      el("strong", { className: "minimal-card__value", text: model.permissionSummary.items.join("、") }),
+    ], model.permissionSummary.state),
   ]);
 
   replace(nodes.warningList, selectOverviewWarnings(analysis.warnings).map(warning => (
@@ -221,32 +221,7 @@ function renderOverview(analysis, nodes, revealRegistry) {
       el("span", { text: warning.message }),
     ])
   )));
-
-  const plan = analysis.account.plan;
-  const residency = analysis.account.residency;
-  const email = findEntry(analysis, "email");
-  const accountUser = findEntry(analysis, "chatgpt_account_user_id");
-  replace(nodes.accountSummary, [
-    definitionRow("JWT 声明的套餐", plan?.value ?? "未提供"),
-    definitionRow("计算驻留", residency?.value ?? "未提供"),
-    sensitiveDefinitionRow("邮箱", email, nodes, revealRegistry),
-    sensitiveDefinitionRow("账号成员", accountUser, nodes, revealRegistry),
-  ]);
-
-  replace(nodes.authenticationSummary, [
-    definitionRow("认证方式", formatAuthenticationMethods(findEntry(analysis, "amr")?.value)),
-    definitionRow("邮箱已验证", formatOverviewEntryValue(findEntry(analysis, "email_verified"))),
-    definitionRow("注册流程", formatOverviewEntryValue(findEntry(analysis, "is_signup"))),
-    definitionRow("密码认证时间", formatOverviewEntryValue(findEntry(analysis, "pwd_auth_time")), { mono: true }),
-  ]);
-
-  const client = findEntry(analysis, "client_id");
-  replace(nodes.securitySummary, [
-    definitionRow("签发方", formatOverviewEntryValue(findEntry(analysis, "iss")), { mono: true }),
-    definitionRow("目标受众", formatAudience(findEntry(analysis, "aud")?.value)),
-    sensitiveDefinitionRow("客户端", client, nodes, revealRegistry),
-    definitionRow("密钥标识", formatOverviewEntryValue(findEntry(analysis, "kid")), { mono: true }),
-  ]);
+  nodes.overviewNotice.textContent = model.quietNotice;
 }
 
 function renderPermissions(analysis, nodes, state) {
@@ -435,7 +410,7 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
   const resultArea = documentRef.getElementById("resultArea");
   const errorBox = documentRef.getElementById("errorBox");
   const nodes = Object.fromEntries([
-    "statusStrip", "warningList", "accountSummary", "authenticationSummary", "securitySummary",
+    "overviewCards", "warningList", "overviewNotice",
     "permissionFilters", "permissionList", "permissionNotice", "inspectorSearch", "inspectorCategory",
     "inspectorCategories", "inspectorFields", "inspectorCount", "inspectorDetail", "rawJson",
     "revealStatus",
