@@ -16,6 +16,7 @@ const clearButton = document.getElementById("subscriptionClearButton");
 const errorBox = document.getElementById("subscriptionError");
 const resultArea = document.getElementById("subscriptionResult");
 const statusText = document.getElementById("subscriptionStatus");
+const shell = document.querySelector(".subscription-shell");
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -88,9 +89,15 @@ function clearError() {
   errorBox.hidden = true;
 }
 
+function setHasResult(hasResult) {
+  if (!shell) return;
+  shell.dataset.hasResult = hasResult ? "true" : "false";
+}
+
 export function renderSubscriptionResult(data) {
   if (!data?.ok) {
     resultArea.hidden = true;
+    setHasResult(false);
     setError(data?.message ?? "订阅查询失败。");
     return;
   }
@@ -159,6 +166,7 @@ export function renderSubscriptionResult(data) {
     </article>
   `;
   resultArea.hidden = false;
+  setHasResult(true);
 }
 
 async function runSubscriptionQuery() {
@@ -188,6 +196,7 @@ async function runSubscriptionQuery() {
     statusText.textContent = data?.ok ? "查询完成" : "查询失败";
   } catch (error) {
     resultArea.hidden = true;
+    setHasResult(false);
     setError(error instanceof Error
       ? `${error.message}。请确认已通过 npm start 打开本地服务页面。`
       : "查询失败。请确认本地服务正在运行。");
@@ -203,6 +212,7 @@ function clearAll() {
   clearError();
   resultArea.hidden = true;
   resultArea.innerHTML = "";
+  setHasResult(false);
   input.focus();
 }
 

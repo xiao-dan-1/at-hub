@@ -44,3 +44,17 @@ test("subscription result card separates header, metrics, details, and offers", 
   assert.match(css, /\.subscription-detail-panel\s*\{/u);
   assert.match(css, /\.subscription-offers\s*\{/u);
 });
+
+test("subscription detail area reads as one quiet panel instead of split widgets", () => {
+  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*padding:/u);
+  assert.match(css, /\.subscription-list-block\s*\{[^}]*border-top:/u);
+  assert.doesNotMatch(css, /\.subscription-detail-panel\s*\{[^}]*grid-template-columns:\s*minmax\(270px/u);
+  assert.match(css, /\.subscription-query\s*\{[^}]*box-shadow:\s*0 6px 18px/u);
+});
+
+test("subscription input quiets down after a successful result while staying editable", () => {
+  assert.match(js, /dataset\.hasResult/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea/u);
+});
