@@ -109,7 +109,6 @@ export function renderSubscriptionResult(data) {
     <article class="subscription-card">
       <header class="subscription-card__top">
         <div class="subscription-card__identity">
-          <p class="eyebrow">单个 AT</p>
           <h2>${escapeHtml(plan)}</h2>
           <p class="subscription-card__account">${escapeHtml(valueOrDash(data.email))}${data.account_id ? ` · ${escapeHtml(data.account_id)}` : ""}</p>
         </div>

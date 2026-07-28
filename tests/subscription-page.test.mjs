@@ -52,6 +52,14 @@ test("subscription detail area reads as one quiet panel instead of split widgets
   assert.match(css, /\.subscription-query\s*\{[^}]*box-shadow:\s*0 6px 18px/u);
 });
 
+test("subscription result avoids redundant labels and nested-card framing", () => {
+  assert.doesNotMatch(js, /<p class="eyebrow">单个 AT<\/p>/u);
+  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*background:\s*transparent/u);
+  assert.match(css, /\.subscription-detail-panel\s*\{[^}]*border:\s*0/u);
+  assert.match(css, /\.subscription-facts\s*\{[^}]*border-top:\s*1px solid/u);
+  assert.match(css, /\.subscription-facts\s*\{[^}]*border-bottom:\s*1px solid/u);
+});
+
 test("subscription input quiets down after a successful result while staying editable", () => {
   assert.match(js, /dataset\.hasResult/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query/u);
