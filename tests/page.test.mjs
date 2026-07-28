@@ -104,6 +104,14 @@ test("summary card adopts a light horizontal credential strip", () => {
   assert.doesNotMatch(css, /linear-gradient\(180deg,[^;]*at-summary-card/u);
 });
 
+test("result layout uses a quiet single column without empty overview scaffolding", () => {
+  assert.match(css, /\.app-bar__inner\s*\{[^}]*width:\s*min\(100% - 32px,\s*920px\);/u);
+  assert.match(css, /\.app-shell\s*\{[^}]*width:\s*min\(100% - 32px,\s*920px\);[^}]*padding:\s*34px 0 22px;/u);
+  assert.doesNotMatch(css, /\.app-shell\s*\{[^}]*min-height:\s*calc\(100vh - 128px\)/u);
+  assert.match(css, /\.overview-notice:empty\s*\{[^}]*display:\s*none;[^}]*\}/u);
+  assert.match(css, /\.app-footer\s*\{[^}]*width:\s*min\(100% - 32px,\s*920px\);[^}]*padding:\s*10px 0 24px;[^}]*border-top:\s*0;/u);
+});
+
 test("controller avoids HTML injection and implements accessible error recovery", () => {
   assert.doesNotMatch(app, /\.innerHTML\s*=/u);
   assert.match(app, /textContent/u);
