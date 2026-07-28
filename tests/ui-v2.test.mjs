@@ -58,6 +58,17 @@ test("successful parsing collapses input and renders semantic analysis", () => {
   assert.match(app, /resultArea\.focus\(/u);
 });
 
+test("result input dock replaces the current AT without discarding a good result on errors", () => {
+  assert.match(app, /const dockInput = documentRef\.getElementById\("dockTokenInput"\)/u);
+  assert.match(app, /function setDockOpen\(open/u);
+  assert.match(app, /resultInputDock\.hidden\s*=\s*!open/u);
+  assert.match(app, /newParseButton\.setAttribute\("aria-expanded", String\(open\)\)/u);
+  assert.match(app, /parseFrom\(dockInput,\s*\{\s*preserveResultOnError:\s*true\s*\}\)/u);
+  assert.match(app, /if \(preserveResultOnError && state\.analysis\) \{/u);
+  assert.match(app, /setDockError\(error\?\.message/u);
+  assert.doesNotMatch(app, /newParseButton"\)\.addEventListener\("click", \(\) => clearAll\(\)\)/u);
+});
+
 test("overview formats booleans for people while keeping sensitive values masked", () => {
   assert.equal(formatOverviewEntryValue(null), "未提供");
   assert.equal(formatOverviewEntryValue({ key: "email_verified", value: true, sensitive: false }), "是");

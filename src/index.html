@@ -61,8 +61,8 @@
           <p>JWT 声明可能陈旧；结果不代表服务器接受该凭据。</p>
         </div>
         <div class="result-actions" aria-label="结果操作">
-          <button id="newParseButton" class="icon-button" type="button" title="重新解析" aria-label="重新解析">
-            <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+          <button id="newParseButton" class="button button--secondary button--compact" type="button" aria-controls="resultInputDock" aria-expanded="false">
+            <i data-lucide="key-round" aria-hidden="true"></i><span>输入新 AT</span>
           </button>
           <button id="copyButton" class="button button--secondary" type="button">
             <i data-lucide="copy" aria-hidden="true"></i><span>复制脱敏 JSON</span>
@@ -72,6 +72,33 @@
           </button>
         </div>
       </header>
+
+      <section id="resultInputDock" class="input-dock" aria-labelledby="dockHeading" hidden>
+        <div class="input-dock__heading">
+          <div>
+            <h2 id="dockHeading">输入新 AT</h2>
+            <p>成功后替换当前卡片；取消不会清空当前结果。</p>
+          </div>
+          <span class="privacy-note"><i data-lucide="key-round" aria-hidden="true"></i> 本地解析</span>
+        </div>
+        <textarea
+          id="dockTokenInput"
+          aria-labelledby="dockHeading"
+          aria-describedby="dockHelp"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="粘贴新的三段式 JWT"
+        ></textarea>
+        <p id="dockHelp" class="input-help">解析成功后输入会立即清空。请勿把真实 AT 分享到聊天、Issue 或日志。</p>
+        <div class="input-dock__actions">
+          <button id="dockParseButton" class="button button--primary" type="button">
+            <i data-lucide="scan-search" aria-hidden="true"></i><span>本地解析</span>
+          </button>
+          <button id="dockCancelButton" class="button button--secondary" type="button">取消</button>
+        </div>
+        <div id="dockErrorBox" class="error-box" role="alert" hidden></div>
+      </section>
 
       <nav class="tabs" role="tablist" aria-label="检查结果视图">
         <button id="overviewTab" class="tab" type="button" role="tab" aria-selected="true" aria-controls="overviewPanel" tabindex="0" data-tab="overview">概览</button>

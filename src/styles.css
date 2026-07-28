@@ -59,6 +59,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--primary); box-sh
 .button, .icon-button { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 7px; cursor: pointer; font-size: 0.86rem; font-weight: 720; }
 .button { padding: 9px 15px; }
 .button svg, .icon-button svg { width: 17px; height: 17px; stroke-width: 2; }
+.button--compact { min-height: 40px; padding: 8px 12px; }
 .button--primary { color: var(--on-primary); background: var(--primary); }
 .button--primary:hover { background: var(--primary-strong); }
 .button--secondary, .icon-button { background: var(--surface); border-color: var(--line); }
@@ -73,6 +74,13 @@ textarea:focus, input:focus, select:focus { border-color: var(--primary); box-sh
 .result-toolbar h1 { font-size: 1.18rem; }
 .result-toolbar p { font-size: 0.82rem; }
 .result-actions { margin-top: 0; }
+.input-dock { margin-bottom: 18px; padding: 14px 16px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 10px 24px rgba(27, 42, 34, 0.05); }
+.input-dock__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.input-dock__heading h2 { margin: 0 0 3px; font-size: 0.95rem; }
+.input-dock__heading p { margin: 0; font-size: 0.78rem; }
+.input-dock textarea { min-height: 92px; margin-top: 12px; }
+.input-dock .input-help { margin-top: 8px; margin-bottom: 0; }
+.input-dock__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .tabs { display: flex; min-height: 44px; align-items: end; gap: 26px; border-bottom: 1px solid var(--line); }
 .tab { position: relative; min-height: 44px; padding: 0 2px; color: var(--muted); background: transparent; border: 0; cursor: pointer; font-size: 0.88rem; font-weight: 700; }
 .tab[aria-selected="true"] { color: var(--text); }
@@ -223,6 +231,8 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .keyboard-hint { width: 100%; margin-left: 0; }
   .result-actions { width: 100%; }
   .result-actions .button { flex: 1; }
+  .input-dock { padding: 14px; }
+  .input-dock__heading { flex-direction: column; gap: 8px; }
   .tabs { gap: 20px; overflow-x: auto; }
   .at-summary-card { grid-template-columns: 1fr; gap: 6px; padding: 12px 14px; }
   .at-summary-expiry { justify-self: start; }

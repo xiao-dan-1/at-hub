@@ -112,6 +112,17 @@ test("result layout uses a quiet single column without empty overview scaffoldin
   assert.match(css, /\.app-footer\s*\{[^}]*width:\s*min\(100% - 32px,\s*920px\);[^}]*padding:\s*10px 0 24px;[^}]*border-top:\s*0;/u);
 });
 
+test("result page keeps a compact hidden dock for entering another AT", () => {
+  assert.match(html, /id="newParseButton"[\s\S]*aria-expanded="false"[\s\S]*输入新 AT/u);
+  assert.match(html, /id="resultInputDock"\s+class="input-dock"[\s\S]*hidden/u);
+  assert.match(html, /id="dockTokenInput"[\s\S]*placeholder="粘贴新的三段式 JWT"/u);
+  assert.match(html, /id="dockParseButton"[\s\S]*本地解析/u);
+  assert.match(html, /id="dockCancelButton"[\s\S]*取消/u);
+  assert.match(css, /\.input-dock\s*\{[^}]*margin-bottom:\s*18px;[^}]*padding:\s*14px 16px 16px;[^}]*background:\s*var\(--surface\);[^}]*border:\s*1px solid var\(--line\);[^}]*border-radius:\s*9px;/u);
+  assert.match(css, /\.input-dock textarea\s*\{[^}]*min-height:\s*92px;[^}]*margin-top:\s*12px;/u);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.input-dock\s*\{[^}]*padding:\s*14px;[^}]*\}/u);
+});
+
 test("controller avoids HTML injection and implements accessible error recovery", () => {
   assert.doesNotMatch(app, /\.innerHTML\s*=/u);
   assert.match(app, /textContent/u);

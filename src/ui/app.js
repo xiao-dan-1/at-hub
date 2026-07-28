@@ -357,9 +357,13 @@ function renderInspector(analysis, nodes, state, revealRegistry) {
 
 export function createApp(documentRef = document, navigatorRef = globalThis.navigator) {
   const input = documentRef.getElementById("tokenInput");
+  const dockInput = documentRef.getElementById("dockTokenInput");
   const inputSurface = documentRef.getElementById("inputSurface");
   const resultArea = documentRef.getElementById("resultArea");
+  const resultInputDock = documentRef.getElementById("resultInputDock");
   const errorBox = documentRef.getElementById("errorBox");
+  const dockErrorBox = documentRef.getElementById("dockErrorBox");
+  const newParseButton = documentRef.getElementById("newParseButton");
   const nodes = Object.fromEntries([
     "overviewCards", "warningList", "overviewNotice",
     "permissionFilters", "permissionList", "permissionNotice", "inspectorSearch", "inspectorCategory",
@@ -382,16 +386,37 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
     selectedPath: null,
   };
 
-  function setError(message = "") {
-    errorBox.textContent = message;
-    errorBox.hidden = !message;
+  function setInputError(inputNode, errorNode, helpId, message = "") {
+    errorNode.textContent = message;
+    errorNode.hidden = !message;
     if (message) {
-      input.setAttribute("aria-invalid", "true");
-      input.setAttribute("aria-describedby", "inputHelp errorBox");
+      inputNode.setAttribute("aria-invalid", "true");
+      inputNode.setAttribute("aria-describedby", `${helpId} ${errorNode.id}`);
     } else {
-      input.removeAttribute("aria-invalid");
-      input.setAttribute("aria-describedby", "inputHelp");
+      inputNode.removeAttribute("aria-invalid");
+      inputNode.setAttribute("aria-describedby", helpId);
     }
+  }
+
+  function setError(message = "") {
+    setInputError(input, errorBox, "inputHelp", message);
+  }
+
+  function setDockError(message = "") {
+    setInputError(dockInput, dockErrorBox, "dockHelp", message);
+  }
+
+  function setDockOpen(open, { focus = true } = {}) {
+    resultInputDock.hidden = !open;
+    newParseButton.setAttribute("aria-expanded", String(open));
+    setDockError();
+    if (open) {
+      dockInput.value = "";
+      if (focus) dockInput.focus();
+      return;
+    }
+    dockInput.value = "";
+    if (focus) newParseButton.focus();
   }
 
   function activateTab(name, { focus = false } = {}) {
@@ -415,28 +440,48 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
     state.selectedPath = null;
     nodes.inspectorSearch.value = "";
     input.value = "";
+    dockInput.value = "";
     setError();
+    setDockOpen(false, { focus: false });
     inputSurface.hidden = false;
     resultArea.hidden = true;
     activateTab("overview");
     if (focus) input.focus();
   }
 
-  function handleParse() {
-    const rawInput = input.value;
-    setError();
+  function renderAnalysis(analysis) {
+    state.analysis = analysis;
+    state.permissionFilter = "all";
+    state.inspectorCategory = "all";
+    state.inspectorQuery = "";
+    state.selectedPath = null;
+    nodes.inspectorSearch.value = "";
+    renderOverview(analysis, nodes, revealRegistry);
+    renderPermissions(analysis, nodes, state);
+    renderInspector(analysis, nodes, state, revealRegistry);
+  }
+
+  function parseFrom(inputNode, { preserveResultOnError = false } = {}) {
+    const rawInput = inputNode.value;
+    if (inputNode === dockInput) setDockError();
+    else setError();
     try {
       const analysis = analyzeToken(rawInput);
       input.value = "";
-      state.analysis = analysis;
-      renderOverview(analysis, nodes, revealRegistry);
-      renderPermissions(analysis, nodes, state);
-      renderInspector(analysis, nodes, state, revealRegistry);
+      dockInput.value = "";
+      renderAnalysis(analysis);
       inputSurface.hidden = true;
       resultArea.hidden = false;
+      setDockOpen(false, { focus: false });
       activateTab("overview");
       resultArea.focus({ preventScroll: true });
     } catch (error) {
+      if (preserveResultOnError && state.analysis) {
+        dockInput.value = rawInput;
+        setDockError(error?.message ?? "解析失败，请确认输入是完整的三段式 JWT。");
+        dockInput.focus();
+        return;
+      }
       clearAll({ focus: false });
       input.value = rawInput;
       setError(error?.message ?? "解析失败，请确认输入是完整的三段式 JWT。");
@@ -444,10 +489,16 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
     }
   }
 
+  function handleParse() {
+    parseFrom(input);
+  }
+
   documentRef.getElementById("parseButton").addEventListener("click", handleParse);
+  documentRef.getElementById("dockParseButton").addEventListener("click", () => parseFrom(dockInput, { preserveResultOnError: true }));
   documentRef.getElementById("clearButton").addEventListener("click", () => clearAll());
   documentRef.getElementById("resultClearButton").addEventListener("click", () => clearAll());
-  documentRef.getElementById("newParseButton").addEventListener("click", () => clearAll());
+  newParseButton.addEventListener("click", () => setDockOpen(resultInputDock.hidden));
+  documentRef.getElementById("dockCancelButton").addEventListener("click", () => setDockOpen(false));
   documentRef.getElementById("copyButton").addEventListener("click", async () => {
     if (!state.analysis) return;
     const status = documentRef.getElementById("copyStatus");
@@ -463,6 +514,7 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
     }
   });
   input.addEventListener("input", () => setError());
+  dockInput.addEventListener("input", () => setDockError());
   nodes.inspectorSearch.addEventListener("input", () => {
     if (!state.analysis) return;
     revealRegistry.clear();
@@ -489,7 +541,12 @@ export function createApp(documentRef = document, navigatorRef = globalThis.navi
     });
   }
   documentRef.addEventListener("keydown", event => {
-    if (event.key === "Escape") clearAll();
+    if (event.key !== "Escape") return;
+    if (!resultInputDock.hidden) {
+      setDockOpen(false);
+      return;
+    }
+    clearAll();
   });
 
   return { activateTab, clearAll, handleParse, state };
