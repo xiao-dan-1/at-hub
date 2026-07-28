@@ -92,10 +92,12 @@ test("result styling supports stable sensitive values and open permission groups
   assert.match(css, /\.inspector-layout\s*\{[^}]*height:\s*clamp\(/u);
 });
 
-test("summary card adopts a dark horizontal record strip", () => {
-  assert.match(css, /\.at-summary-card\s*\{[^}]*width:\s*min\(100%,\s*920px\);[^}]*min-height:\s*58px;[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto;[^}]*background:\s*#101722;[^}]*border-radius:\s*9px;/u);
+test("summary card adopts a light horizontal credential strip", () => {
+  assert.match(css, /\.at-summary-card\s*\{[^}]*width:\s*min\(100%,\s*920px\);[^}]*min-height:\s*58px;[^}]*display:\s*grid;[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto;[^}]*color:\s*var\(--text\);[^}]*background:\s*#fbfdfb;[^}]*border:\s*1px solid #d8e4de;[^}]*border-radius:\s*9px;/u);
   assert.match(css, /\.at-summary-expiry\s*\{[^}]*justify-self:\s*end;[^}]*white-space:\s*nowrap;/u);
   assert.doesNotMatch(css, /\.at-summary-token\s*\{/u);
+  assert.doesNotMatch(css, /background:\s*#101722/u);
+  assert.doesNotMatch(css, /color:\s*#eaf3ff/u);
   assert.doesNotMatch(css, /\.at-summary-field\s*\{[^}]*border-top:/u);
   assert.doesNotMatch(css, /at-summary-stat/u);
   assert.doesNotMatch(css, /at-summary-card__badge/u);
