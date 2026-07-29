@@ -62,13 +62,11 @@ test("subscription result avoids redundant labels while keeping secondary detail
   assert.match(css, /\.subscription-facts div\s*\{[^}]*border-left:\s*0/u);
 });
 
-test("subscription result reads as an open report below the stable input", () => {
+test("subscription result card reads as a lighter report below the stable input", () => {
   assert.match(css, /\.subscription-result\s*\{[^}]*margin-top:\s*-2px/u);
-  assert.match(css, /\.subscription-card\s*\{[^}]*background:\s*transparent/u);
-  assert.match(css, /\.subscription-card\s*\{[^}]*border:\s*0/u);
-  assert.match(css, /\.subscription-card\s*\{[^}]*border-top:\s*1px solid color-mix\(in srgb,\s*var\(--line\) 70%/u);
-  assert.match(css, /\.subscription-card\s*\{[^}]*border-radius:\s*0/u);
-  assert.match(css, /\.subscription-card\s*\{[^}]*box-shadow:\s*none/u);
+  assert.match(css, /\.subscription-card\s*\{[^}]*background:\s*var\(--surface\)/u);
+  assert.match(css, /\.subscription-card\s*\{[^}]*border:\s*1px solid color-mix\(in srgb,\s*var\(--line\) 88%/u);
+  assert.match(css, /\.subscription-card\s*\{[^}]*box-shadow:\s*0 14px 34px rgba\(27,\s*42,\s*34,\s*0\.04\)/u);
   assert.doesNotMatch(css, /\.subscription-card\s*\{[^}]*var\(--primary/u);
 });
 
