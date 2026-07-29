@@ -203,7 +203,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-query textarea { min-height: 118px; margin-top: 10px; }
 .network-boundary { margin: 10px 0 0; padding: 0; color: var(--muted); background: transparent; border: 0; border-radius: 0; font-size: 0.78rem; line-height: 1.55; }
 .subscription-result { display: block; margin-top: -2px; }
-.subscription-card { display: grid; gap: 16px; padding: 20px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--line) 88%, transparent); border-radius: 16px; box-shadow: 0 14px 34px rgba(27, 42, 34, 0.04); }
+.subscription-card { display: grid; gap: 16px; padding: 20px 22px 18px; background: transparent; border: 0; border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: 0; box-shadow: none; }
 .subscription-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 2px 2px 0; }
 .subscription-card__identity { min-width: 0; }
 .subscription-card__identity h2 { margin: 0; font-size: 1.45rem; line-height: 1.1; letter-spacing: -0.03em; }
