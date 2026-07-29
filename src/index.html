@@ -12,10 +12,23 @@
 
   <header class="app-bar">
     <div class="app-bar__inner">
-      <a class="brand" href="#top" aria-label="AT Inspector 首页">
-        <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
-        <span>AT Inspector</span>
-      </a>
+      <div class="app-bar__primary">
+        <a class="brand" href="#top" aria-label="AT Inspector 首页">
+          <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
+          <span>AT Inspector</span>
+        </a>
+        <nav class="tool-nav" aria-label="AT 工具">
+          <a class="tool-nav__item" href="#top" aria-current="page">本地解析</a>
+          <a
+            class="tool-nav__item"
+            href="/subscription"
+            data-requires-local-service
+            data-service-href="/subscription"
+            data-local-service-label="订阅查询"
+            data-offline-label="订阅查询 · 需本地服务"
+          >订阅查询</a>
+        </nav>
+      </div>
       <div class="local-status">
         <span class="local-status__dot" aria-hidden="true"></span>
         <span>本地运行 · 零上传</span>

@@ -40,9 +40,15 @@ p { color: var(--muted); line-height: 1.6; }
 .skip-link:focus { transform: translateY(0); }
 .app-bar { position: sticky; top: 0; z-index: 10; height: 56px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(16px); }
 .app-bar__inner { width: min(100% - 32px, 920px); height: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.app-bar__primary { display: flex; min-width: 0; align-items: center; gap: 18px; }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-size: 1rem; font-weight: 780; text-decoration: none; }
 .brand__mark { display: grid; width: 30px; height: 30px; place-items: center; color: var(--on-primary); background: var(--primary); border-radius: 7px; }
 .brand__mark svg { width: 17px; height: 17px; stroke-width: 2; }
+.tool-nav { display: inline-flex; align-items: center; gap: 2px; padding: 3px; background: color-mix(in srgb, var(--surface-subtle) 72%, transparent); border: 1px solid color-mix(in srgb, var(--line) 74%, transparent); border-radius: 999px; }
+.tool-nav__item { display: inline-flex; min-height: 30px; align-items: center; justify-content: center; padding: 5px 10px; color: var(--muted); border-radius: 999px; font-size: 0.78rem; font-weight: 720; line-height: 1; text-decoration: none; white-space: nowrap; }
+.tool-nav__item:hover { color: var(--primary-strong); }
+.tool-nav__item[aria-current="page"] { color: var(--text); background: var(--surface); box-shadow: 0 1px 3px rgba(24, 33, 28, 0.1); }
+.tool-nav__item[aria-disabled="true"] { color: color-mix(in srgb, var(--muted) 68%, transparent); cursor: not-allowed; }
 .local-status { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.8rem; font-weight: 650; }
 .local-status__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
 
@@ -260,6 +266,12 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 
 @media (max-width: 700px) {
   .app-bar__inner, .app-shell, .app-footer { width: calc(100% - 20px); }
+  .app-bar { height: auto; min-height: 56px; }
+  .app-bar__inner { min-height: 56px; padding: 8px 0; }
+  .app-bar__primary { flex: 1 1 auto; flex-wrap: wrap; gap: 8px 10px; justify-content: flex-start; }
+  .tool-nav { flex: 0 0 auto; }
+  .tool-nav__item { min-height: 28px; padding: 5px 8px; font-size: 0.74rem; }
+  .local-status { display: none; }
   .app-shell { padding: 22px 0 16px; }
   .app-footer { padding-top: 8px; }
   .input-surface { margin-top: 2vh; padding: 20px; }

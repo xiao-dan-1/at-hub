@@ -13,6 +13,7 @@ import {
 } from "lucide";
 import "./styles.css";
 import { createApp } from "./ui/app.js";
+import { configureToolNavigation } from "./ui/tool-navigation.js";
 
 createIcons({
   icons: {
@@ -30,3 +31,4 @@ createIcons({
 });
 
 createApp();
+configureToolNavigation();

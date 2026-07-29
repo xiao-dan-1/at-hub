@@ -12,10 +12,24 @@
 
   <header class="app-bar">
     <div class="app-bar__inner">
-      <a class="brand" href="/" aria-label="AT Inspector 首页">
-        <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
-        <span>AT Inspector</span>
-      </a>
+      <div class="app-bar__primary">
+        <a class="brand" href="/" aria-label="AT Inspector 首页">
+          <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
+          <span>AT Inspector</span>
+        </a>
+        <nav class="tool-nav" aria-label="AT 工具">
+          <a class="tool-nav__item" href="/">本地解析</a>
+          <a
+            class="tool-nav__item"
+            href="/subscription"
+            aria-current="page"
+            data-requires-local-service
+            data-service-href="/subscription"
+            data-local-service-label="订阅查询"
+            data-offline-label="订阅查询 · 需本地服务"
+          >订阅查询</a>
+        </nav>
+      </div>
       <div class="local-status">
         <span class="local-status__dot" aria-hidden="true"></span>
         <span>本地服务 · 会联网</span>
@@ -30,7 +44,6 @@
         <h1 id="subscriptionHeading">ChatGPT 订阅查询</h1>
         <p>粘贴一个 AT，查询账号套餐、续费状态和剩余时间。</p>
       </div>
-      <a class="quiet-link" href="/">返回本地解析</a>
     </section>
 
     <section class="input-surface subscription-query" aria-label="订阅查询输入">

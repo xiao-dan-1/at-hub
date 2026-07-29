@@ -15,6 +15,14 @@ test("subscription page declares local-service network boundary", () => {
   assert.match(html, /id="subscriptionRunButton"/u);
 });
 
+test("subscription page participates in the shared tool navigation", () => {
+  assert.match(html, /<nav class="tool-nav" aria-label="AT 工具">/u);
+  assert.match(html, /href="\/"[^>]*>本地解析/u);
+  assert.match(html, /aria-current="page"[^>]*>订阅查询/u);
+  assert.doesNotMatch(html, /返回本地解析/u);
+  assert.match(js, /configureToolNavigation/u);
+});
+
 test("subscription controller calls only the local subscription endpoint", () => {
   assert.match(js, /fetch\("\/api\/subscription"/u);
   assert.doesNotMatch(js, /chatgpt\.com|chat\.openai\.com/u);

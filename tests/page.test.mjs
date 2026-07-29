@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/ui/app.js", import.meta.url), "utf8");
+const main = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
 
 test("V2 source exposes the complete accessible application structure", () => {
   for (const id of [
@@ -56,6 +57,26 @@ test("V2 source is a compact tool rather than a marketing hero", () => {
   assert.match(html, /概览/u);
   assert.match(html, /权限/u);
   assert.match(html, /高级检查器/u);
+});
+
+test("app bar exposes lightweight tool navigation with a gated subscription link", () => {
+  assert.match(html, /<nav class="tool-nav" aria-label="AT 工具">/u);
+  assert.match(html, /aria-current="page"[^>]*>本地解析/u);
+  assert.match(html, /data-requires-local-service/u);
+  assert.match(html, /data-offline-label="订阅查询 · 需本地服务"/u);
+  assert.match(main, /configureToolNavigation/u);
+  assert.match(css, /\.app-bar__primary\s*\{/u);
+  assert.match(css, /\.tool-nav\s*\{/u);
+  assert.match(css, /\.tool-nav__item\[aria-current="page"\]/u);
+  assert.match(css, /\.tool-nav__item\[aria-disabled="true"\]/u);
+});
+
+test("mobile app bar keeps tool navigation inside the viewport", () => {
+  assert.match(
+    css,
+    /@media \(max-width: 700px\)[\s\S]*\.app-bar__primary\s*\{[^}]*flex-wrap:\s*wrap;[^}]*justify-content:\s*flex-start;[^}]*\}/u,
+  );
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.tool-nav\s*\{[^}]*flex:\s*0 0 auto;[^}]*\}/u);
 });
 
 test("mobile result layouts keep the one-card overview and stack inspector detail", () => {

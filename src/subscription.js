@@ -1,6 +1,7 @@
 import { Radar, ShieldCheck, Trash2, createIcons } from "lucide";
 import "./styles.css";
 import { extractAccessTokens } from "./core/token-extract.js";
+import { configureToolNavigation } from "./ui/tool-navigation.js";
 
 createIcons({
   icons: {
@@ -17,6 +18,8 @@ const errorBox = document.getElementById("subscriptionError");
 const resultArea = document.getElementById("subscriptionResult");
 const statusText = document.getElementById("subscriptionStatus");
 const shell = document.querySelector(".subscription-shell");
+
+configureToolNavigation();
 
 function escapeHtml(value) {
   return String(value ?? "")
