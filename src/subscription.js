@@ -192,7 +192,7 @@ async function runSubscriptionQuery() {
       throw new Error(`本机服务返回 HTTP ${response.status}`);
     }
     renderSubscriptionResult(data);
-    statusText.textContent = data?.ok ? "查询完成" : "查询失败";
+    statusText.textContent = data?.ok ? "" : "查询失败";
   } catch (error) {
     resultArea.hidden = true;
     setHasResult(false);

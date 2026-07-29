@@ -62,49 +62,21 @@ test("subscription result avoids redundant labels while keeping secondary detail
   assert.match(css, /\.subscription-facts div\s*\{[^}]*border-left:\s*0/u);
 });
 
-test("subscription input quiets down after a successful result while staying editable", () => {
+test("subscription input stays visually identical after a successful result", () => {
   assert.match(js, /dataset\.hasResult/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea/u);
-});
-
-test("subscription finished state keeps utility chrome lighter than the result", () => {
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.network-boundary\s*\{[^}]*display:\s*none/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*92px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*max-height:\s*112px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea\s*\{[^}]*max-height:\s*148px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions\s*\{[^}]*margin-top:\s*0/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions\s*\{[^}]*align-self:\s*center/u);
-  assert.match(css, /\.subscription-json\s*\{[^}]*padding:\s*10px 2px 0/u);
-});
-
-test("subscription finished input keeps its label as a persistent editor", () => {
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*color:\s*var\(--muted\)/u);
-  assert.doesNotMatch(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*clip:/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*gap:\s*10px 12px/u);
-});
-
-test("subscription finished input stays as a quiet persistent panel", () => {
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*background:\s*color-mix/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border:\s*1px solid/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border-radius:\s*12px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*padding:\s*14px/u);
+  assert.match(js, /statusText\.textContent\s*=\s*data\?\.ok\s*\?\s*""\s*:\s*"查询失败"/u);
+  assert.match(css, /\.subscription-query\s*\{[^}]*padding:\s*18px/u);
+  assert.match(css, /\.subscription-query textarea\s*\{[^}]*min-height:\s*118px/u);
+  assert.match(css, /\.subscription-query textarea\s*\{[^}]*margin-top:\s*10px/u);
+  assert.doesNotMatch(css, /\.subscription-shell\[data-has-result="true"\]\s*\{/u);
+  assert.doesNotMatch(css, /\.subscription-shell\[data-has-result="true"\]\s+\.subscription-query/u);
+  assert.doesNotMatch(css, /\.subscription-shell\[data-has-result="true"\]\s+\.network-boundary/u);
 });
 
 test("subscription helper copy reads as quiet text instead of an alert bar", () => {
   assert.match(css, /\.network-boundary\s*\{[^}]*background:\s*transparent/u);
   assert.match(css, /\.network-boundary\s*\{[^}]*border:\s*0/u);
   assert.match(css, /\.network-boundary\s*\{[^}]*padding:\s*0/u);
-});
-
-test("subscription refocus state uses a lighter focus treatment", () => {
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea:focus\s*\{[^}]*box-shadow:\s*0 0 0 2px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea:focus-visible\s*\{[^}]*outline:\s*0/u);
 });
 
 test("subscription raw JSON disclosure stays visually subordinate to the result card", () => {
@@ -124,7 +96,8 @@ test("inactive subscription status reads as neutral instead of warning", () => {
 test("subscription mobile layout gives long metric values room", () => {
   assert.match(css, /@media \(max-width: 520px\) \{[^}]*\.subscription-grid\s*\{\s*grid-template-columns:\s*1fr/u);
   assert.match(css, /\.subscription-metric\s*\{[^}]*border-radius:\s*10px/u);
-  assert.match(css, /@media \(max-width: 700px\) \{[\s\S]*\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*92px/u);
+  assert.match(css, /@media \(max-width: 700px\) \{[\s\S]*\.subscription-query\s*\{[^}]*padding:\s*16px/u);
+  assert.doesNotMatch(css, /@media \(max-width: 700px\) \{[\s\S]*\.subscription-shell\[data-has-result="true"\] \.subscription-query/u);
 });
 
 test("subscription metrics read as quiet tiles instead of a bordered table", () => {
