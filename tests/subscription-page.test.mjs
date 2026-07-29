@@ -102,6 +102,7 @@ test("subscription helper copy reads as quiet text instead of an alert bar", () 
 
 test("subscription refocus state uses a lighter focus treatment", () => {
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea:focus\s*\{[^}]*box-shadow:\s*0 0 0 2px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea:focus-visible\s*\{[^}]*outline:\s*0/u);
 });
 
 test("subscription raw JSON disclosure stays visually subordinate to the result card", () => {
