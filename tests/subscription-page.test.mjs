@@ -74,7 +74,7 @@ test("subscription finished state keeps utility chrome lighter than the result",
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*48px/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*max-height:\s*48px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea\s*\{[^}]*max-height:\s*220px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea\s*\{[^}]*max-height:\s*156px/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions\s*\{[^}]*margin-top:\s*0/u);
   assert.match(css, /\.subscription-json\s*\{[^}]*padding:\s*10px 2px 0/u);
 });
@@ -92,6 +92,16 @@ test("subscription finished input row drops the extra outer card", () => {
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border:\s*0/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border-radius:\s*0/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*padding:\s*0/u);
+});
+
+test("subscription helper copy reads as quiet text instead of an alert bar", () => {
+  assert.match(css, /\.network-boundary\s*\{[^}]*background:\s*transparent/u);
+  assert.match(css, /\.network-boundary\s*\{[^}]*border:\s*0/u);
+  assert.match(css, /\.network-boundary\s*\{[^}]*padding:\s*0/u);
+});
+
+test("subscription refocus state uses a lighter focus treatment", () => {
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea:focus\s*\{[^}]*box-shadow:\s*0 0 0 2px/u);
 });
 
 test("subscription raw JSON disclosure stays visually subordinate to the result card", () => {
