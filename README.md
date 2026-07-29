@@ -44,6 +44,10 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 如果已经开启 TUN 模式，优先使用默认 `npm start`。某些 HTTP 代理端口会让 Node 请求触发 Cloudflare challenge，此时显式 `--proxy` 反而会失败。
 
+### `/subscription` v1 收口
+
+`subscription-v1` 保持单个 AT 查询：输入框常驻，结果以一张轻卡片展示当前账号订阅状态，更多字段收进原始 JSON。后续新功能应继续复用“AT 输入 → 本地服务 → 按需展示 → 原始 JSON 兜底”的节奏，而不是在这个页面继续堆数据。
+
 ## 安全边界
 
 - 根目录 `index.html` 离线解析页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。
