@@ -72,26 +72,28 @@ test("subscription input quiets down after a successful result while staying edi
 test("subscription finished state keeps utility chrome lighter than the result", () => {
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.network-boundary\s*\{[^}]*display:\s*none/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\) auto/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*48px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*max-height:\s*48px/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea\s*\{[^}]*max-height:\s*156px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*92px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*max-height:\s*112px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query:focus-within textarea\s*\{[^}]*max-height:\s*148px/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions\s*\{[^}]*margin-top:\s*0/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions\s*\{[^}]*align-self:\s*center/u);
   assert.match(css, /\.subscription-json\s*\{[^}]*padding:\s*10px 2px 0/u);
 });
 
-test("subscription finished dock hides redundant visual-only helper chrome", () => {
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*position:\s*absolute/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*clip:\s*rect\(0,\s*0,\s*0,\s*0\)/u);
+test("subscription finished input keeps its label as a persistent editor", () => {
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*color:\s*var\(--muted\)/u);
+  assert.doesNotMatch(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-label\s*\{[^}]*clip:/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
   assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query \.input-actions \.keyboard-hint\s*\{[^}]*position:\s*absolute/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*gap:\s*0 12px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*gap:\s*10px 12px/u);
 });
 
-test("subscription finished input row drops the extra outer card", () => {
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*background:\s*transparent/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border:\s*0/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border-radius:\s*0/u);
-  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*padding:\s*0/u);
+test("subscription finished input stays as a quiet persistent panel", () => {
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*background:\s*color-mix/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border:\s*1px solid/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*border-radius:\s*12px/u);
+  assert.match(css, /\.subscription-shell\[data-has-result="true"\] \.subscription-query\s*\{[^}]*padding:\s*14px/u);
 });
 
 test("subscription helper copy reads as quiet text instead of an alert bar", () => {
@@ -122,7 +124,7 @@ test("inactive subscription status reads as neutral instead of warning", () => {
 test("subscription mobile layout gives long metric values room", () => {
   assert.match(css, /@media \(max-width: 520px\) \{[^}]*\.subscription-grid\s*\{\s*grid-template-columns:\s*1fr/u);
   assert.match(css, /\.subscription-metric\s*\{[^}]*border-radius:\s*10px/u);
-  assert.match(css, /@media \(max-width: 700px\) \{[\s\S]*\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*72px/u);
+  assert.match(css, /@media \(max-width: 700px\) \{[\s\S]*\.subscription-shell\[data-has-result="true"\] \.subscription-query textarea\s*\{[^}]*min-height:\s*92px/u);
 });
 
 test("subscription metrics read as quiet tiles instead of a bordered table", () => {
