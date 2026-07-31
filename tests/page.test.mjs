@@ -53,7 +53,7 @@ test("source CSP blocks connections, persistence, and external resources", () =>
 test("V2 source is a compact tool rather than a marketing hero", () => {
   assert.doesNotMatch(html, /class="[^"]*hero/u);
   assert.doesNotMatch(css, /font-size:\s*clamp\([^;]*4rem/iu);
-  assert.match(html, /AT Inspector/u);
+  assert.match(html, /AT Hub/u);
   assert.match(html, /概览/u);
   assert.match(html, /权限/u);
   assert.match(html, /高级检查器/u);

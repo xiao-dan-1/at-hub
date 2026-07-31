@@ -162,5 +162,5 @@ if (isDirectRun) {
   const address = server.address();
   const displayPort = typeof address === "object" && address ? address.port : port;
   const proxyNote = proxy ? ` via proxy ${redactProxyUrl(proxy)}` : "";
-  console.log(`AT Inspector local service: http://${host}:${displayPort}/subscription${proxyNote}`);
+  console.log(`AT Hub local service: http://${host}:${displayPort}/subscription${proxyNote}`);
 }
