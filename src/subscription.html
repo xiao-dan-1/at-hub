@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; font-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>ChatGPT 订阅查询 · AT Hub</title>
+</head>
+<body class="subscription-page">
+  <a class="skip-link" href="#subscriptionInput">跳到订阅查询输入框</a>
+
+  <header class="app-bar">
+    <div class="app-bar__inner">
+      <div class="app-bar__primary">
+        <a class="brand" href="/" aria-label="AT Hub 首页">
+          <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
+          <span>AT Hub</span>
+        </a>
+        <nav class="tool-nav" aria-label="AT 工具">
+          <a class="tool-nav__item" href="/">本地解析</a>
+          <a
+            class="tool-nav__item"
+            href="/subscription"
+            aria-current="page"
+            data-requires-local-service
+            data-service-href="/subscription"
+            data-local-service-label="订阅查询"
+            data-offline-label="订阅查询 · 需本地服务"
+          >订阅查询</a>
+        </nav>
+      </div>
+      <div class="local-status">
+        <span class="local-status__dot" aria-hidden="true"></span>
+        <span>本地服务 · 会联网</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="app-shell subscription-shell">
+    <section class="subscription-hero" aria-labelledby="subscriptionHeading">
+      <div>
+        <p class="eyebrow">Subscription</p>
+        <h1 id="subscriptionHeading">ChatGPT 订阅查询</h1>
+        <p>粘贴一个 AT，查询账号套餐、续费状态和剩余时间。</p>
+      </div>
+    </section>
+
+    <section class="input-surface subscription-query" aria-label="订阅查询输入">
+      <label class="subscription-label" for="subscriptionInput">输入 AT 或 api/auth/session JSON</label>
+      <textarea
+        id="subscriptionInput"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="粘贴 accessToken、Bearer token，或 api/auth/session 返回的 JSON"
+      ></textarea>
+      <p class="network-boundary">
+        本页通过本地服务查询：AT 只发送到本机 /api/subscription，然后由本机服务会联网查询订阅状态；不保存、不记录原始 AT。
+      </p>
+      <div class="input-actions">
+        <button id="subscriptionRunButton" class="button button--primary" type="button">
+          <i data-lucide="radar" aria-hidden="true"></i><span>查询订阅</span>
+        </button>
+        <button id="subscriptionClearButton" class="button button--secondary" type="button">
+          <i data-lucide="trash-2" aria-hidden="true"></i><span>清空</span>
+        </button>
+        <span id="subscriptionStatus" class="keyboard-hint" aria-live="polite"></span>
+      </div>
+      <div id="subscriptionError" class="error-box" role="alert" hidden></div>
+    </section>
+
+    <section id="subscriptionResult" class="subscription-result" aria-live="polite" hidden></section>
+  </main>
+
+  <footer class="app-footer">订阅查询依赖实时服务状态；AT 泄露后应立即注销相关会话或更新凭据。</footer>
+  <script type="module" src="/subscription.js"></script>
+</body>
+</html>
