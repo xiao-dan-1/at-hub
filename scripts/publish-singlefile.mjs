@@ -1,4 +1,4 @@
-import { copyFile, readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 const source = new URL("../dist/index.html", import.meta.url);
 const target = new URL("../index.html", import.meta.url);
@@ -16,4 +16,4 @@ if (/\b(?:fetch|XMLHttpRequest|WebSocket|EventSource|sendBeacon)\s*\(/u.test(htm
   throw new Error("Refusing to publish an artifact containing network APIs");
 }
 
-await copyFile(source, target);
+await writeFile(target, html, "utf8");
