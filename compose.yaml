@@ -1,0 +1,14 @@
+services:
+  at-hub:
+    image: at-hub:local
+    build:
+      context: .
+    ports:
+      - "${AT_HUB_PORT:-5173}:5173"
+    environment:
+      AT_INSPECTOR_HOST: 0.0.0.0
+      AT_INSPECTOR_PORT: 5173
+      AT_INSPECTOR_PROXY: ${AT_INSPECTOR_PROXY:-}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+    restart: unless-stopped

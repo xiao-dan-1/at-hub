@@ -26,3 +26,12 @@ test("parseCliOptions keeps safe local defaults", () => {
   assert.equal(options.port, 5173);
   assert.equal(options.proxy, "");
 });
+
+test("parseCliOptions ignores empty proxy env values when falling back", () => {
+  const options = parseCliOptions(["node", "server/local-server.mjs"], {
+    AT_INSPECTOR_PROXY: "",
+    HTTPS_PROXY: "http://127.0.0.1:7890",
+  });
+
+  assert.equal(options.proxy, "http://127.0.0.1:7890");
+});

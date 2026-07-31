@@ -48,6 +48,40 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 `subscription-v1` 保持单个 AT 查询：输入框常驻，结果以一张轻卡片展示当前账号订阅状态，更多字段收进原始 JSON。后续新功能应继续复用“AT 输入 → 本地服务 → 按需展示 → 原始 JSON 兜底”的节奏，而不是在这个页面继续堆数据。
 
+## Docker 部署
+
+适合把 `/subscription` 也一起部署为一个本地服务。镜像会在构建阶段生成 `dist/`，运行阶段只启动 Node 本地服务，不运行 Vite dev server。
+
+```powershell
+docker compose up -d --build
+```
+
+打开：
+
+- `http://127.0.0.1:5173/`
+- `http://127.0.0.1:5173/subscription`
+
+查看日志与停止服务：
+
+```powershell
+docker compose logs -f at-hub
+docker compose down
+```
+
+如果容器访问 ChatGPT 需要走宿主机代理，Docker Desktop 可使用 `host.docker.internal`：
+
+```bash
+AT_INSPECTOR_PROXY=http://host.docker.internal:7890 docker compose up -d --build
+```
+
+也可以改宿主机端口：
+
+```bash
+AT_HUB_PORT=8080 docker compose up -d --build
+```
+
+容器内默认监听 `0.0.0.0:5173`；AT 仍只先发到容器内的 `/api/subscription`，再由容器服务查询上游订阅状态。
+
 ## 安全边界
 
 - 根目录 `index.html` 离线解析页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。
