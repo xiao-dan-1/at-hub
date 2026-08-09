@@ -82,6 +82,23 @@ AT_HUB_PORT=8080 docker compose up -d --build
 
 容器内默认监听 `0.0.0.0:5173`；AT 仍只先发到容器内的 `/api/subscription`，再由容器服务查询上游订阅状态。
 
+### GitHub 自动镜像
+
+仓库已配置 GitHub Actions 自动构建 Docker 镜像并推送到 GHCR：`ghcr.io/xiao-dan-1/at-hub`。
+
+触发方式：
+
+- push 到 `master`：构建并推送 `latest`、`master`、`sha-...` 标签。
+- 推送 `v*.*.*` 标签：构建并推送对应版本标签，例如 `v2.0.1`。
+- pull request 到 `master`：只构建校验，不推送镜像。
+- GitHub Actions 页面手动运行 `workflow_dispatch`：构建并推送当前分支对应标签。
+
+拉取最新镜像：
+
+```bash
+docker pull ghcr.io/xiao-dan-1/at-hub:latest
+```
+
 ## 安全边界
 
 - 根目录 `index.html` 离线解析页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。
