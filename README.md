@@ -86,17 +86,18 @@ AT_HUB_PORT=8080 docker compose up -d --build
 
 仓库已配置 GitHub Actions 自动构建 Docker 镜像并推送到 GHCR：`ghcr.io/xiao-dan-1/at-hub`。
 
-触发方式：
+触发方式：推送 `v*.*.*` tag 才会触发，例如 `v2.0.1`。普通 push 到 `master` 不会构建或推送镜像。
 
-- push 到 `master`：构建并推送 `latest`、`master`、`sha-...` 标签。
-- 推送 `v*.*.*` 标签：构建并推送对应版本标签，例如 `v2.0.1`。
-- pull request 到 `master`：只构建校验，不推送镜像。
-- GitHub Actions 页面手动运行 `workflow_dispatch`：构建并推送当前分支对应标签。
+```bash
+git tag v2.0.1
+git push origin v2.0.1
+```
 
-拉取最新镜像：
+发布后可拉取最新标签或指定版本：
 
 ```bash
 docker pull ghcr.io/xiao-dan-1/at-hub:latest
+docker pull ghcr.io/xiao-dan-1/at-hub:2.0.1
 ```
 
 ## 安全边界
