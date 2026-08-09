@@ -60,10 +60,26 @@ test("README documents docker deployment and proxy usage", () => {
   const readme = readText("../README.md");
 
   assert.match(readme, /## Docker 部署/u);
+  assert.match(readme, /方式 A：本地构建部署/u);
   assert.match(readme, /docker compose up -d --build/u);
+  assert.match(readme, /方式 B：使用 GHCR 镜像部署/u);
+  assert.match(readme, /docker run -d --name at-hub/u);
+  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:latest/u);
   assert.match(readme, /http:\/\/127\.0\.0\.1:5173\/subscription/u);
   assert.match(readme, /AT_INSPECTOR_PROXY=http:\/\/host\.docker\.internal:7890/u);
   assert.match(readme, /docker compose down/u);
+});
+
+test("README documents how to update Docker deployments", () => {
+  const readme = readText("../README.md");
+
+  assert.match(readme, /### 更新 Docker 部署/u);
+  assert.match(readme, /更新本地构建部署/u);
+  assert.match(readme, /git pull/u);
+  assert.match(readme, /docker compose up -d --build/u);
+  assert.match(readme, /更新 GHCR 镜像部署/u);
+  assert.match(readme, /docker pull ghcr\.io\/xiao-dan-1\/at-hub:latest/u);
+  assert.match(readme, /docker rm -f at-hub/u);
 });
 
 test("git attributes keep docker deployment files line-ending stable", () => {

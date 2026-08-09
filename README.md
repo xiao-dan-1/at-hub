@@ -50,9 +50,14 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 ## Docker 部署
 
-适合把 `/subscription` 也一起部署为一个本地服务。镜像会在构建阶段生成 `dist/`，运行阶段只启动 Node 本地服务，不运行 Vite dev server。
+适合把 `/subscription` 作为长期运行的本地服务。容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/subscription`，再由容器服务查询上游订阅状态。
+
+### 方式 A：本地构建部署
+
+适合你在当前仓库目录中部署最新源码。镜像会在构建阶段生成 `dist/`，运行阶段只启动 Node 本地服务，不运行 Vite dev server。
 
 ```powershell
+git pull
 docker compose up -d --build
 ```
 
@@ -61,26 +66,83 @@ docker compose up -d --build
 - `http://127.0.0.1:5173/`
 - `http://127.0.0.1:5173/subscription`
 
-查看日志与停止服务：
+查看状态、日志与停止服务：
 
 ```powershell
+docker compose ps
 docker compose logs -f at-hub
 docker compose down
 ```
 
 如果容器访问 ChatGPT 需要走宿主机代理，Docker Desktop 可使用 `host.docker.internal`：
 
-```bash
-AT_INSPECTOR_PROXY=http://host.docker.internal:7890 docker compose up -d --build
+```powershell
+$env:AT_INSPECTOR_PROXY="http://host.docker.internal:7890"
+docker compose up -d --build
 ```
 
 也可以改宿主机端口：
 
-```bash
-AT_HUB_PORT=8080 docker compose up -d --build
+```powershell
+$env:AT_HUB_PORT="8080"
+docker compose up -d --build
 ```
 
-容器内默认监听 `0.0.0.0:5173`；AT 仍只先发到容器内的 `/api/subscription`，再由容器服务查询上游订阅状态。
+### 方式 B：使用 GHCR 镜像部署
+
+适合服务器直接拉取已发布镜像，不需要 Node.js 或本地构建环境。镜像发布到：`ghcr.io/xiao-dan-1/at-hub`。
+
+```bash
+docker pull ghcr.io/xiao-dan-1/at-hub:latest
+docker run -d --name at-hub \
+  --restart unless-stopped \
+  -p 5173:5173 \
+  ghcr.io/xiao-dan-1/at-hub:latest
+```
+
+如需代理：
+
+```bash
+docker run -d --name at-hub \
+  --restart unless-stopped \
+  -p 5173:5173 \
+  -e AT_INSPECTOR_PROXY=http://host.docker.internal:7890 \
+  ghcr.io/xiao-dan-1/at-hub:latest
+```
+
+指定版本部署示例：
+
+```bash
+docker pull ghcr.io/xiao-dan-1/at-hub:2.0.1
+docker run -d --name at-hub --restart unless-stopped -p 5173:5173 ghcr.io/xiao-dan-1/at-hub:2.0.1
+```
+
+### 更新 Docker 部署
+
+更新本地构建部署：
+
+```powershell
+git pull
+docker compose up -d --build
+```
+
+更新 GHCR 镜像部署：
+
+```bash
+docker pull ghcr.io/xiao-dan-1/at-hub:latest
+docker rm -f at-hub
+docker run -d --name at-hub \
+  --restart unless-stopped \
+  -p 5173:5173 \
+  ghcr.io/xiao-dan-1/at-hub:latest
+```
+
+更新后验证：
+
+```bash
+docker ps --filter name=at-hub
+docker logs --tail 80 at-hub
+```
 
 ### GitHub 自动镜像
 
