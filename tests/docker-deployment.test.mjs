@@ -38,7 +38,7 @@ test("compose file exposes AT Hub with optional proxy configuration", () => {
 
   const compose = readText("../compose.yaml");
   assert.match(compose, /services:\s+at-hub:/u);
-  assert.match(compose, /image:\s*ghcr\.io\/xiao-dan-1\/at-hub:\$\{AT_HUB_IMAGE_TAG:-0\.0\.2\}/u);
+  assert.match(compose, /image:\s*ghcr\.io\/xiao-dan-1\/at-hub:\$\{AT_HUB_IMAGE_TAG:-latest\}/u);
   assert.doesNotMatch(compose, /^\s*build:/mu);
   assert.match(compose, /"\$\{AT_HUB_PORT:-5173\}:5173"/u);
   assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
@@ -66,6 +66,7 @@ test("README documents docker deployment and proxy usage", () => {
   assert.match(readme, /方式 A：使用 compose\.yaml 部署 GHCR 镜像/u);
   assert.match(readme, /docker compose pull/u);
   assert.match(readme, /docker compose up -d/u);
+  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:latest/u);
   assert.match(readme, /AT_HUB_IMAGE_TAG=0\.0\.2/u);
   assert.match(readme, /方式 B：本地构建镜像/u);
   assert.match(readme, /docker build -t at-hub:local \./u);

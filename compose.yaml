@@ -1,6 +1,6 @@
 services:
   at-hub:
-    image: ghcr.io/xiao-dan-1/at-hub:${AT_HUB_IMAGE_TAG:-0.0.2}
+    image: ghcr.io/xiao-dan-1/at-hub:${AT_HUB_IMAGE_TAG:-latest}
     ports:
       - "${AT_HUB_PORT:-5173}:5173"
     environment:

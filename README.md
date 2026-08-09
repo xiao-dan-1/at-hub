@@ -59,7 +59,7 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 ### 方式 A：使用 compose.yaml 部署 GHCR 镜像
 
-默认镜像为 `ghcr.io/xiao-dan-1/at-hub:0.0.2`，由 `AT_HUB_IMAGE_TAG` 控制标签。
+默认镜像为 `ghcr.io/xiao-dan-1/at-hub:latest`，会直接跟随最新发布；如需固定到某个版本，再用 `AT_HUB_IMAGE_TAG` 指定标签。
 
 ```bash
 docker compose pull
@@ -90,7 +90,6 @@ AT_INSPECTOR_PROXY=http://host.docker.internal:7890 docker compose up -d
 ```bash
 cd /opt/at-hub
 cat > .env <<'EOF'
-AT_HUB_IMAGE_TAG=0.0.2
 AT_HUB_PORT=5173
 AT_INSPECTOR_PROXY=socks5://proxy-user:proxy-password@proxy.example.com:3000
 EOF
@@ -102,7 +101,7 @@ docker compose logs --tail 80 at-hub
 
 把 `proxy-user`、`proxy-password` 和代理主机替换为服务商提供的值；密码里有特殊字符时同样先做 URL 编码。
 
-也可以指定镜像版本或宿主机端口：
+也可以固定镜像版本或指定宿主机端口：
 
 ```bash
 AT_HUB_IMAGE_TAG=0.0.2 docker compose up -d
