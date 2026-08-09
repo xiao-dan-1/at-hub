@@ -44,6 +44,8 @@ test("compose file exposes AT Hub with optional proxy configuration", () => {
   assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
   assert.match(compose, /AT_INSPECTOR_PORT:\s*5173/u);
   assert.match(compose, /AT_INSPECTOR_PROXY:\s*\$\{AT_INSPECTOR_PROXY:-\}/u);
+  assert.doesNotMatch(compose, /HTTP_PROXY/u);
+  assert.doesNotMatch(compose, /HTTPS_PROXY/u);
   assert.match(compose, /restart:\s*unless-stopped/u);
 });
 

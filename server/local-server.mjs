@@ -130,7 +130,7 @@ export function parseCliOptions(argv = process.argv, env = process.env) {
   const options = {
     host: env.AT_INSPECTOR_HOST ?? "127.0.0.1",
     port: Number(env.AT_INSPECTOR_PORT ?? 5173),
-    proxy: env.AT_INSPECTOR_PROXY || env.HTTPS_PROXY || env.HTTP_PROXY || "",
+    proxy: env.AT_INSPECTOR_PROXY || "",
   };
 
   for (let index = 2; index < argv.length; index += 1) {
