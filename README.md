@@ -104,7 +104,7 @@ docker compose logs --tail 80 at-hub
 也可以固定镜像版本或指定宿主机端口：
 
 ```bash
-AT_HUB_IMAGE_TAG=0.0.2 docker compose up -d
+AT_HUB_IMAGE_TAG=0.0.3 docker compose up -d
 AT_HUB_PORT=8080 docker compose up -d
 ```
 
@@ -162,17 +162,17 @@ docker compose logs --tail 80 at-hub
 
 仓库已配置 GitHub Actions 自动构建 Docker 镜像并推送到 GHCR：`ghcr.io/xiao-dan-1/at-hub`。
 
-触发方式：推送 `v*.*.*` tag 才会触发，例如 `v0.0.2`。普通 push 到 `master` 不会构建或推送镜像。
+触发方式：推送 `v*.*.*` tag 才会触发，例如 `v0.0.3`。普通 push 到 `master` 不会构建或推送镜像。
 
 ```bash
-git tag v0.0.2
-git push origin v0.0.2
+git tag v0.0.3
+git push origin v0.0.3
 ```
 
 发布后可拉取指定版本：
 
 ```bash
-docker pull ghcr.io/xiao-dan-1/at-hub:0.0.2
+docker pull ghcr.io/xiao-dan-1/at-hub:0.0.3
 ```
 
 ## 安全边界

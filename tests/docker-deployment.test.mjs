@@ -67,11 +67,11 @@ test("README documents docker deployment and proxy usage", () => {
   assert.match(readme, /docker compose pull/u);
   assert.match(readme, /docker compose up -d/u);
   assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:latest/u);
-  assert.match(readme, /AT_HUB_IMAGE_TAG=0\.0\.2/u);
+  assert.match(readme, /AT_HUB_IMAGE_TAG=0\.0\.3/u);
   assert.match(readme, /方式 B：本地构建镜像/u);
   assert.match(readme, /docker build -t at-hub:local \./u);
   assert.match(readme, /docker run -d --name at-hub/u);
-  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:0\.0\.2/u);
+  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:0\.0\.3/u);
   assert.match(readme, /http:\/\/127\.0\.0\.1:5173\/subscription/u);
   assert.match(readme, /AT_INSPECTOR_PROXY=http:\/\/host\.docker\.internal:7890/u);
   assert.match(readme, /\/opt\/at-hub\/\.env/u);

@@ -47,9 +47,9 @@ test("README documents tag-only GHCR publishing and pull commands", () => {
   assert.doesNotMatch(readme, /push 到 `master`：构建并推送/u);
   assert.doesNotMatch(readme, /pull request 到 `master`：只构建校验/u);
   assert.doesNotMatch(readme, /workflow_dispatch/u);
-  assert.match(readme, /git tag v0\.0\.2/u);
-  assert.match(readme, /git push origin v0\.0\.2/u);
-  assert.match(readme, /docker pull ghcr\.io\/xiao-dan-1\/at-hub:0\.0\.2/u);
+  assert.match(readme, /git tag v0\.0\.3/u);
+  assert.match(readme, /git push origin v0\.0\.3/u);
+  assert.match(readme, /docker pull ghcr\.io\/xiao-dan-1\/at-hub:0\.0\.3/u);
 });
 
 test("git attributes keep GitHub workflow line endings stable", () => {
