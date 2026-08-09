@@ -209,9 +209,14 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-query textarea { min-height: 118px; margin-top: 10px; }
 .network-boundary { margin: 10px 0 0; padding: 0; color: var(--muted); background: transparent; border: 0; border-radius: 0; font-size: 0.78rem; line-height: 1.55; }
 .subscription-result { display: block; margin-top: -2px; }
+.subscription-batch-summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 10px; padding: 0 2px; color: var(--muted); font-size: 0.82rem; }
+.subscription-batch-summary strong { color: var(--text); font-size: 0.9rem; }
+.subscription-batch-list { display: grid; gap: 12px; }
 .subscription-card { display: grid; gap: 16px; padding: 20px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--line) 88%, transparent); border-radius: 16px; box-shadow: 0 14px 34px rgba(27, 42, 34, 0.04); }
+.subscription-card--error { border-color: color-mix(in srgb, var(--danger) 22%, var(--line)); }
 .subscription-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 2px 2px 0; }
 .subscription-card__identity { min-width: 0; }
+.subscription-card__index { margin: 0 0 6px; color: var(--primary-strong); font-size: 0.72rem; font-weight: 780; letter-spacing: 0.04em; }
 .subscription-card__identity h2 { margin: 0; font-size: 1.45rem; line-height: 1.1; letter-spacing: -0.03em; }
 .subscription-card__account { margin: 8px 0 0; color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.78rem; line-height: 1.45; overflow-wrap: anywhere; }
 .subscription-status-pill { display: inline-flex; min-height: 30px; flex: 0 0 auto; align-items: center; justify-content: center; padding: 5px 11px; color: var(--muted); background: color-mix(in srgb, var(--surface-subtle) 74%, var(--surface)); border: 1px solid color-mix(in srgb, var(--line) 78%, transparent); border-radius: 999px; font-size: 0.76rem; font-weight: 780; white-space: nowrap; }
@@ -222,6 +227,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-metric strong { display: block; margin-top: 6px; font-size: 0.84rem; font-weight: 720; overflow-wrap: anywhere; }
 .subscription-detail-panel { display: grid; gap: 0; align-items: start; padding: 0 2px; background: transparent; border: 0; border-radius: 0; }
 .subscription-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 18px; margin: 0; padding: 12px 0 10px; border-top: 1px solid color-mix(in srgb, var(--line) 68%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 68%, transparent); }
+.subscription-facts--compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .subscription-facts div { min-width: 0; padding: 0 0 2px; border-left: 0; }
 .subscription-facts div:first-child { padding-left: 0; border-left: 0; }
 .subscription-facts dd { margin: 4px 0 0; font-size: 0.82rem; font-weight: 680; overflow-wrap: anywhere; }
@@ -231,6 +237,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-list-block div { display: flex; flex-wrap: wrap; gap: 7px; }
 .subscription-tag { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 8px; color: var(--primary-strong); background: color-mix(in srgb, var(--primary-soft) 72%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent); border-radius: 999px; font-size: 0.7rem; font-family: "Cascadia Code", Consolas, monospace; }
 .subscription-muted { color: var(--muted); font-size: 0.82rem; }
+.subscription-error-message { margin: 0; color: var(--danger); font-size: 0.84rem; }
 .subscription-json { margin-top: -2px; padding: 10px 2px 0; background: transparent; border: 0; border-top: 1px solid color-mix(in srgb, var(--line) 62%, transparent); border-radius: 0; }
 .subscription-json summary { color: var(--muted); font-size: 0.82rem; font-weight: 720; }
 .subscription-json pre { margin-top: 10px; }

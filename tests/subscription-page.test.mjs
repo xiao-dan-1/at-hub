@@ -30,6 +30,20 @@ test("subscription controller calls only the local subscription endpoint", () =>
   assert.match(js, /renderSubscriptionResult/u);
 });
 
+test("subscription page supports batch subscription lookups without leaving the local service", () => {
+  assert.match(html, /粘贴一个或多个 AT/u);
+  assert.match(html, /最多 20 个/u);
+  assert.match(js, /fetch\("\/api\/subscriptions\/batch"/u);
+  assert.match(js, /tokens\.length === 1/u);
+  assert.match(js, /renderSubscriptionBatchResult/u);
+  assert.match(js, /subscription-batch-summary/u);
+  assert.match(js, /success_count/u);
+  assert.match(js, /failure_count/u);
+  assert.match(css, /\.subscription-batch-summary\s*\{/u);
+  assert.match(css, /\.subscription-batch-list\s*\{/u);
+  assert.match(css, /\.subscription-card--error\s*\{/u);
+});
+
 test("subscription result keeps subscription status and AT validity separate", () => {
   assert.match(js, /剩余时间/u);
   assert.match(js, /AT 有效期/u);

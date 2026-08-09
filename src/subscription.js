@@ -97,21 +97,15 @@ function setHasResult(hasResult) {
   shell.dataset.hasResult = hasResult ? "true" : "false";
 }
 
-export function renderSubscriptionResult(data) {
-  if (!data?.ok) {
-    resultArea.hidden = true;
-    setHasResult(false);
-    setError(data?.message ?? "订阅查询失败。");
-    return;
-  }
-
+function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
   const active = data.has_active_subscription === true;
   const plan = formatPlan(data);
   const rawJson = escapeHtml(JSON.stringify(data.raw ?? {}, null, 2));
-  resultArea.innerHTML = `
+  return `
     <article class="subscription-card">
       <header class="subscription-card__top">
         <div class="subscription-card__identity">
+          ${indexLabel ? `<p class="subscription-card__index">${escapeHtml(indexLabel)}</p>` : ""}
           <h2>${escapeHtml(plan)}</h2>
           <p class="subscription-card__account">${escapeHtml(valueOrDash(data.email))}${data.account_id ? ` · ${escapeHtml(data.account_id)}` : ""}</p>
         </div>
@@ -167,34 +161,116 @@ export function renderSubscriptionResult(data) {
       </details>
     </article>
   `;
+}
+
+function renderSubscriptionErrorCard(data) {
+  const index = Number.isFinite(data?.index) ? `第 ${data.index} 个 AT` : "AT";
+  return `
+    <article class="subscription-card subscription-card--error">
+      <header class="subscription-card__top">
+        <div class="subscription-card__identity">
+          <p class="subscription-card__index">${escapeHtml(index)}</p>
+          <h2>查询失败</h2>
+          <p class="subscription-card__account">${escapeHtml(valueOrDash(data?.token_hint))}</p>
+        </div>
+        <span class="subscription-status-pill">失败</span>
+      </header>
+      <p class="subscription-error-message">${escapeHtml(data?.message ?? "订阅查询失败。")}</p>
+      <dl class="subscription-facts subscription-facts--compact">
+        <div><dt>原因</dt><dd>${escapeHtml(valueOrDash(data?.reason))}</dd></div>
+        <div><dt>状态</dt><dd>${escapeHtml(valueOrDash(data?.status))}</dd></div>
+      </dl>
+    </article>
+  `;
+}
+
+export function renderSubscriptionResult(data) {
+  if (!data?.ok) {
+    resultArea.hidden = true;
+    setHasResult(false);
+    setError(data?.message ?? "订阅查询失败。");
+    return;
+  }
+
+  resultArea.innerHTML = renderSubscriptionCard(data);
   resultArea.hidden = false;
   setHasResult(true);
+}
+
+export function renderSubscriptionBatchResult(data) {
+  if (!data?.ok) {
+    resultArea.hidden = true;
+    setHasResult(false);
+    setError(data?.message ?? "批量订阅查询失败。");
+    return;
+  }
+
+  const results = Array.isArray(data.results) ? data.results : [];
+  const cards = results
+    .map(item => item?.ok
+      ? renderSubscriptionCard(item, { indexLabel: `#${item.index}` })
+      : renderSubscriptionErrorCard(item))
+    .join("");
+  resultArea.innerHTML = `
+    <section class="subscription-batch-summary" aria-label="批量查询摘要">
+      <strong>批量查询完成</strong>
+      <span>共 ${escapeHtml(data.count ?? results.length)} 个 · 成功 ${escapeHtml(data.success_count ?? 0)} · 失败 ${escapeHtml(data.failure_count ?? 0)}</span>
+    </section>
+    <div class="subscription-batch-list">
+      ${cards}
+    </div>
+  `;
+  resultArea.hidden = false;
+  setHasResult(true);
+}
+
+function postSingleSubscription(token) {
+  return fetch("/api/subscription", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+}
+
+function postBatchSubscriptions(tokens) {
+  return fetch("/api/subscriptions/batch", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ tokens }),
+  });
 }
 
 async function runSubscriptionQuery() {
   clearError();
   const extracted = extractAccessTokens(input.value);
-  const token = extracted.tokens[0];
-  if (!token) {
+  const tokens = extracted.tokens;
+  if (tokens.length === 0) {
     setError("没有找到有效的三段式 AT。");
+    return;
+  }
+  if (tokens.length > 20) {
+    setError("最多一次查询 20 个 AT。");
     return;
   }
 
   runButton.disabled = true;
-  statusText.textContent = "查询中…";
+  statusText.textContent = tokens.length === 1 ? "查询中…" : `查询中 ${tokens.length} 个…`;
   input.value = "";
 
   try {
-    const response = await fetch("/api/subscription", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
+    const isSingleToken = tokens.length === 1;
+    const response = isSingleToken
+      ? await postSingleSubscription(tokens[0])
+      : await postBatchSubscriptions(tokens);
     const data = await response.json();
     if (!response.ok && !data?.message) {
       throw new Error(`本机服务返回 HTTP ${response.status}`);
     }
-    renderSubscriptionResult(data);
+    if (tokens.length === 1) {
+      renderSubscriptionResult(data);
+    } else {
+      renderSubscriptionBatchResult(data);
+    }
     statusText.textContent = data?.ok ? "" : "查询失败";
   } catch (error) {
     resultArea.hidden = true;

@@ -4,6 +4,8 @@ import { normalizeSubscriptionStatus, selectDefaultAccountRecord } from "../src/
 const DEFAULT_ORIGIN = "https://chatgpt.com";
 const ACCOUNTS_CHECK_PATH = "/backend-api/accounts/check/v4-2023-04-27";
 const SUBSCRIPTIONS_PATH = "/backend-api/subscriptions";
+const DEFAULT_BATCH_LIMIT = 20;
+const DEFAULT_BATCH_CONCURRENCY = 2;
 const UPSTREAM_HEADERS = {
   accept: "application/json, text/plain, */*",
   "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
@@ -134,5 +136,75 @@ export function createSubscriptionHandler({
         status: error?.status ?? 500,
       };
     }
+  };
+}
+
+function normalizeTokenList(tokens) {
+  if (!Array.isArray(tokens)) return [];
+  const normalizedTokens = [];
+  const seen = new Set();
+  for (const token of tokens) {
+    const normalized = normalizeInput(token);
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    normalizedTokens.push(normalized);
+  }
+  return normalizedTokens;
+}
+
+export function createSubscriptionBatchHandler({
+  fetchFn = globalThis.fetch,
+  nowMilliseconds = Date.now(),
+  origin = DEFAULT_ORIGIN,
+  batchLimit = DEFAULT_BATCH_LIMIT,
+  concurrency = DEFAULT_BATCH_CONCURRENCY,
+} = {}) {
+  const handleSingleSubscription = createSubscriptionHandler({ fetchFn, nowMilliseconds, origin });
+  const workerCount = Math.max(1, Number(concurrency) || DEFAULT_BATCH_CONCURRENCY);
+
+  return async function handleSubscriptionBatchQuery({ tokens } = {}) {
+    const normalizedTokens = normalizeTokenList(tokens);
+    if (normalizedTokens.length === 0) {
+      return { ok: false, reason: "empty-tokens", message: "请提供至少一个 AT。", status: 400 };
+    }
+    if (normalizedTokens.length > batchLimit) {
+      return {
+        ok: false,
+        reason: "batch-too-large",
+        message: `最多一次查询 ${batchLimit} 个 AT。`,
+        status: 400,
+        count: normalizedTokens.length,
+        max: batchLimit,
+      };
+    }
+
+    const results = new Array(normalizedTokens.length);
+    let cursor = 0;
+    async function runWorker() {
+      while (cursor < normalizedTokens.length) {
+        const index = cursor;
+        cursor += 1;
+        const token = normalizedTokens[index];
+        const result = await handleSingleSubscription({ token });
+        results[index] = {
+          ...result,
+          index: index + 1,
+          token_hint: redactToken(token),
+        };
+      }
+    }
+
+    await Promise.all(
+      Array.from({ length: Math.min(workerCount, normalizedTokens.length) }, () => runWorker()),
+    );
+    const successCount = results.filter(result => result?.ok === true).length;
+    return {
+      ok: true,
+      status: 200,
+      count: results.length,
+      success_count: successCount,
+      failure_count: results.length - successCount,
+      results,
+    };
   };
 }

@@ -22,9 +22,9 @@ npm install
 npm start
 ```
 
-然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个 AT 或 `api/auth/session` 返回的 JSON，页面会提取单个 `accessToken` 并展示一张订阅卡片：账号邮箱、plan、剩余时间、续费状态、套餐 ID、渠道、优惠和可购买套餐。
+然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个或多个 AT，也可以粘贴一个或多个 `api/auth/session` 返回的 JSON；页面会提取并去重 `accessToken`。单个 AT 保持一张订阅卡片；批量查询会显示汇总和一组同风格结果卡。最多一次查询 20 个 AT，结果按输入顺序返回，单个失败不会影响其它 AT 的结果。
 
-AT 只发送到本机 `/api/subscription`，再由本机服务请求 ChatGPT 订阅相关接口；本项目不保存、不记录原始 AT，也不会把它写进测试、日志或版本库。
+AT 只发送到本机 `/api/subscription` 或 `/api/subscriptions/batch`，再由本机服务请求 ChatGPT 订阅相关接口；本项目不保存、不记录原始 AT，也不会把它写进测试、日志或版本库。批量接口返回时只附带脱敏 token 片段用于定位失败项。
 
 如需临时用本机局域网 IPv4 访问，可运行 `npm start -- --host 0.0.0.0`，再打开形如 `http://10.100.9.181:5173/subscription` 的地址；验证后建议切回默认 `127.0.0.1`。
 
@@ -49,13 +49,13 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 ### `/subscription` v1 收口
 
-`subscription-v1` 保持单个 AT 查询：输入框常驻，结果以一张轻卡片展示当前账号订阅状态，更多字段收进原始 JSON。后续新功能应继续复用“AT 输入 → 本地服务 → 按需展示 → 原始 JSON 兜底”的节奏，而不是在这个页面继续堆数据。
+`subscription-v1` 保持输入框常驻：单个 AT 以一张轻卡片展示当前账号订阅状态，多个 AT 以批量摘要和结果卡片列表展示；更多字段收进原始 JSON。后续新功能应继续复用“AT 输入 → 本地服务 → 按需展示 → 原始 JSON 兜底”的节奏，而不是在这个页面继续堆数据。
 
 ## Docker 部署
 
 适合把 `/subscription` 作为长期运行的本地服务。当前仓库的 `compose.yaml` 默认使用 GHCR 镜像，不再从服务器源码构建；这样服务器上可以直接 `docker compose pull` 更新镜像。
 
-容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/subscription`，再由容器服务查询上游订阅状态。
+容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/subscription` 或 `/api/subscriptions/batch`，再由容器服务查询上游订阅状态。
 
 ### 方式 A：使用 compose.yaml 部署 GHCR 镜像
 

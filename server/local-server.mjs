@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createProxyFetch, redactProxyUrl } from "./proxy-fetch.mjs";
-import { createSubscriptionHandler } from "./subscription-service.mjs";
+import { createSubscriptionBatchHandler, createSubscriptionHandler } from "./subscription-service.mjs";
 
 const projectRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const defaultDistDir = join(projectRoot, "dist");
@@ -91,8 +91,24 @@ export function startLocalServer({
   origin,
 } = {}) {
   const handleSubscription = createSubscriptionHandler({ fetchFn, nowMilliseconds, origin });
+  const handleSubscriptionBatch = createSubscriptionBatchHandler({ fetchFn, nowMilliseconds, origin });
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${host}:${port}`);
+
+    if (request.method === "POST" && url.pathname === "/api/subscriptions/batch") {
+      try {
+        const body = await readRequestJson(request);
+        const result = await handleSubscriptionBatch({ tokens: body.tokens });
+        sendJson(response, result.ok ? 200 : result.status ?? 502, result);
+      } catch (error) {
+        sendJson(response, error?.status ?? 500, {
+          ok: false,
+          reason: "local-request-error",
+          message: error instanceof Error ? error.message : "本机服务处理失败。",
+        });
+      }
+      return;
+    }
 
     if (request.method === "POST" && url.pathname === "/api/subscription") {
       try {

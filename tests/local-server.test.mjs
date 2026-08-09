@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseCliOptions } from "../server/local-server.mjs";
+import { parseCliOptions, startLocalServer } from "../server/local-server.mjs";
+import { makeJwt } from "./helpers/make-jwt.mjs";
 
 test("parseCliOptions honors explicit host and port arguments", () => {
   const options = parseCliOptions([
@@ -44,4 +45,45 @@ test("parseCliOptions uses AT_INSPECTOR_PROXY when provided", () => {
   });
 
   assert.equal(options.proxy, "http://127.0.0.1:7890");
+});
+
+test("local server routes batch subscription queries to the batch handler", async () => {
+  const token = makeJwt({ alg: "RS256" }, { "https://api.openai.com/profile": { email: "batch@example.test" } });
+  const server = await startLocalServer({
+    host: "127.0.0.1",
+    port: 0,
+    nowMilliseconds: Date.UTC(2033, 4, 17),
+    fetchFn: async url => {
+      if (String(url).includes("/accounts/check/")) {
+        return new Response(JSON.stringify({
+          accounts: {
+            default: {
+              account: { account_id: "acc_batch", plan_type: "free" },
+              entitlement: { has_active_subscription: false, subscription_plan: "chatgptfreeplan" },
+            },
+          },
+        }), { status: 200 });
+      }
+      return new Response("{}", { status: 200 });
+    },
+  });
+
+  try {
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+    const response = await fetch(`http://127.0.0.1:${port}/api/subscriptions/batch`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tokens: [token] }),
+    });
+    const data = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(data.ok, true);
+    assert.equal(data.count, 1);
+    assert.equal(data.results[0].email, "batch@example.test");
+    assert.equal(data.results[0].account_id, "acc_batch");
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
 });
