@@ -38,7 +38,8 @@ test("compose file exposes AT Hub with optional proxy configuration", () => {
 
   const compose = readText("../compose.yaml");
   assert.match(compose, /services:\s+at-hub:/u);
-  assert.match(compose, /image:\s*at-hub:local/u);
+  assert.match(compose, /image:\s*ghcr\.io\/xiao-dan-1\/at-hub:\$\{AT_HUB_IMAGE_TAG:-0\.0\.1\}/u);
+  assert.doesNotMatch(compose, /^\s*build:/mu);
   assert.match(compose, /"\$\{AT_HUB_PORT:-5173\}:5173"/u);
   assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
   assert.match(compose, /AT_INSPECTOR_PORT:\s*5173/u);
@@ -60,11 +61,14 @@ test("README documents docker deployment and proxy usage", () => {
   const readme = readText("../README.md");
 
   assert.match(readme, /## Docker 部署/u);
-  assert.match(readme, /方式 A：本地构建部署/u);
-  assert.match(readme, /docker compose up -d --build/u);
-  assert.match(readme, /方式 B：使用 GHCR 镜像部署/u);
+  assert.match(readme, /方式 A：使用 compose\.yaml 部署 GHCR 镜像/u);
+  assert.match(readme, /docker compose pull/u);
+  assert.match(readme, /docker compose up -d/u);
+  assert.match(readme, /AT_HUB_IMAGE_TAG=0\.0\.1/u);
+  assert.match(readme, /方式 B：本地构建镜像/u);
+  assert.match(readme, /docker build -t at-hub:local \./u);
   assert.match(readme, /docker run -d --name at-hub/u);
-  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:latest/u);
+  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:0\.0\.1/u);
   assert.match(readme, /http:\/\/127\.0\.0\.1:5173\/subscription/u);
   assert.match(readme, /AT_INSPECTOR_PROXY=http:\/\/host\.docker\.internal:7890/u);
   assert.match(readme, /docker compose down/u);
@@ -74,11 +78,12 @@ test("README documents how to update Docker deployments", () => {
   const readme = readText("../README.md");
 
   assert.match(readme, /### 更新 Docker 部署/u);
-  assert.match(readme, /更新本地构建部署/u);
+  assert.match(readme, /更新 compose GHCR 部署/u);
+  assert.match(readme, /docker compose pull/u);
+  assert.match(readme, /docker compose up -d/u);
+  assert.match(readme, /更新本地构建镜像/u);
   assert.match(readme, /git pull/u);
-  assert.match(readme, /docker compose up -d --build/u);
-  assert.match(readme, /更新 GHCR 镜像部署/u);
-  assert.match(readme, /docker pull ghcr\.io\/xiao-dan-1\/at-hub:latest/u);
+  assert.match(readme, /docker build -t at-hub:local \./u);
   assert.match(readme, /docker rm -f at-hub/u);
 });
 

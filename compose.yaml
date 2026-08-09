@@ -1,8 +1,6 @@
 services:
   at-hub:
-    image: at-hub:local
-    build:
-      context: .
+    image: ghcr.io/xiao-dan-1/at-hub:${AT_HUB_IMAGE_TAG:-0.0.1}
     ports:
       - "${AT_HUB_PORT:-5173}:5173"
     environment:

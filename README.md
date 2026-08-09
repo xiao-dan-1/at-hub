@@ -50,15 +50,17 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 ## Docker 部署
 
-适合把 `/subscription` 作为长期运行的本地服务。容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/subscription`，再由容器服务查询上游订阅状态。
+适合把 `/subscription` 作为长期运行的本地服务。当前仓库的 `compose.yaml` 默认使用 GHCR 镜像，不再从服务器源码构建；这样服务器上可以直接 `docker compose pull` 更新镜像。
 
-### 方式 A：本地构建部署
+容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/subscription`，再由容器服务查询上游订阅状态。
 
-适合你在当前仓库目录中部署最新源码。镜像会在构建阶段生成 `dist/`，运行阶段只启动 Node 本地服务，不运行 Vite dev server。
+### 方式 A：使用 compose.yaml 部署 GHCR 镜像
 
-```powershell
-git pull
-docker compose up -d --build
+默认镜像为 `ghcr.io/xiao-dan-1/at-hub:0.0.1`，由 `AT_HUB_IMAGE_TAG` 控制标签。
+
+```bash
+docker compose pull
+docker compose up -d
 ```
 
 打开：
@@ -68,7 +70,7 @@ docker compose up -d --build
 
 查看状态、日志与停止服务：
 
-```powershell
+```bash
 docker compose ps
 docker compose logs -f at-hub
 docker compose down
@@ -76,28 +78,27 @@ docker compose down
 
 如果容器访问 ChatGPT 需要走宿主机代理，Docker Desktop 可使用 `host.docker.internal`：
 
-```powershell
-$env:AT_INSPECTOR_PROXY="http://host.docker.internal:7890"
-docker compose up -d --build
+```bash
+AT_INSPECTOR_PROXY=http://host.docker.internal:7890 docker compose up -d
 ```
 
-也可以改宿主机端口：
-
-```powershell
-$env:AT_HUB_PORT="8080"
-docker compose up -d --build
-```
-
-### 方式 B：使用 GHCR 镜像部署
-
-适合服务器直接拉取已发布镜像，不需要 Node.js 或本地构建环境。镜像发布到：`ghcr.io/xiao-dan-1/at-hub`。
+也可以指定镜像版本或宿主机端口：
 
 ```bash
-docker pull ghcr.io/xiao-dan-1/at-hub:latest
+AT_HUB_IMAGE_TAG=0.0.1 docker compose up -d
+AT_HUB_PORT=8080 docker compose up -d
+```
+
+### 方式 B：本地构建镜像
+
+适合在开发机上临时验证当前源码。镜像会在构建阶段生成 `dist/`，运行阶段只启动 Node 本地服务，不运行 Vite dev server。
+
+```bash
+docker build -t at-hub:local .
 docker run -d --name at-hub \
   --restart unless-stopped \
   -p 5173:5173 \
-  ghcr.io/xiao-dan-1/at-hub:latest
+  at-hub:local
 ```
 
 如需代理：
@@ -107,59 +108,52 @@ docker run -d --name at-hub \
   --restart unless-stopped \
   -p 5173:5173 \
   -e AT_INSPECTOR_PROXY=http://host.docker.internal:7890 \
-  ghcr.io/xiao-dan-1/at-hub:latest
-```
-
-指定版本部署示例：
-
-```bash
-docker pull ghcr.io/xiao-dan-1/at-hub:2.0.1
-docker run -d --name at-hub --restart unless-stopped -p 5173:5173 ghcr.io/xiao-dan-1/at-hub:2.0.1
+  at-hub:local
 ```
 
 ### 更新 Docker 部署
 
-更新本地构建部署：
-
-```powershell
-git pull
-docker compose up -d --build
-```
-
-更新 GHCR 镜像部署：
+更新 compose GHCR 部署：
 
 ```bash
-docker pull ghcr.io/xiao-dan-1/at-hub:latest
+docker compose pull
+docker compose up -d
+```
+
+更新本地构建镜像：
+
+```bash
+git pull
+docker build -t at-hub:local .
 docker rm -f at-hub
 docker run -d --name at-hub \
   --restart unless-stopped \
   -p 5173:5173 \
-  ghcr.io/xiao-dan-1/at-hub:latest
+  at-hub:local
 ```
 
 更新后验证：
 
 ```bash
-docker ps --filter name=at-hub
-docker logs --tail 80 at-hub
+docker compose ps
+docker compose logs --tail 80 at-hub
 ```
 
 ### GitHub 自动镜像
 
 仓库已配置 GitHub Actions 自动构建 Docker 镜像并推送到 GHCR：`ghcr.io/xiao-dan-1/at-hub`。
 
-触发方式：推送 `v*.*.*` tag 才会触发，例如 `v2.0.1`。普通 push 到 `master` 不会构建或推送镜像。
+触发方式：推送 `v*.*.*` tag 才会触发，例如 `v0.0.1`。普通 push 到 `master` 不会构建或推送镜像。
 
 ```bash
-git tag v2.0.1
-git push origin v2.0.1
+git tag v0.0.1
+git push origin v0.0.1
 ```
 
-发布后可拉取最新标签或指定版本：
+发布后可拉取指定版本：
 
 ```bash
-docker pull ghcr.io/xiao-dan-1/at-hub:latest
-docker pull ghcr.io/xiao-dan-1/at-hub:2.0.1
+docker pull ghcr.io/xiao-dan-1/at-hub:0.0.1
 ```
 
 ## 安全边界
