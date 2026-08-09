@@ -28,10 +28,11 @@ AT 只发送到本机 `/api/subscription`，再由本机服务请求 ChatGPT 订
 
 如需临时用本机局域网 IPv4 访问，可运行 `npm start -- --host 0.0.0.0`，再打开形如 `http://10.100.9.181:5173/subscription` 的地址；验证后建议切回默认 `127.0.0.1`。
 
-如果你的网络访问 ChatGPT 必须走本机 HTTP 代理，可以显式指定代理端口，例如：
+如果你的网络访问 ChatGPT 必须走代理，可以显式指定代理地址；支持 HTTP/HTTPS 与 SOCKS5，例如：
 
 ```powershell
 npm start -- --proxy http://127.0.0.1:7890
+npm start -- --proxy socks5://proxy-user:proxy-password@proxy.example.com:3000
 ```
 
 也可以组合局域网监听与代理：
@@ -41,6 +42,8 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 ```
 
 `--proxy` 只影响本地服务访问 ChatGPT 的上游请求；浏览器访问 `127.0.0.1` 或本机 IPv4 的这段仍是本机连接。
+
+代理用户名或密码里如果包含 `@`、`:`、`/`、`?`、`#`、`%` 等特殊字符，先做 URL 编码后再写入代理地址。
 
 如果已经开启 TUN 模式，优先使用默认 `npm start`。某些 HTTP 代理端口会让 Node 请求触发 Cloudflare challenge，此时显式 `--proxy` 反而会失败。
 
@@ -56,7 +59,7 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 ### 方式 A：使用 compose.yaml 部署 GHCR 镜像
 
-默认镜像为 `ghcr.io/xiao-dan-1/at-hub:0.0.1`，由 `AT_HUB_IMAGE_TAG` 控制标签。
+默认镜像为 `ghcr.io/xiao-dan-1/at-hub:0.0.2`，由 `AT_HUB_IMAGE_TAG` 控制标签。
 
 ```bash
 docker compose pull
@@ -82,10 +85,27 @@ docker compose down
 AT_INSPECTOR_PROXY=http://host.docker.internal:7890 docker compose up -d
 ```
 
+服务器部署时建议把配置写到 `/opt/at-hub/.env`，避免每次命令行重复输入。`compose.yaml` 会读取 `AT_INSPECTOR_PROXY`，支持 HTTP/HTTPS 与 SOCKS5：
+
+```bash
+cd /opt/at-hub
+cat > .env <<'EOF'
+AT_HUB_IMAGE_TAG=0.0.2
+AT_HUB_PORT=5173
+AT_INSPECTOR_PROXY=socks5://proxy-user:proxy-password@proxy.example.com:3000
+EOF
+
+docker compose pull
+docker compose up -d --force-recreate
+docker compose logs --tail 80 at-hub
+```
+
+把 `proxy-user`、`proxy-password` 和代理主机替换为服务商提供的值；密码里有特殊字符时同样先做 URL 编码。
+
 也可以指定镜像版本或宿主机端口：
 
 ```bash
-AT_HUB_IMAGE_TAG=0.0.1 docker compose up -d
+AT_HUB_IMAGE_TAG=0.0.2 docker compose up -d
 AT_HUB_PORT=8080 docker compose up -d
 ```
 
@@ -143,17 +163,17 @@ docker compose logs --tail 80 at-hub
 
 仓库已配置 GitHub Actions 自动构建 Docker 镜像并推送到 GHCR：`ghcr.io/xiao-dan-1/at-hub`。
 
-触发方式：推送 `v*.*.*` tag 才会触发，例如 `v0.0.1`。普通 push 到 `master` 不会构建或推送镜像。
+触发方式：推送 `v*.*.*` tag 才会触发，例如 `v0.0.2`。普通 push 到 `master` 不会构建或推送镜像。
 
 ```bash
-git tag v0.0.1
-git push origin v0.0.1
+git tag v0.0.2
+git push origin v0.0.2
 ```
 
 发布后可拉取指定版本：
 
 ```bash
-docker pull ghcr.io/xiao-dan-1/at-hub:0.0.1
+docker pull ghcr.io/xiao-dan-1/at-hub:0.0.2
 ```
 
 ## 安全边界

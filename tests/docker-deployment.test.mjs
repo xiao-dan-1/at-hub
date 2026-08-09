@@ -38,7 +38,7 @@ test("compose file exposes AT Hub with optional proxy configuration", () => {
 
   const compose = readText("../compose.yaml");
   assert.match(compose, /services:\s+at-hub:/u);
-  assert.match(compose, /image:\s*ghcr\.io\/xiao-dan-1\/at-hub:\$\{AT_HUB_IMAGE_TAG:-0\.0\.1\}/u);
+  assert.match(compose, /image:\s*ghcr\.io\/xiao-dan-1\/at-hub:\$\{AT_HUB_IMAGE_TAG:-0\.0\.2\}/u);
   assert.doesNotMatch(compose, /^\s*build:/mu);
   assert.match(compose, /"\$\{AT_HUB_PORT:-5173\}:5173"/u);
   assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
@@ -66,13 +66,17 @@ test("README documents docker deployment and proxy usage", () => {
   assert.match(readme, /方式 A：使用 compose\.yaml 部署 GHCR 镜像/u);
   assert.match(readme, /docker compose pull/u);
   assert.match(readme, /docker compose up -d/u);
-  assert.match(readme, /AT_HUB_IMAGE_TAG=0\.0\.1/u);
+  assert.match(readme, /AT_HUB_IMAGE_TAG=0\.0\.2/u);
   assert.match(readme, /方式 B：本地构建镜像/u);
   assert.match(readme, /docker build -t at-hub:local \./u);
   assert.match(readme, /docker run -d --name at-hub/u);
-  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:0\.0\.1/u);
+  assert.match(readme, /ghcr\.io\/xiao-dan-1\/at-hub:0\.0\.2/u);
   assert.match(readme, /http:\/\/127\.0\.0\.1:5173\/subscription/u);
   assert.match(readme, /AT_INSPECTOR_PROXY=http:\/\/host\.docker\.internal:7890/u);
+  assert.match(readme, /\/opt\/at-hub\/\.env/u);
+  assert.match(readme, /AT_INSPECTOR_PROXY=socks5:\/\/proxy-user:proxy-password@proxy\.example\.com:3000/u);
+  assert.match(readme, /docker compose up -d --force-recreate/u);
+  assert.match(readme, /URL 编码/u);
   assert.match(readme, /docker compose down/u);
 });
 

@@ -1,11 +1,22 @@
-import { ProxyAgent, fetch as undiciFetch } from "undici";
+import { ProxyAgent, Socks5ProxyAgent, fetch as undiciFetch } from "undici";
+
+function getProxyProtocol(proxyUrl) {
+  try {
+    return new URL(proxyUrl).protocol;
+  } catch {
+    return "";
+  }
+}
 
 export function createProxyFetch(proxyUrl, {
   undiciFetch: compatibleFetch = undiciFetch,
   baseFetch = compatibleFetch,
   ProxyAgentCtor = ProxyAgent,
+  Socks5ProxyAgentCtor = Socks5ProxyAgent,
 } = {}) {
-  const dispatcher = new ProxyAgentCtor(proxyUrl);
+  const protocol = getProxyProtocol(proxyUrl);
+  const AgentCtor = protocol === "socks5:" || protocol === "socks:" ? Socks5ProxyAgentCtor : ProxyAgentCtor;
+  const dispatcher = new AgentCtor(proxyUrl);
   return function proxyFetch(url, init = {}) {
     return baseFetch(url, {
       ...init,
