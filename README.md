@@ -57,6 +57,37 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/subscription` 或 `/api/subscriptions/batch`，再由容器服务查询上游订阅状态。
 
+### Docker 开发调试
+
+频繁改代码时使用 `compose.dev.yaml`。它不构建生产镜像，而是把当前源码目录挂载进 Node 容器；改代码不用重建镜像，刷新页面即可看到前端变化，`server/` 以及后端依赖的 `src/core/` 变化会由 `node --watch` 重启开发服务。
+
+```bash
+AT_HUB_DEV_PORT=5175 docker compose -f compose.dev.yaml up
+```
+
+打开：
+
+- `http://127.0.0.1:5175/`
+- `http://127.0.0.1:5175/subscription`
+
+停止开发容器：
+
+```bash
+docker compose -f compose.dev.yaml down
+```
+
+如需代理，继续使用同一个环境变量：
+
+```bash
+AT_INSPECTOR_PROXY=http://host.docker.internal:7890 docker compose -f compose.dev.yaml up
+```
+
+不使用 Docker 时，本地也可以运行同一个开发服务：
+
+```powershell
+npm run dev:service
+```
+
 ### 方式 A：使用 compose.yaml 部署 GHCR 镜像
 
 默认镜像为 `ghcr.io/xiao-dan-1/at-hub:latest`，会直接跟随最新发布；如需固定到某个版本，再用 `AT_HUB_IMAGE_TAG` 指定标签。

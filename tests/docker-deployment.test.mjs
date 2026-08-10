@@ -49,6 +49,24 @@ test("compose file exposes AT Hub with optional proxy configuration", () => {
   assert.match(compose, /restart:\s*unless-stopped/u);
 });
 
+test("dev compose mounts the workspace for no-rebuild debugging", () => {
+  const composeUrl = new URL("../compose.dev.yaml", import.meta.url);
+  assert.equal(existsSync(composeUrl), true);
+
+  const compose = readText("../compose.dev.yaml");
+  assert.match(compose, /services:\s+at-hub-dev:/u);
+  assert.match(compose, /image:\s*node:24-bookworm-slim/u);
+  assert.match(compose, /"\$\{AT_HUB_DEV_PORT:-5175\}:5173"/u);
+  assert.match(compose, /- \.\/:\/app/u);
+  assert.match(compose, /- at-hub-dev-node-modules:\/app\/node_modules/u);
+  assert.match(compose, /npm ci/u);
+  assert.match(compose, /node --watch server\/dev-server\.mjs/u);
+  assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
+  assert.match(compose, /AT_INSPECTOR_PROXY:\s*\$\{AT_INSPECTOR_PROXY:-\}/u);
+  assert.match(compose, /CHOKIDAR_USEPOLLING:\s*"true"/u);
+  assert.doesNotMatch(compose, /^\s*build:/mu);
+});
+
 test("docker ignore keeps local artifacts out of the build context", () => {
   const dockerignoreUrl = new URL("../.dockerignore", import.meta.url);
   assert.equal(existsSync(dockerignoreUrl), true);
@@ -92,6 +110,17 @@ test("README documents how to update Docker deployments", () => {
   assert.match(readme, /git pull/u);
   assert.match(readme, /docker build -t at-hub:local \./u);
   assert.match(readme, /docker rm -f at-hub/u);
+});
+
+test("README documents no-rebuild Docker development", () => {
+  const readme = readText("../README.md");
+
+  assert.match(readme, /### Docker 开发调试/u);
+  assert.match(readme, /compose\.dev\.yaml/u);
+  assert.match(readme, /docker compose -f compose\.dev\.yaml up/u);
+  assert.match(readme, /AT_HUB_DEV_PORT=5175/u);
+  assert.match(readme, /改代码不用重建镜像/u);
+  assert.match(readme, /npm run dev:service/u);
 });
 
 test("git attributes keep docker deployment files line-ending stable", () => {

@@ -1,0 +1,19 @@
+services:
+  at-hub-dev:
+    image: node:24-bookworm-slim
+    working_dir: /app
+    command: sh -c "npm ci && node --watch server/dev-server.mjs --host 0.0.0.0 --port 5173"
+    ports:
+      - "${AT_HUB_DEV_PORT:-5175}:5173"
+    environment:
+      AT_INSPECTOR_HOST: 0.0.0.0
+      AT_INSPECTOR_PORT: 5173
+      AT_INSPECTOR_PROXY: ${AT_INSPECTOR_PROXY:-}
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./:/app
+      - at-hub-dev-node-modules:/app/node_modules
+    restart: unless-stopped
+
+volumes:
+  at-hub-dev-node-modules:

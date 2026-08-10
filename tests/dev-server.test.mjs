@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 import config from "../vite.config.js";
 
-const sourceHtml = readFileSync(new URL("../src/index.html", import.meta.url), "utf8");
+const readText = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 const resolvedConfig = typeof config === "function"
   ? config({ command: "serve", mode: "development" })
   : config;
@@ -18,8 +18,31 @@ function runIndexTransform(plugin, html) {
 
 test("dev server strips the offline CSP before Vite injects module assets", () => {
   const plugin = resolvedConfig.plugins.find(candidate => candidate?.name === "strip-offline-csp-in-dev");
+  const sourceHtml = readText("../src/index.html");
 
   assert.equal(plugin?.apply, "serve");
   assert.match(sourceHtml, /http-equiv="Content-Security-Policy"/u);
   assert.doesNotMatch(runIndexTransform(plugin, sourceHtml), /http-equiv="Content-Security-Policy"/u);
+});
+
+test("dev server combines Vite source serving with the local subscription APIs", () => {
+  const devServerUrl = new URL("../server/dev-server.mjs", import.meta.url);
+  assert.equal(existsSync(devServerUrl), true);
+
+  const source = readText("../server/dev-server.mjs");
+  assert.match(source, /createViteServer/u);
+  assert.match(source, /middlewareMode:\s*true/u);
+  assert.match(source, /src\/subscription\.html/u);
+  assert.match(source, /transformIndexHtml/u);
+  assert.match(source, /\/api\/subscription/u);
+  assert.match(source, /\/api\/subscriptions\/batch/u);
+  assert.match(source, /createSubscriptionHandler/u);
+  assert.match(source, /createSubscriptionBatchHandler/u);
+  assert.match(source, /createProxyFetch/u);
+});
+
+test("package exposes a dev service command for Docker and local debugging", () => {
+  const packageJson = JSON.parse(readText("../package.json"));
+
+  assert.match(packageJson.scripts["dev:service"], /node --watch server\/dev-server\.mjs/u);
 });
