@@ -22,7 +22,7 @@ npm install
 npm start
 ```
 
-然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个或多个 AT，也可以粘贴一个或多个 `api/auth/session` 返回的 JSON；页面会提取并去重 `accessToken`。单个 AT 保持一张订阅卡片；批量查询会显示汇总和一组同风格结果卡。最多一次查询 20 个 AT，结果按输入顺序返回，单个失败不会影响其它 AT 的结果。
+然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个或多个 AT，也可以粘贴一个或多个 `api/auth/session` 返回的 JSON；页面会提取并去重 `accessToken`。也兼容每行 `email----pwd----2fa----at` 的记录格式，只取最后一段 AT。单个 AT 保持一张订阅卡片；批量查询会显示汇总和一组同风格结果卡。最多一次查询 20 个 AT，结果按输入顺序返回，单个失败不会影响其它 AT 的结果。
 
 AT 只发送到本机 `/api/subscription` 或 `/api/subscriptions/batch`，再由本机服务请求 ChatGPT 订阅相关接口；本项目不保存、不记录原始 AT，也不会把它写进测试、日志或版本库。批量接口返回时只附带脱敏 token 片段用于定位失败项。
 

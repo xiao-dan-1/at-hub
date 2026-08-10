@@ -1,4 +1,5 @@
 const JWT_PATTERN = /\b(?:Bearer\s+)?([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b/giu;
+const CREDENTIAL_LINE_SEPARATOR = "----";
 const TOKEN_KEYS = new Set(["accesstoken", "access_token", "token"]);
 
 function normalizeCandidate(value) {
@@ -81,12 +82,58 @@ function readBalancedJsonObjects(text) {
   return values;
 }
 
+function readCredentialLineTokens(text) {
+  const events = [];
+  const ranges = [];
+  let lineStart = 0;
+
+  for (let index = 0; index <= text.length; index += 1) {
+    const isLineBreak = index === text.length || text[index] === "\n";
+    if (!isLineBreak) continue;
+
+    const lineEnd = index;
+    const rawLine = text.slice(lineStart, lineEnd);
+    if (rawLine.includes(CREDENTIAL_LINE_SEPARATOR)) {
+      ranges.push({ start: lineStart, end: lineEnd });
+
+      const trimmed = rawLine.trim();
+      const parts = trimmed.split(CREDENTIAL_LINE_SEPARATOR);
+      if (parts.length >= 4) {
+        const candidate = parts.at(-1)?.trim() ?? "";
+        const normalized = normalizeCandidate(candidate);
+        if (normalized) {
+          const leadingWhitespace = rawLine.search(/\S/u);
+          const contentStart = leadingWhitespace === -1 ? 0 : leadingWhitespace;
+          const candidateOffset = trimmed.lastIndexOf(candidate);
+          events.push({
+            index: lineStart + contentStart + candidateOffset,
+            source: "credential-line",
+            token: normalized,
+          });
+        }
+      }
+    }
+
+    lineStart = index + 1;
+  }
+
+  return { events, ranges };
+}
+
+function isInsideRanges(index, ranges) {
+  return ranges.some(range => index >= range.start && index < range.end);
+}
+
 export function extractAccessTokens(input) {
   const text = String(input ?? "");
   const collection = { tokens: [], sources: [], seen: new Set() };
   const events = [];
+  const credentialLines = readCredentialLineTokens(text);
   const jsonObjects = readBalancedJsonObjects(text);
 
+  for (const credentialLine of credentialLines.events) {
+    events.push(credentialLine);
+  }
   for (const jsonObject of jsonObjects) {
     const jsonCollection = { tokens: [], sources: [], seen: new Set() };
     walkJson(jsonObject.value, jsonCollection);
@@ -97,8 +144,9 @@ export function extractAccessTokens(input) {
 
   for (const match of text.matchAll(JWT_PATTERN)) {
     const matchIndex = match.index ?? 0;
-    const isInsideJson = jsonObjects.some(jsonObject => matchIndex >= jsonObject.start && matchIndex < jsonObject.end);
-    if (!isInsideJson) {
+    const isInsideJson = isInsideRanges(matchIndex, jsonObjects);
+    const isInsideCredentialLine = isInsideRanges(matchIndex, credentialLines.ranges);
+    if (!isInsideJson && !isInsideCredentialLine) {
       events.push({ index: matchIndex, source: "jwt", token: match[1] });
     }
   }

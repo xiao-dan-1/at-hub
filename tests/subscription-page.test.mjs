@@ -33,6 +33,7 @@ test("subscription controller calls only the local subscription endpoint", () =>
 test("subscription page supports batch subscription lookups without leaving the local service", () => {
   assert.match(html, /粘贴一个或多个 AT/u);
   assert.match(html, /最多 20 个/u);
+  assert.match(html, /email----pwd----2fa----at/u);
   assert.match(js, /fetch\("\/api\/subscriptions\/batch"/u);
   assert.match(js, /tokens\.length === 1/u);
   assert.match(js, /renderSubscriptionBatchResult/u);
