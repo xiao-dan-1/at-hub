@@ -19,7 +19,8 @@ test("README explains local operation, V2 views, engineering workflow, and secur
   assert.match(readme, /\/subscription/u);
   assert.match(readme, /subscription-v1/u);
   assert.match(readme, /批量/u);
-  assert.match(readme, /最多一次查询 20 个 AT/u);
+  assert.doesNotMatch(readme, /最多一次查询 20 个 AT/u);
+  assert.match(readme, /默认并发 10/u);
   assert.match(readme, /结果按输入顺序返回/u);
   assert.match(readme, /email----pwd----2fa----at/u);
   assert.match(readme, /AT 只发送到本机.*ChatGPT/u);

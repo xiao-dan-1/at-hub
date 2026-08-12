@@ -1,6 +1,6 @@
 # AT Hub
 
-围绕单个 ChatGPT Access Token（AT）的本地检查、订阅查询与状态理解工具。它把原始声明整理成可读的账号、认证、时间与权限信息，并在需要时通过本机服务查询订阅状态。
+围绕 ChatGPT Access Token（AT）的本地检查、测活、订阅查询与状态理解工具。它把原始声明整理成可读的账号、认证、时间与权限信息，并在需要时通过本机服务查询实时状态。
 
 ## 使用：离线解析
 
@@ -22,7 +22,7 @@ npm install
 npm start
 ```
 
-然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个或多个 AT，也可以粘贴一个或多个 `api/auth/session` 返回的 JSON；页面会提取并去重 `accessToken`。也兼容每行 `email----pwd----2fa----at` 的记录格式，只取最后一段 AT。单个 AT 保持一张订阅卡片；批量查询会显示汇总和一组同风格结果卡。最多一次查询 20 个 AT，结果按输入顺序返回，单个失败不会影响其它 AT 的结果。
+然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个或多个 AT，也可以粘贴一个或多个 `api/auth/session` 返回的 JSON；页面会提取并去重 `accessToken`。也兼容每行 `email----pwd----2fa----at` 的记录格式，只取最后一段 AT。单个 AT 保持一张订阅卡片；批量查询会显示汇总和一组同风格结果卡。结果按输入顺序返回，单个失败不会影响其它 AT 的结果；默认并发 10，每个上游请求默认 12 秒超时，慢代理不会无限拖住整批。
 
 AT 只发送到本机 `/api/subscription` 或 `/api/subscriptions/batch`，再由本机服务请求 ChatGPT 订阅相关接口；本项目不保存、不记录原始 AT，也不会把它写进测试、日志或版本库。批量接口返回时只附带脱敏 token 片段用于定位失败项。
 
@@ -33,6 +33,7 @@ AT 只发送到本机 `/api/subscription` 或 `/api/subscriptions/batch`，再�
 ```powershell
 npm start -- --proxy http://127.0.0.1:7890
 npm start -- --proxy socks5://proxy-user:proxy-password@proxy.example.com:3000
+npm start -- --proxy socks5://proxy-region-JP-sid-fixed-t-5:proxy-password@proxy.example.com:3000 --proxy-mode rotate
 ```
 
 也可以组合局域网监听与代理：
@@ -41,7 +42,9 @@ npm start -- --proxy socks5://proxy-user:proxy-password@proxy.example.com:3000
 npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 ```
 
-`--proxy` 只影响本地服务访问 ChatGPT 的上游请求；浏览器访问 `127.0.0.1` 或本机 IPv4 的这段仍是本机连接。
+`--proxy` 只影响本地服务访问 ChatGPT 的上游请求；浏览器访问 `127.0.0.1` 或本机 IPv4 的这段仍是本机连接。`--proxy-mode rotate` 会为每个 AT 分配一个代理 sid，并让该 AT 的 accounts/check 与 subscriptions 两次上游请求复用同一个 sid，适合 1024proxy 这类按 session id 分配出口的动态代理；不写时默认 `fixed`，保持同一个代理会话。
+
+查询速度可以按代理质量调节：`--subscription-concurrency 10` 提高订阅批量并发（最高按 20 执行），`--live-concurrency 16` 提高测活批量并发，`--upstream-timeout-ms 9000` 缩短单次上游等待，`--ip-timeout-ms 2500` 缩短出口 IP 检测等待，`--body-limit-bytes 8388608` 调整本地服务接收批量 AT 的请求体上限。并发越高越快，但代理质量一般时也更容易触发限速或防护。
 
 代理用户名或密码里如果包含 `@`、`:`、`/`、`?`、`#`、`%` 等特殊字符，先做 URL 编码后再写入代理地址。
 
@@ -51,11 +54,24 @@ npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 
 `subscription-v1` 保持输入框常驻：单个 AT 以一张轻卡片展示当前账号订阅状态，多个 AT 以批量摘要和结果卡片列表展示；更多字段收进原始 JSON。后续新功能应继续复用“AT 输入 → 本地服务 → 按需展示 → 原始 JSON 兜底”的节奏，而不是在这个页面继续堆数据。
 
+## 使用：AT 测活
+
+AT 测活同样需要本地 JS 服务：
+
+```powershell
+npm install
+npm start
+```
+
+然后打开 `http://127.0.0.1:5173/live`。页面支持单个或批量粘贴 AT、`api/auth/session` JSON，以及每行 `email----pwd----2fa----at` 的记录格式；最多一次测活 100 个，默认并发 10（参考 CPA 测活配置）。
+
+本地服务会请求 `backend-api/me`：上游 HTTP 200 会显示“AT 可用”并展示邮箱、用户 ID、名称与原始 JSON；上游 HTTP 401/403 会显示“AT 不可用”。其它网络、代理或网页防护问题会显示为查询失败，不会把原始 AT 回显到结果里。
+
 ## Docker 部署
 
-适合把 `/subscription` 作为长期运行的本地服务。当前仓库的 `compose.yaml` 默认使用 GHCR 镜像，不再从服务器源码构建；这样服务器上可以直接 `docker compose pull` 更新镜像。
+适合把 `/live` 和 `/subscription` 作为长期运行的本地服务。当前仓库的 `compose.yaml` 默认使用 GHCR 镜像，不再从服务器源码构建；这样服务器上可以直接 `docker compose pull` 更新镜像。
 
-容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/subscription` 或 `/api/subscriptions/batch`，再由容器服务查询上游订阅状态。
+容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/at-live`、`/api/at-live/batch`、`/api/subscription` 或 `/api/subscriptions/batch`，再由容器服务查询上游实时状态。
 
 ### Docker 开发调试
 
@@ -68,6 +84,7 @@ AT_HUB_DEV_PORT=5175 docker compose -f compose.dev.yaml up
 打开：
 
 - `http://127.0.0.1:5175/`
+- `http://127.0.0.1:5175/live`
 - `http://127.0.0.1:5175/subscription`
 
 停止开发容器：
@@ -100,6 +117,7 @@ docker compose up -d
 打开：
 
 - `http://127.0.0.1:5173/`
+- `http://127.0.0.1:5173/live`
 - `http://127.0.0.1:5173/subscription`
 
 查看状态、日志与停止服务：
@@ -123,6 +141,12 @@ cd /opt/at-hub
 cat > .env <<'EOF'
 AT_HUB_PORT=5173
 AT_INSPECTOR_PROXY=socks5://proxy-user:proxy-password@proxy.example.com:3000
+AT_INSPECTOR_PROXY_MODE=rotate
+AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY=10
+AT_INSPECTOR_LIVE_CONCURRENCY=10
+AT_INSPECTOR_UPSTREAM_TIMEOUT_MS=12000
+AT_INSPECTOR_IP_TIMEOUT_MS=4000
+AT_INSPECTOR_BODY_LIMIT_BYTES=8388608
 EOF
 
 docker compose pull
@@ -130,7 +154,7 @@ docker compose up -d --force-recreate
 docker compose logs --tail 80 at-hub
 ```
 
-把 `proxy-user`、`proxy-password` 和代理主机替换为服务商提供的值；密码里有特殊字符时同样先做 URL 编码。
+把 `proxy-user`、`proxy-password` 和代理主机替换为服务商提供的值；如果你的代理用户名包含 `-sid-固定值-t-`，可把 `AT_INSPECTOR_PROXY_MODE` 设为 `rotate` 自动轮转 sid。密码里有特殊字符时同样先做 URL 编码。
 
 也可以固定镜像版本或指定宿主机端口：
 
@@ -209,6 +233,7 @@ docker pull ghcr.io/xiao-dan-1/at-hub:0.0.3
 ## 安全边界
 
 - 根目录 `index.html` 离线解析页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。
+- `/live` AT 测活页面只连接同源本地服务；本地服务会联网请求 `backend-api/me`，因此不要把它当成零上传页面。
 - `/subscription` 订阅查询页面只连接同源本地服务；本地服务会联网查询实时订阅状态，因此不要把它当成零上传页面。
 - 本地服务上游请求只显式携带 `Authorization: Bearer <AT>` 与 JSON `Accept`，不主动携带浏览器 Cookie 或本机时区参数。
 - 工具只解码 JWT，不验证签名、撤销状态或服务器可用性。页面显示“在声明时间窗口内”也不等于 token 可用。
@@ -228,7 +253,7 @@ npm run dev
 npm start
 ```
 
-Vite 开发服务器默认位于 `http://127.0.0.1:5173/`。订阅查询请使用 `npm start`，它会先构建，再启动提供 `/subscription` 所需 API 的本地服务。
+Vite 开发服务器默认位于 `http://127.0.0.1:5173/`。测活与订阅查询请使用 `npm start` 或 `npm run dev:service`，它会启动提供 `/live`、`/subscription` 所需 API 的本地服务。
 
 ```powershell
 npm test
@@ -237,7 +262,7 @@ npm run release
 ```
 
 - `npm test` 先重新构建，再运行全部解析、脱敏、语义、交互、发布与仓库安全测试；若根目录发布文件尚未同步，测试会明确失败。
-- `npm run build` 在 `dist/index.html` 生成无外部运行时资源的离线解析版本，并在 `dist/subscription.html` 生成本地服务订阅查询页。
+- `npm run build` 在 `dist/index.html` 生成无外部运行时资源的离线解析版本，并在 `dist/live.html`、`dist/subscription.html` 生成本地服务页面。
 - `npm run release` 只验证并发布离线解析页到根目录可双击使用的 `index.html`；订阅查询仍需 `npm start`。
 
 源码位于 `src/`：`core/` 保存不依赖 DOM 的解析与解释逻辑，`ui/` 负责界面和交互。所有测试 token 都由代码生成，不包含真实账号或凭据。

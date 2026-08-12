@@ -41,13 +41,86 @@ function createFakeLink() {
   };
 }
 
+function createFakeNav(currentPage = "index") {
+  return {
+    dataset: { currentPage },
+    children: [],
+    replaceChildren(...children) {
+      this.children = children;
+    },
+  };
+}
+
+function createFakeDocument({ navs = [], links = [] } = {}) {
+  const createdLinks = [];
+  return {
+    createdLinks,
+    createElement(tagName) {
+      assert.equal(tagName, "a");
+      const attributes = new Map();
+      const link = {
+        dataset: {},
+        className: "",
+        textContent: "",
+        setAttribute(name, value) {
+          attributes.set(name, String(value));
+        },
+        getAttribute(name) {
+          return attributes.get(name) ?? null;
+        },
+        removeAttribute(name) {
+          attributes.delete(name);
+        },
+        addEventListener() {},
+      };
+      createdLinks.push(link);
+      return link;
+    },
+    querySelectorAll(selector) {
+      if (selector === "[data-tool-navigation]") return navs;
+      if (selector === "[data-requires-local-service]") {
+        return [
+          ...links,
+          ...createdLinks.filter(link => Object.hasOwn(link.dataset, "requiresLocalService")),
+        ];
+      }
+      return [];
+    },
+  };
+}
+
+test("tool navigation renders registered pages from the shared registry", async () => {
+  assert.equal(existsSync(navigationModule), true, "missing shared tool navigation controller");
+  const { configureToolNavigation } = await import(`${navigationModule.href}?registry-render`);
+  const nav = createFakeNav("subscription");
+  const documentRef = createFakeDocument({ navs: [nav] });
+
+  configureToolNavigation({
+    documentRef,
+    locationRef: { protocol: "http:", pathname: "/subscription" },
+  });
+
+  assert.equal(nav.children.length, 3);
+  assert.equal(nav.children[0].textContent, "本地解析");
+  assert.equal(nav.children[0].getAttribute("href"), "/");
+  assert.equal(nav.children[0].getAttribute("aria-current"), null);
+  assert.equal(nav.children[1].textContent, "AT 测活");
+  assert.equal(nav.children[1].getAttribute("href"), "/live");
+  assert.equal(nav.children[1].getAttribute("aria-current"), null);
+  assert.equal(nav.children[1].dataset.requiresLocalService, "true");
+  assert.equal(nav.children[2].textContent, "订阅查询");
+  assert.equal(nav.children[2].getAttribute("href"), "/subscription");
+  assert.equal(nav.children[2].getAttribute("aria-current"), "page");
+  assert.equal(nav.children[2].dataset.requiresLocalService, "true");
+});
+
 test("tool navigation marks service-only links as unavailable in file mode", async () => {
   assert.equal(existsSync(navigationModule), true, "missing shared tool navigation controller");
   const { configureToolNavigation } = await import(`${navigationModule.href}?file-mode`);
   const link = createFakeLink();
 
   configureToolNavigation({
-    documentRef: { querySelectorAll: () => [link] },
+    documentRef: createFakeDocument({ links: [link] }),
     locationRef: { protocol: "file:" },
   });
 
@@ -65,7 +138,7 @@ test("tool navigation keeps service links active on the local service", async ()
   const link = createFakeLink();
 
   configureToolNavigation({
-    documentRef: { querySelectorAll: () => [link] },
+    documentRef: createFakeDocument({ links: [link] }),
     locationRef: { protocol: "http:" },
   });
 

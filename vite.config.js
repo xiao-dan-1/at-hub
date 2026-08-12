@@ -2,12 +2,9 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
+import { getPageById } from "./src/core/pages.js";
 
 const projectRoot = fileURLToPath(new URL(".", import.meta.url));
-const pageEntries = {
-  index: "src/index.html",
-  subscription: "src/subscription.html",
-};
 
 function stripOfflineCspInDev() {
   return {
@@ -24,7 +21,8 @@ function stripOfflineCspInDev() {
 
 export default defineConfig(() => {
   const page = process.env.AT_INSPECTOR_PAGE ?? "index";
-  if (!pageEntries[page]) {
+  const pageEntry = getPageById(page);
+  if (!pageEntry) {
     throw new Error(`Unknown AT_INSPECTOR_PAGE: ${page}`);
   }
 
@@ -34,13 +32,13 @@ export default defineConfig(() => {
     plugins: [stripOfflineCspInDev(), viteSingleFile()],
     build: {
       outDir: "../dist",
-      emptyOutDir: page === "index",
+      emptyOutDir: pageEntry.id === "index",
       cssCodeSplit: false,
       assetsInlineLimit: Number.MAX_SAFE_INTEGER,
       sourcemap: false,
       modulePreload: { polyfill: false },
       rollupOptions: {
-        input: resolve(projectRoot, pageEntries[page]),
+        input: resolve(projectRoot, pageEntry.source),
       },
     },
   };

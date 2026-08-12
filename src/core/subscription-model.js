@@ -57,14 +57,19 @@ function readJwtSummary(token, nowMilliseconds) {
         readPath(payload, ["https://api.openai.com/auth", "chatgpt_plan_type"]),
         payload.chatgpt_plan_type,
       ) ?? null,
-      user_id: firstDefined(
-        readPath(payload, ["https://api.openai.com/auth", "chatgpt_user_id"]),
-        readPath(payload, ["https://api.openai.com/auth", "user_id"]),
-        payload.chatgpt_user_id,
-        payload.user_id,
-      ) ?? null,
-      expires_at_jwt: toIsoDate(payload.exp),
-    };
+    user_id: firstDefined(
+      readPath(payload, ["https://api.openai.com/auth", "chatgpt_user_id"]),
+      readPath(payload, ["https://api.openai.com/auth", "user_id"]),
+      payload.chatgpt_user_id,
+      payload.user_id,
+    ) ?? null,
+    account_id: firstDefined(
+      readPath(payload, ["https://api.openai.com/auth", "chatgpt_account_id"]),
+      payload.chatgpt_account_id,
+      payload.account_id,
+    ) ?? null,
+    expires_at_jwt: toIsoDate(payload.exp),
+  };
   } catch {
     return { email: null, plan_type_jwt: null, user_id: null, expires_at_jwt: null };
   }
@@ -149,7 +154,7 @@ export function normalizeSubscriptionStatus({
     ok: true,
     reason: "ok",
     email: firstDefined(jwt.email, account.email, accountsResponse.email) ?? null,
-    account_id: firstDefined(account.account_id, account.id, accountRecord.account_id) ?? null,
+    account_id: firstDefined(account.account_id, account.id, accountRecord.account_id, jwt.account_id) ?? null,
     user_id: firstDefined(jwt.user_id, account.account_owner_id, account.user_id, accountRecord.user_id) ?? null,
     plan_type: firstDefined(subscriptionResponse.plan_type, account.plan_type, jwt.plan_type_jwt) ?? null,
     plan_type_jwt: jwt.plan_type_jwt,

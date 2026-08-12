@@ -76,6 +76,71 @@ test("createProxyFetch uses the SOCKS5 dispatcher for socks proxy urls", async (
   assert.equal(calls[0].init.dispatcher.uri, proxyUrl);
 });
 
+test("createProxyFetch rotates 1024proxy sid values for each upstream request in rotate mode", async () => {
+  const calls = [];
+  const generatedSessionIds = ["sidA123", "sidB456"];
+  class FakeSocks5ProxyAgent {
+    constructor(uri) {
+      this.type = "socks5";
+      this.uri = uri;
+    }
+  }
+  const fetchFn = createProxyFetch("socks5://proxy-region-JP-sid-fixed-t-5:secret@us.1024proxy.io:3000", {
+    mode: "rotate",
+    Socks5ProxyAgentCtor: FakeSocks5ProxyAgent,
+    sessionIdFactory: () => generatedSessionIds.shift(),
+    baseFetch: async (url, init) => {
+      calls.push({ url: String(url), init });
+      return new Response("{}");
+    },
+  });
+
+  await fetchFn("https://example.test/first");
+  await fetchFn("https://example.test/second");
+
+  assert.equal(calls.length, 2);
+  assert.equal(
+    calls[0].init.dispatcher.uri,
+    "socks5://proxy-region-JP-sid-sidA123-t-5:secret@us.1024proxy.io:3000",
+  );
+  assert.equal(
+    calls[1].init.dispatcher.uri,
+    "socks5://proxy-region-JP-sid-sidB456-t-5:secret@us.1024proxy.io:3000",
+  );
+  assert.notEqual(calls[0].init.dispatcher.uri, calls[1].init.dispatcher.uri);
+});
+
+test("createProxyFetch reuses an explicit rotate session id across related upstream calls", async () => {
+  const calls = [];
+  class FakeSocks5ProxyAgent {
+    constructor(uri) {
+      this.type = "socks5";
+      this.uri = uri;
+    }
+  }
+  const fetchFn = createProxyFetch("socks5://proxy-region-JP-sid-fixed-t-5:secret@us.1024proxy.io:3000", {
+    mode: "rotate",
+    Socks5ProxyAgentCtor: FakeSocks5ProxyAgent,
+    sessionIdFactory: () => "unusedFallback",
+    baseFetch: async (url, init) => {
+      calls.push({ url: String(url), init });
+      return new Response("{}");
+    },
+  });
+
+  await fetchFn("https://example.test/accounts", { proxySessionId: "sameAT42" });
+  await fetchFn("https://example.test/subscriptions", { proxySessionId: "sameAT42" });
+
+  assert.equal(calls.length, 2);
+  assert.equal(
+    calls[0].init.dispatcher.uri,
+    "socks5://proxy-region-JP-sid-sameAT42-t-5:secret@us.1024proxy.io:3000",
+  );
+  assert.equal(calls[1].init.dispatcher.uri, calls[0].init.dispatcher.uri);
+  assert.equal(calls[1].init.dispatcher, calls[0].init.dispatcher);
+  assert.equal("proxySessionId" in calls[0].init, false);
+});
+
 test("createProxyFetch keeps HTTP proxy urls on the HTTP dispatcher", async () => {
   const calls = [];
   class FakeHttpProxyAgent {

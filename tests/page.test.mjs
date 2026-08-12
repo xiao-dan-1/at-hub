@@ -6,6 +6,7 @@ const html = readFileSync(new URL("../src/index.html", import.meta.url), "utf8")
 const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 const app = readFileSync(new URL("../src/ui/app.js", import.meta.url), "utf8");
 const main = readFileSync(new URL("../src/main.js", import.meta.url), "utf8");
+const navigation = readFileSync(new URL("../src/ui/tool-navigation.js", import.meta.url), "utf8");
 
 test("V2 source exposes the complete accessible application structure", () => {
   for (const id of [
@@ -60,11 +61,11 @@ test("V2 source is a compact tool rather than a marketing hero", () => {
 });
 
 test("app bar exposes lightweight tool navigation with a gated subscription link", () => {
-  assert.match(html, /<nav class="tool-nav" aria-label="AT 工具">/u);
-  assert.match(html, /aria-current="page"[^>]*>本地解析/u);
-  assert.match(html, /data-requires-local-service/u);
-  assert.match(html, /data-offline-label="订阅查询 · 需本地服务"/u);
+  assert.match(html, /<nav class="tool-nav" aria-label="AT 工具" data-tool-navigation data-current-page="index"><\/nav>/u);
   assert.match(main, /configureToolNavigation/u);
+  assert.match(navigation, /getNavigationPages/u);
+  assert.match(navigation, /requiresLocalService/u);
+  assert.match(navigation, /offlineLabel/u);
   assert.match(css, /\.app-bar__primary\s*\{/u);
   assert.match(css, /\.tool-nav\s*\{/u);
   assert.match(css, /\.tool-nav__item\[aria-current="page"\]/u);

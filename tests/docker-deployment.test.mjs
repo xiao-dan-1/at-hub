@@ -44,6 +44,11 @@ test("compose file exposes AT Hub with optional proxy configuration", () => {
   assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
   assert.match(compose, /AT_INSPECTOR_PORT:\s*5173/u);
   assert.match(compose, /AT_INSPECTOR_PROXY:\s*\$\{AT_INSPECTOR_PROXY:-\}/u);
+  assert.match(compose, /AT_INSPECTOR_PROXY_MODE:\s*\$\{AT_INSPECTOR_PROXY_MODE:-fixed\}/u);
+  assert.match(compose, /AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY:\s*\$\{AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY:-10\}/u);
+  assert.match(compose, /AT_INSPECTOR_LIVE_CONCURRENCY:\s*\$\{AT_INSPECTOR_LIVE_CONCURRENCY:-10\}/u);
+  assert.match(compose, /AT_INSPECTOR_UPSTREAM_TIMEOUT_MS:\s*\$\{AT_INSPECTOR_UPSTREAM_TIMEOUT_MS:-12000\}/u);
+  assert.match(compose, /AT_INSPECTOR_IP_TIMEOUT_MS:\s*\$\{AT_INSPECTOR_IP_TIMEOUT_MS:-4000\}/u);
   assert.doesNotMatch(compose, /HTTP_PROXY/u);
   assert.doesNotMatch(compose, /HTTPS_PROXY/u);
   assert.match(compose, /restart:\s*unless-stopped/u);
@@ -60,9 +65,14 @@ test("dev compose mounts the workspace for no-rebuild debugging", () => {
   assert.match(compose, /- \.\/:\/app/u);
   assert.match(compose, /- at-hub-dev-node-modules:\/app\/node_modules/u);
   assert.match(compose, /npm ci/u);
-  assert.match(compose, /node --watch server\/dev-server\.mjs/u);
+  assert.match(compose, /node --watch-path=server --watch-path=src\/core server\/dev-server\.mjs/u);
   assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
   assert.match(compose, /AT_INSPECTOR_PROXY:\s*\$\{AT_INSPECTOR_PROXY:-\}/u);
+  assert.match(compose, /AT_INSPECTOR_PROXY_MODE:\s*\$\{AT_INSPECTOR_PROXY_MODE:-fixed\}/u);
+  assert.match(compose, /AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY:\s*\$\{AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY:-10\}/u);
+  assert.match(compose, /AT_INSPECTOR_LIVE_CONCURRENCY:\s*\$\{AT_INSPECTOR_LIVE_CONCURRENCY:-10\}/u);
+  assert.match(compose, /AT_INSPECTOR_UPSTREAM_TIMEOUT_MS:\s*\$\{AT_INSPECTOR_UPSTREAM_TIMEOUT_MS:-12000\}/u);
+  assert.match(compose, /AT_INSPECTOR_IP_TIMEOUT_MS:\s*\$\{AT_INSPECTOR_IP_TIMEOUT_MS:-4000\}/u);
   assert.match(compose, /CHOKIDAR_USEPOLLING:\s*"true"/u);
   assert.doesNotMatch(compose, /^\s*build:/mu);
 });
@@ -94,8 +104,13 @@ test("README documents docker deployment and proxy usage", () => {
   assert.match(readme, /AT_INSPECTOR_PROXY=http:\/\/host\.docker\.internal:7890/u);
   assert.match(readme, /\/opt\/at-hub\/\.env/u);
   assert.match(readme, /AT_INSPECTOR_PROXY=socks5:\/\/proxy-user:proxy-password@proxy\.example\.com:3000/u);
+  assert.match(readme, /AT_INSPECTOR_PROXY_MODE=rotate/u);
+  assert.match(readme, /-sid-/u);
   assert.match(readme, /docker compose up -d --force-recreate/u);
   assert.match(readme, /URL 编码/u);
+  assert.match(readme, /AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY=10/u);
+  assert.match(readme, /AT_INSPECTOR_UPSTREAM_TIMEOUT_MS=12000/u);
+  assert.match(readme, /AT_INSPECTOR_IP_TIMEOUT_MS=4000/u);
   assert.match(readme, /docker compose down/u);
 });
 

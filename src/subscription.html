@@ -17,18 +17,7 @@
           <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
           <span>AT Hub</span>
         </a>
-        <nav class="tool-nav" aria-label="AT 工具">
-          <a class="tool-nav__item" href="/">本地解析</a>
-          <a
-            class="tool-nav__item"
-            href="/subscription"
-            aria-current="page"
-            data-requires-local-service
-            data-service-href="/subscription"
-            data-local-service-label="订阅查询"
-            data-offline-label="订阅查询 · 需本地服务"
-          >订阅查询</a>
-        </nav>
+        <nav class="tool-nav" aria-label="AT 工具" data-tool-navigation data-current-page="subscription"></nav>
       </div>
       <div class="local-status">
         <span class="local-status__dot" aria-hidden="true"></span>
@@ -44,6 +33,7 @@
         <h1 id="subscriptionHeading">ChatGPT 订阅查询</h1>
         <p>粘贴一个或多个 AT，查询账号套餐、续费状态和剩余时间。</p>
       </div>
+      <span class="dev-smoke-badge" data-dev-smoke>Docker dev hot reload ✓</span>
     </section>
 
     <section class="input-surface subscription-query" aria-label="订阅查询输入">
@@ -53,10 +43,11 @@
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
-        placeholder="粘贴 accessToken、Bearer token，或 api/auth/session 返回的 JSON；也支持 email----pwd----2fa----at 逐行粘贴，最多 20 个"
+        wrap="off"
+        placeholder="粘贴 accessToken、Bearer token，或 api/auth/session 返回的 JSON；也支持 email----pwd----2fa----at 逐行粘贴，查询后保留为一行一个 AT"
       ></textarea>
       <p class="network-boundary">
-        本页通过本地服务查询：AT 只发送到本机 /api/subscription 或 /api/subscriptions/batch，然后由本机服务会联网查询订阅状态；最多 20 个，不保存、不记录原始 AT。
+        本页通过本地服务查询：AT 只发送到本机 /api/subscription 或 /api/subscriptions/batch，然后由本机服务会联网查询订阅状态；不保存、不记录原始 AT。
       </p>
       <div class="input-actions">
         <button id="subscriptionRunButton" class="button button--primary" type="button">
@@ -65,6 +56,10 @@
         <button id="subscriptionClearButton" class="button button--secondary" type="button">
           <i data-lucide="trash-2" aria-hidden="true"></i><span>清空</span>
         </button>
+        <button id="subscriptionIpButton" class="button button--secondary" type="button">
+          <i data-lucide="globe" aria-hidden="true"></i><span>测当前 IP</span>
+        </button>
+        <span id="subscriptionIpStatus" class="ip-inline-status" aria-live="polite" hidden></span>
         <span id="subscriptionStatus" class="keyboard-hint" aria-live="polite"></span>
       </div>
       <div id="subscriptionError" class="error-box" role="alert" hidden></div>

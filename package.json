@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "dev:service": "node --watch server/dev-server.mjs",
+    "dev:service": "node --watch-path=server --watch-path=src/core server/dev-server.mjs",
     "start": "npm run build && node server/local-server.mjs",
     "build": "node scripts/build-pages.mjs",
     "release": "npm run build && node scripts/publish-singlefile.mjs",

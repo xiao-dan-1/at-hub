@@ -1,3 +1,5 @@
+import { decodeJsonObject } from "./jwt.js";
+
 const JWT_PATTERN = /\b(?:Bearer\s+)?([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b/giu;
 const CREDENTIAL_LINE_SEPARATOR = "----";
 const TOKEN_KEYS = new Set(["accesstoken", "access_token", "token"]);
@@ -5,7 +7,17 @@ const TOKEN_KEYS = new Set(["accesstoken", "access_token", "token"]);
 function normalizeCandidate(value) {
   const token = String(value ?? "").trim().replace(/^Bearer\s+/iu, "").trim();
   const match = token.match(/^([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/u);
-  return match?.[1] ?? "";
+  if (!match) return "";
+
+  const [header, payload] = match[1].split(".");
+  try {
+    decodeJsonObject(header, "Header");
+    decodeJsonObject(payload, "Payload");
+  } catch {
+    return "";
+  }
+
+  return match[1];
 }
 
 function addToken(collection, token, source) {

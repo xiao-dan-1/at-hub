@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src data:; font-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>AT 测活 · AT Hub</title>
+</head>
+<body class="subscription-page live-page">
+  <a class="skip-link" href="#liveInput">跳到 AT 测活输入框</a>
+
+  <header class="app-bar">
+    <div class="app-bar__inner">
+      <div class="app-bar__primary">
+        <a class="brand" href="/" aria-label="AT Hub 首页">
+          <span class="brand__mark" aria-hidden="true"><i data-lucide="shield-check"></i></span>
+          <span>AT Hub</span>
+        </a>
+        <nav class="tool-nav" aria-label="AT 工具" data-tool-navigation data-current-page="live"></nav>
+      </div>
+      <div class="local-status">
+        <span class="local-status__dot" aria-hidden="true"></span>
+        <span>本地服务 · 会联网</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="top" class="app-shell subscription-shell live-shell">
+    <section class="subscription-hero" aria-labelledby="liveHeading">
+      <div>
+        <p class="eyebrow">Live Check</p>
+        <h1 id="liveHeading">AT 测活</h1>
+        <p>通过 backend-api/me 检查 AT 是否仍可读取当前账号信息。</p>
+      </div>
+    </section>
+
+    <section class="input-surface subscription-query live-query" aria-label="AT 测活输入">
+      <label class="subscription-label" for="liveInput">粘贴 AT</label>
+      <textarea
+        id="liveInput"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="accessToken / Bearer token / api/auth/session JSON / email----pwd----2fa----at，最多 100 个"
+      ></textarea>
+      <p id="liveCountHint" class="input-counter" aria-live="polite">等待粘贴 · 一行一个 AT</p>
+      <p class="network-boundary">
+        本机接口：/api/at-live、/api/at-live/batch；上游：backend-api/me；不保存、不记录原始 AT。
+      </p>
+      <div class="input-actions">
+        <button id="liveRunButton" class="button button--primary" type="button">
+          <i data-lucide="activity" aria-hidden="true"></i><span>开始测活</span>
+        </button>
+        <button id="liveClearButton" class="button button--secondary" type="button">
+          <i data-lucide="trash-2" aria-hidden="true"></i><span>清空</span>
+        </button>
+        <span id="liveStatus" class="keyboard-hint" aria-live="polite"></span>
+      </div>
+      <div id="liveError" class="error-box" role="alert" hidden></div>
+    </section>
+
+    <section id="liveResult" class="live-result" aria-live="polite" hidden></section>
+  </main>
+
+  <footer class="app-footer">测活依赖实时服务状态；AT 泄露后应立即注销相关会话或更新凭据。</footer>
+  <script type="module" src="/live.js"></script>
+</body>
+</html>

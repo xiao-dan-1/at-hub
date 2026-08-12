@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const html = readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
+const liveHtml = readFileSync(new URL("../dist/live.html", import.meta.url), "utf8");
 const subscriptionHtml = readFileSync(new URL("../dist/subscription.html", import.meta.url), "utf8");
 const publishedHtml = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
@@ -23,6 +24,14 @@ test("build emits a local-service subscription page", () => {
   assert.match(subscriptionHtml, /connect-src 'self'/u);
   assert.match(subscriptionHtml, /\/api\/subscription/u);
   assert.doesNotMatch(subscriptionHtml, /chatgpt\.com|chat\.openai\.com/u);
+});
+
+test("build emits a local-service AT live check page", () => {
+  assert.match(liveHtml, /<style[\s>]/u);
+  assert.match(liveHtml, /<script[^>]*>[\s\S]+<\/script>/u);
+  assert.match(liveHtml, /connect-src 'self'/u);
+  assert.match(liveHtml, /\/api\/at-live/u);
+  assert.doesNotMatch(liveHtml, /chatgpt\.com|chat\.openai\.com/u);
 });
 
 test("the standard test command rebuilds the generated artifact first", () => {
