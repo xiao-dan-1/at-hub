@@ -71,7 +71,7 @@ npm start
 
 适合把 `/live` 和 `/subscription` 作为长期运行的本地服务。当前仓库的 `compose.yaml` 默认使用 GHCR 镜像，不再从服务器源码构建；这样服务器上可以直接 `docker compose pull` 更新镜像。
 
-容器默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到容器内的 `/api/at-live`、`/api/at-live/batch`、`/api/subscription` 或 `/api/subscriptions/batch`，再由容器服务查询上游实时状态。
+生产 `compose.yaml` 使用宿主网络模式运行容器。这样在部分 Linux 服务器上，容器访问 SOCKS5 动态代理会复用宿主机已经验证可用的出站路径，不会被受限的 Docker bridge 网络拦截。服务默认监听 `0.0.0.0:5173`，浏览器访问本机 `5173`；AT 只先发送到本机服务的 `/api/at-live`、`/api/at-live/batch`、`/api/subscription` 或 `/api/subscriptions/batch`，再由服务查询上游实时状态。生产模式不使用 `ports` 映射；需要换端口时设置 `AT_HUB_PORT`，它会同时成为服务监听端口。
 
 ### Docker 开发调试
 
@@ -128,7 +128,7 @@ docker compose logs -f at-hub
 docker compose down
 ```
 
-如果容器访问 ChatGPT 需要走宿主机代理，Docker Desktop 可使用 `host.docker.internal`：
+开发容器仍使用 bridge 网络。Docker Desktop 中如果代理运行在宿主机，可使用 `host.docker.internal`：
 
 ```bash
 AT_INSPECTOR_PROXY=http://host.docker.internal:7890 docker compose up -d
@@ -156,7 +156,7 @@ docker compose logs --tail 80 at-hub
 
 把 `proxy-user`、`proxy-password` 和代理主机替换为服务商提供的值；如果你的代理用户名包含 `-sid-固定值-t-`，可把 `AT_INSPECTOR_PROXY_MODE` 设为 `rotate` 自动轮转 sid。密码里有特殊字符时同样先做 URL 编码。
 
-也可以固定镜像版本或指定宿主机端口：
+也可以固定镜像版本或指定宿主机监听端口：
 
 ```bash
 AT_HUB_IMAGE_TAG=0.0.3 docker compose up -d

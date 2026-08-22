@@ -1,11 +1,13 @@
 services:
   at-hub:
     image: ghcr.io/xiao-dan-1/at-hub:${AT_HUB_IMAGE_TAG:-latest}
-    ports:
-      - "${AT_HUB_PORT:-5173}:5173"
+    # The production host uses a restricted Docker bridge that cannot reach
+    # SOCKS5 proxy endpoints. Share the host network so proxy egress follows
+    # the same route as the server's verified host-level connection.
+    network_mode: host
     environment:
       AT_INSPECTOR_HOST: 0.0.0.0
-      AT_INSPECTOR_PORT: 5173
+      AT_INSPECTOR_PORT: ${AT_HUB_PORT:-5173}
       AT_INSPECTOR_PROXY: ${AT_INSPECTOR_PROXY:-}
       AT_INSPECTOR_PROXY_MODE: ${AT_INSPECTOR_PROXY_MODE:-fixed}
       AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY: ${AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY:-10}

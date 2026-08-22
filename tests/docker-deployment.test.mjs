@@ -40,9 +40,10 @@ test("compose file exposes AT Hub with optional proxy configuration", () => {
   assert.match(compose, /services:\s+at-hub:/u);
   assert.match(compose, /image:\s*ghcr\.io\/xiao-dan-1\/at-hub:\$\{AT_HUB_IMAGE_TAG:-latest\}/u);
   assert.doesNotMatch(compose, /^\s*build:/mu);
-  assert.match(compose, /"\$\{AT_HUB_PORT:-5173\}:5173"/u);
+  assert.match(compose, /network_mode:\s*host/u);
+  assert.doesNotMatch(compose, /^\s*ports:/mu);
   assert.match(compose, /AT_INSPECTOR_HOST:\s*0\.0\.0\.0/u);
-  assert.match(compose, /AT_INSPECTOR_PORT:\s*5173/u);
+  assert.match(compose, /AT_INSPECTOR_PORT:\s*\$\{AT_HUB_PORT:-5173\}/u);
   assert.match(compose, /AT_INSPECTOR_PROXY:\s*\$\{AT_INSPECTOR_PROXY:-\}/u);
   assert.match(compose, /AT_INSPECTOR_PROXY_MODE:\s*\$\{AT_INSPECTOR_PROXY_MODE:-fixed\}/u);
   assert.match(compose, /AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY:\s*\$\{AT_INSPECTOR_SUBSCRIPTION_CONCURRENCY:-10\}/u);
