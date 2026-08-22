@@ -57,9 +57,51 @@ test("extractAccessTokens counts one JWT per line without adding email-like nois
   assert.equal(result.tokens.length, 10);
 });
 
+test("extractAccessTokens preserves trailing base64url hyphens and reports line accounting", () => {
+  const trailingHyphen = makeJwt(
+    { alg: "RS256" },
+    { email: "hyphen@example.test" },
+    "synthetic-signature-",
+  );
+  const second = makeJwt({ alg: "RS256" }, { email: "second@example.test" });
+
+  const result = extractAccessTokens([
+    trailingHyphen,
+    trailingHyphen,
+    second,
+    "not a token",
+  ].join("\n"));
+
+  assert.deepEqual(result.tokens, [trailingHyphen, second]);
+  assert.equal(result.input_line_count, 4);
+  assert.equal(result.duplicate_count, 1);
+  assert.equal(result.unrecognized_line_count, 1);
+});
+
+test("extractAccessTokens preserves a deterministic set of base64url signature endings", () => {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
+  const tokens = Array.from({ length: 128 }, (_, index) => {
+    let signature = "";
+    let value = (index + 1) * 2654435761;
+    for (let cursor = 0; cursor < 31; cursor += 1) {
+      value = (value * 1664525 + 1013904223) >>> 0;
+      signature += alphabet[value % alphabet.length];
+    }
+    signature += index % 2 === 0 ? "-" : "_";
+    return makeJwt({ alg: "RS256", typ: "JWT" }, { index }, signature);
+  });
+
+  assert.deepEqual(extractAccessTokens(tokens.join("\n")).tokens, tokens);
+});
+
 test("extractAccessTokens reports a safe empty result without echoing input", () => {
   const result = extractAccessTokens("not a token");
 
-  assert.deepEqual(result.tokens, []);
-  assert.deepEqual(result.sources, []);
+  assert.deepEqual(result, {
+    tokens: [],
+    sources: [],
+    input_line_count: 1,
+    duplicate_count: 0,
+    unrecognized_line_count: 1,
+  });
 });

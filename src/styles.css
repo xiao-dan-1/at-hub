@@ -202,16 +202,19 @@ textarea:focus, input:focus, select:focus { border-color: var(--primary); box-sh
 pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--code-text); background: var(--code-bg); border-radius: 6px; font-family: "Cascadia Code", Consolas, monospace; font-size: 0.76rem; line-height: 1.6; }
 .app-footer { width: min(100% - 32px, 920px); margin: 0 auto; padding: 10px 0 24px; color: var(--muted); border-top: 0; font-size: 0.78rem; }
 
-.subscription-shell { display: grid; gap: 18px; }
-.subscription-hero { display: flex; align-items: end; justify-content: space-between; gap: 24px; padding-top: 6px; }
+.subscription-shell { display: grid; gap: 16px; }
+.subscription-hero { padding: 8px 2px 0; }
 .subscription-hero p { margin-bottom: 0; }
-.dev-smoke-badge { display: inline-flex; min-height: 28px; flex: 0 0 auto; align-items: center; padding: 4px 10px; color: var(--primary-strong); background: color-mix(in srgb, var(--primary-soft) 76%, var(--surface)); border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--line)); border-radius: 999px; font-size: 0.74rem; font-weight: 760; white-space: nowrap; }
 .eyebrow { margin: 0 0 6px; color: var(--primary-strong); font-size: 0.72rem; font-weight: 780; letter-spacing: 0.04em; text-transform: uppercase; }
 .quiet-link { color: var(--muted); font-size: 0.82rem; font-weight: 700; text-decoration: none; }
 .quiet-link:hover { color: var(--primary-strong); }
-.subscription-query { max-width: none; margin: 0; padding: 18px; box-shadow: 0 6px 18px rgba(27, 42, 34, 0.035); }
+.subscription-query { max-width: none; margin: 0; padding: 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(27, 42, 34, 0.035); }
+.subscription-query__heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .subscription-label { display: block; color: var(--text); font-size: 0.84rem; font-weight: 760; }
-.subscription-query textarea { min-height: 118px; margin-top: 10px; overflow-x: auto; white-space: pre; }
+.query-privacy { color: var(--muted); font-size: 0.74rem; font-weight: 680; white-space: nowrap; }
+.subscription-query textarea { min-height: 118px; margin-top: 10px; padding: 15px 16px; overflow-x: auto; white-space: pre; }
+.subscription-query .input-actions { gap: 8px; margin-top: 14px; }
+.subscription-query .button { min-height: 40px; padding: 8px 13px; }
 .network-boundary { margin: 10px 0 0; padding: 0; color: var(--muted); background: transparent; border: 0; border-radius: 0; font-size: 0.78rem; line-height: 1.55; }
 .live-query { padding: 16px 18px 18px; }
 .live-query textarea { min-height: 108px; margin-top: 9px; padding: 14px 15px; border-color: color-mix(in srgb, var(--line-strong) 82%, var(--line)); }
@@ -228,6 +231,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-batch-stat strong { color: var(--text); font-size: 0.86rem; font-weight: 820; }
 .subscription-batch-stat[data-kind="trial"] { color: var(--primary-strong); background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 24%, var(--line)); }
 .subscription-batch-stat[data-kind="trial"] strong, .subscription-batch-stat[data-kind="active"] strong, .subscription-batch-stat[data-kind="success"] strong { color: var(--primary-strong); }
+.subscription-batch-stat[data-kind="partial"] strong { color: var(--warning); }
 .subscription-batch-stat[data-kind="failure"] strong { color: var(--danger); }
 .subscription-batch-list { display: grid; gap: 12px; }
 .subscription-batch-retry { min-height: 30px; padding: 5px 10px; color: var(--primary-strong); background: var(--surface); border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line)); border-radius: 999px; cursor: pointer; font-size: 0.72rem; font-weight: 780; white-space: nowrap; }
@@ -389,6 +393,8 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .result-actions .button { flex: 1; }
   .subscription-hero { align-items: stretch; flex-direction: column; gap: 10px; }
   .subscription-query { padding: 16px; }
+  .subscription-query textarea { overflow-x: hidden; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .subscription-query__heading { gap: 10px; }
   .subscription-card, .live-card { padding: 16px; }
   .subscription-card__top, .live-card__top { flex-direction: column; gap: 12px; }
   .subscription-grid, .subscription-facts, .live-card__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }

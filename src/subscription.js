@@ -1,6 +1,12 @@
 import { Globe, Radar, ShieldCheck, Trash2, createIcons } from "lucide";
 import "./styles.css";
 import { readLocalServiceJson } from "./core/local-response.js";
+import {
+  createIncompleteSubscriptionResult,
+  isSubscriptionBatchComplete,
+  missingSubscriptionIndexes,
+  subscriptionResultNeedsRetry,
+} from "./core/subscription-batch.js";
 import { extractAccessTokens } from "./core/token-extract.js";
 import { configureToolNavigation } from "./ui/tool-navigation.js";
 
@@ -24,6 +30,8 @@ const statusText = document.getElementById("subscriptionStatus");
 const shell = document.querySelector(".subscription-shell");
 let lastSubscriptionBatchTokens = [];
 let lastSubscriptionBatchState = null;
+let activeSubscriptionRequestId = 0;
+let activeSubscriptionController = null;
 
 configureToolNavigation();
 
@@ -121,16 +129,46 @@ function localSubscriptionIdentity(data) {
   };
 }
 
-function formatSubscriptionInputLines(tokens) {
-  return tokens.join("\n");
-}
-
-function renderInputTokenStatus(tokens, prefix = "已识别") {
+function renderInputTokenStatus(extracted, prefix = "已识别") {
+  const tokens = Array.isArray(extracted?.tokens) ? extracted.tokens : [];
   if (!Array.isArray(tokens) || tokens.length === 0) {
     statusText.textContent = input.value.trim() ? "未识别 AT · 一行一个 AT" : "";
     return;
   }
-  statusText.textContent = `${prefix} ${tokens.length} 个 AT · 一行一个`;
+  const parts = [
+    `${prefix} ${tokens.length} 个 AT`,
+    `输入 ${Number(extracted?.input_line_count) || tokens.length} 行`,
+  ];
+  if (Number(extracted?.duplicate_count) > 0) parts.push(`重复 ${extracted.duplicate_count}`);
+  if (Number(extracted?.unrecognized_line_count) > 0) parts.push(`未识别 ${extracted.unrecognized_line_count} 行`);
+  parts.push("一行一个");
+  statusText.textContent = parts.join(" · ");
+}
+
+function beginSubscriptionRequest() {
+  activeSubscriptionController?.abort();
+  activeSubscriptionRequestId += 1;
+  activeSubscriptionController = new AbortController();
+  return {
+    requestId: activeSubscriptionRequestId,
+    controller: activeSubscriptionController,
+  };
+}
+
+function isActiveSubscriptionRequest(requestId) {
+  return requestId === activeSubscriptionRequestId
+    && activeSubscriptionController?.signal.aborted !== true;
+}
+
+function isAbortError(error) {
+  return error?.name === "AbortError" || error?.code === "ABORT_ERR";
+}
+
+function redactLocalToken(token) {
+  const value = String(token ?? "");
+  if (!value) return "";
+  if (value.length <= 18) return `${value.slice(0, 4)}…`;
+  return `${value.slice(0, 12)}…${value.slice(-6)}`;
 }
 
 function formatPlan(data) {
@@ -391,7 +429,7 @@ function renderSubscriptionBatchRow(data) {
         <strong>${escapeHtml(ok ? formatRemaining({ days_left: data.token_days_left, hours_left: data.token_hours_left }) : "—")}</strong>
       </div>
       <span class="subscription-status-pill" data-active="${active ? "true" : "false"}">${escapeHtml(ok ? active ? "有效订阅" : "无活跃订阅" : "失败")}</span>
-      <div class="subscription-row__stage" ${stageStateAttribute(stageState)} title="${escapeHtml(valueOrDash(data?.auth_failure_hint ?? data?.subscription_detail_message ?? data?.subscription_detail_reason ?? stageText))}">
+      <div class="subscription-row__stage" ${stageStateAttribute(stageState)} title="${escapeHtml(valueOrDash(data?.retry_message ?? data?.auth_failure_hint ?? data?.subscription_detail_message ?? data?.subscription_detail_reason ?? stageText))}">
         <span>阶段</span>
         <strong>${escapeHtml(stageText)}</strong>
       </div>
@@ -412,6 +450,7 @@ function renderBatchStat(label, value, { kind = "" } = {}) {
     trial: ' data-kind="trial"',
     active: ' data-kind="active"',
     success: ' data-kind="success"',
+    partial: ' data-kind="partial"',
     failure: ' data-kind="failure"',
   };
   const kindAttribute = kindAttrs[kind] ?? "";
@@ -428,29 +467,33 @@ function renderBatchSummary({
   completed = 0,
   success = 0,
   failure = 0,
-  success_count = success,
-  failure_count = failure,
+  partial = 0,
   active = 0,
   trial = 0,
   done = false,
+  integrityConfirmed = true,
   retrying = false,
 } = {}) {
-  const successTotal = Number.isFinite(success_count) ? success_count : success;
-  const failureTotal = Number.isFinite(failure_count) ? failure_count : failure;
-  const canRetryFailure = done && failureTotal > 0 && !retrying;
+  const canRetryIncomplete = done && (failure + partial) > 0 && !retrying;
+  const progressLabel = !done
+    ? "批量查询中"
+    : integrityConfirmed
+    ? "批量查询完成"
+    : "批量结果待确认";
   return `
     <section class="subscription-batch-summary" aria-label="批量查询摘要">
       <div class="subscription-batch-progress">
-        <strong>${done ? "批量查询完成" : "批量查询中"}</strong>
+        <strong>${progressLabel}</strong>
         <span>${escapeHtml(completed)}/${escapeHtml(total)} 已完成</span>
       </div>
       <div class="subscription-batch-stats">
         ${renderBatchStat("可试用", trial, { kind: "trial" })}
         ${renderBatchStat("订阅中", active, { kind: "active" })}
-        ${renderBatchStat("成功", successTotal, { kind: "success" })}
-        ${renderBatchStat("失败", failureTotal, { kind: "failure" })}
+        ${renderBatchStat("成功", success, { kind: "success" })}
+        ${renderBatchStat("待补查", partial, { kind: "partial" })}
+        ${renderBatchStat("失败", failure, { kind: "failure" })}
         ${renderBatchStat("总数", total)}
-        ${canRetryFailure ? '<button class="subscription-batch-retry" type="button" data-retry-failed>只重试失败项</button>' : ""}
+        ${canRetryIncomplete ? '<button class="subscription-batch-retry" type="button" data-retry-incomplete>重试未完成项</button>' : ""}
       </div>
     </section>
   `;
@@ -459,22 +502,23 @@ function renderBatchSummary({
 function updateBatchStateCounts(state) {
   const items = Array.isArray(state?.items) ? state.items : [];
   state.completed = items.length;
-  state.success = items.filter(item => item?.ok === true).length;
+  state.success = items.filter(item => item?.ok === true && !subscriptionResultNeedsRetry(item)).length;
+  state.partial = items.filter(item => item?.ok === true && subscriptionResultNeedsRetry(item)).length;
   state.failure = items.filter(item => item?.ok !== true).length;
   state.active = activeSubscriptionCount(items);
   state.trial = trialEligibleCount(items);
   return state;
 }
 
-function attachRetryFailedButton() {
-  const button = resultArea.querySelector("[data-retry-failed]");
-  if (button) button.addEventListener("click", retryFailedSubscriptionItems);
+function attachRetryIncompleteButton() {
+  const button = resultArea.querySelector("[data-retry-incomplete]");
+  if (button) button.addEventListener("click", retryIncompleteSubscriptionItems);
 }
 
 function replaceBatchSummary(state) {
   resultArea.querySelector(".subscription-batch-summary")?.remove();
   resultArea.insertAdjacentHTML("afterbegin", renderBatchSummary(state));
-  attachRetryFailedButton();
+  attachRetryIncompleteButton();
 }
 
 export function renderSubscriptionResult(data) {
@@ -504,6 +548,7 @@ export function renderSubscriptionBatchResult(data) {
     total: data.count ?? results.length,
     items: results,
     done: true,
+    integrityConfirmed: true,
   });
   lastSubscriptionBatchState = state;
   const rows = renderSubscriptionBatchRows(results);
@@ -516,7 +561,7 @@ export function renderSubscriptionBatchResult(data) {
   `;
   resultArea.hidden = false;
   setHasResult(true);
-  attachRetryFailedButton();
+  attachRetryIncompleteButton();
 }
 
 function renderSubscriptionBatchStart(total, state = {
@@ -524,20 +569,24 @@ function renderSubscriptionBatchStart(total, state = {
     completed: 0,
     success: 0,
     failure: 0,
+    partial: 0,
     active: 0,
     trial: 0,
     items: [],
     done: false,
+    integrityConfirmed: false,
     retrying: false,
   }) {
   state.total = total;
   state.completed = 0;
   state.success = 0;
   state.failure = 0;
+  state.partial = 0;
   state.active = 0;
   state.trial = 0;
   state.items = [];
   state.done = false;
+  state.integrityConfirmed = false;
   state.retrying = false;
   lastSubscriptionBatchState = state;
   resultArea.innerHTML = `
@@ -548,7 +597,7 @@ function renderSubscriptionBatchStart(total, state = {
   `;
   resultArea.hidden = false;
   setHasResult(true);
-  attachRetryFailedButton();
+  attachRetryIncompleteButton();
   return state;
 }
 
@@ -564,11 +613,12 @@ export function renderSubscriptionBatchItem(item, state) {
   replaceBatchSummary(state);
 }
 
-function postSingleSubscription(token) {
+function postSingleSubscription(token, signal) {
   return fetch("/api/subscription", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ token }),
+    signal,
   });
 }
 
@@ -580,7 +630,7 @@ function postBatchSubscriptions(tokens) {
   });
 }
 
-function streamBatchSubscriptions(tokens) {
+function streamBatchSubscriptions(tokens, signal) {
   return fetch("/api/subscriptions/stream", {
     method: "POST",
     headers: {
@@ -588,6 +638,7 @@ function streamBatchSubscriptions(tokens) {
       "content-type": "application/json",
     },
     body: JSON.stringify({ tokens }),
+    signal,
   });
 }
 
@@ -654,10 +705,10 @@ async function runIpInfoQuery() {
   }
 }
 
-function collectFailedSubscriptionEntries() {
+function collectIncompleteSubscriptionEntries() {
   const items = Array.isArray(lastSubscriptionBatchState?.items) ? lastSubscriptionBatchState.items : [];
   return sortSubscriptionResults(items)
-    .filter(item => item?.ok !== true && Number.isFinite(item?.index))
+    .filter(item => subscriptionResultNeedsRetry(item) && Number.isFinite(item?.index))
     .map(item => ({
       index: item.index,
       token: lastSubscriptionBatchTokens[item.index - 1],
@@ -665,41 +716,104 @@ function collectFailedSubscriptionEntries() {
     .filter(entry => entry.token);
 }
 
-async function retryFailedSubscriptionItems() {
+async function retryIncompleteSubscriptionItems() {
   clearError();
-  const failedEntries = collectFailedSubscriptionEntries();
-  const retryTokens = failedEntries.map(entry => entry.token);
+  const incompleteEntries = collectIncompleteSubscriptionEntries();
+  const retryTokens = incompleteEntries.map(entry => entry.token);
   if (retryTokens.length === 0 || !lastSubscriptionBatchState) return;
 
+  const { requestId, controller } = beginSubscriptionRequest();
   runButton.disabled = true;
-  const retryButton = resultArea.querySelector("[data-retry-failed]");
+  const retryButton = resultArea.querySelector("[data-retry-incomplete]");
   if (retryButton) retryButton.disabled = true;
-  statusText.textContent = `重试失败项 ${retryTokens.length} 个…`;
+  statusText.textContent = `重试未完成项 ${retryTokens.length} 个…`;
 
   try {
     await runSubscriptionBatchStream(retryTokens, {
       mergeIntoState: lastSubscriptionBatchState,
-      indexMap: failedEntries.map(entry => entry.index),
+      indexMap: incompleteEntries.map(entry => entry.index),
+      requestId,
+      signal: controller.signal,
     });
   } catch (error) {
-    setError(error instanceof Error ? error.message : "重试失败项失败。");
+    if (!isAbortError(error) && isActiveSubscriptionRequest(requestId)) {
+      setError(error instanceof Error ? error.message : "重试未完成项失败。");
+    }
   } finally {
-    runButton.disabled = false;
+    if (requestId === activeSubscriptionRequestId) {
+      runButton.disabled = false;
+      activeSubscriptionController = null;
+    }
   }
 }
 
-async function runSubscriptionBatchStream(tokens, { mergeIntoState = null, indexMap = null } = {}) {
-  const response = await streamBatchSubscriptions(tokens);
+async function consumeSubscriptionBatchAttempt(tokens, {
+  state,
+  indexMap,
+  requestId,
+  signal,
+} = {}) {
+  const response = await streamBatchSubscriptions(tokens, signal);
   if (!response.ok) {
     const data = await readLocalServiceJson(response, { serviceName: "批量订阅流接口" });
     throw new Error(data?.message ?? `本机服务返回 HTTP ${response.status}`);
   }
 
+  let receivedDone = false;
+  let doneCount = null;
+  const receivedItems = [];
+
+  for await (const message of readEventStream(response)) {
+    if (!isActiveSubscriptionRequest(requestId)) {
+      throw Object.assign(new Error("查询已取消。"), { name: "AbortError" });
+    }
+    if (message.event === "start") continue;
+    if (message.event === "item") {
+      const localIndex = Number(message.data?.index);
+      if (!Number.isInteger(localIndex) || localIndex < 1 || localIndex > tokens.length) continue;
+      receivedItems.push({ index: localIndex });
+      const originalIndex = Array.isArray(indexMap) ? indexMap[localIndex - 1] : localIndex;
+      if (!Number.isInteger(originalIndex) || originalIndex < 1) continue;
+      renderSubscriptionBatchItem({ ...message.data, index: originalIndex }, state);
+      statusText.textContent = `查询中 ${state.completed}/${state.total}`;
+      continue;
+    }
+    if (message.event === "error") {
+      throw new Error(message.data?.message ?? "批量订阅查询失败。");
+    }
+    if (message.event === "done") {
+      receivedDone = true;
+      doneCount = Number(message.data?.count);
+    }
+  }
+
+  return {
+    receivedDone,
+    doneCount,
+    items: receivedItems,
+    missingIndexes: missingSubscriptionIndexes(tokens.length, receivedItems),
+    complete: isSubscriptionBatchComplete({
+      expectedCount: tokens.length,
+      receivedDone,
+      doneCount,
+      items: receivedItems,
+    }),
+  };
+}
+
+async function runSubscriptionBatchStream(tokens, {
+  mergeIntoState = null,
+  indexMap = null,
+  requestId = activeSubscriptionRequestId,
+  signal = activeSubscriptionController?.signal,
+  retryMissing = true,
+} = {}) {
   const state = mergeIntoState ?? {
     total: tokens.length,
     completed: 0,
     success: 0,
     failure: 0,
+    partial: 0,
     active: 0,
     trial: 0,
     items: [],
@@ -712,32 +826,92 @@ async function runSubscriptionBatchStream(tokens, { mergeIntoState = null, index
   else renderSubscriptionBatchStart(tokens.length, state);
   lastSubscriptionBatchState = state;
 
-  for await (const message of readEventStream(response)) {
-    if (message.event === "start") {
-      if (!mergeIntoState) {
-        state.total = message.data?.count ?? tokens.length;
-        renderSubscriptionBatchStart(state.total, state);
-      }
-      continue;
-    }
-    if (message.event === "item") {
-      const originalIndex = Array.isArray(indexMap) ? indexMap[message.data?.index - 1] : message.data?.index;
-      renderSubscriptionBatchItem({ ...message.data, index: originalIndex }, state);
-      statusText.textContent = `查询中 ${state.completed}/${state.total}`;
-      continue;
-    }
-    if (message.event === "error") {
-      throw new Error(message.data?.message ?? "批量订阅查询失败。");
-    }
-    if (message.event === "done") {
-      state.done = true;
-      state.retrying = false;
-      if (!mergeIntoState) state.total = message.data?.count ?? state.total;
-      updateBatchStateCounts(state);
-      replaceBatchSummary(state);
-      statusText.textContent = "";
-    }
+  let attempt;
+  try {
+    attempt = await consumeSubscriptionBatchAttempt(tokens, {
+      state,
+      indexMap,
+      requestId,
+      signal,
+    });
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    attempt = {
+      receivedDone: false,
+      doneCount: null,
+      items: [],
+      missingIndexes: missingSubscriptionIndexes(tokens.length, []),
+      complete: false,
+      error,
+    };
   }
+
+  let unresolvedIndexes = attempt.missingIndexes;
+  let recoveredMissing = false;
+  let recoveryConfirmed = false;
+  if (retryMissing && unresolvedIndexes.length > 0 && isActiveSubscriptionRequest(requestId)) {
+    const retryTokens = unresolvedIndexes.map(index => tokens[index - 1]);
+    const retryIndexMap = unresolvedIndexes.map(index => (
+      Array.isArray(indexMap) ? indexMap[index - 1] : index
+    ));
+    statusText.textContent = `补查缺失项 ${retryTokens.length} 个…`;
+    try {
+      const recovery = await consumeSubscriptionBatchAttempt(retryTokens, {
+        state,
+        indexMap: retryIndexMap,
+        requestId,
+        signal,
+      });
+      unresolvedIndexes = recovery.missingIndexes.map(index => retryIndexMap[index - 1]);
+      recoveredMissing = unresolvedIndexes.length === 0;
+      recoveryConfirmed = recovery.complete;
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      unresolvedIndexes = retryIndexMap;
+    }
+  } else {
+    unresolvedIndexes = unresolvedIndexes.map(index => (
+      Array.isArray(indexMap) ? indexMap[index - 1] : index
+    ));
+  }
+
+  for (const originalIndex of unresolvedIndexes) {
+    const token = lastSubscriptionBatchTokens[originalIndex - 1]
+      ?? tokens[(Array.isArray(indexMap) ? indexMap.indexOf(originalIndex) : originalIndex - 1)];
+    const previousResult = state.items.find(item => Number(item?.index) === originalIndex);
+    const incompleteResult = previousResult
+      ? {
+          ...previousResult,
+          index: originalIndex,
+          retry_reason: "stream-incomplete",
+          retry_message: "补查流提前结束，已保留上一次结果。",
+        }
+      : createIncompleteSubscriptionResult(originalIndex, redactLocalToken(token));
+    renderSubscriptionBatchItem(
+      incompleteResult,
+      state,
+    );
+  }
+
+  state.done = true;
+  state.integrityConfirmed = attempt.complete || (recoveredMissing && recoveryConfirmed);
+  state.retrying = false;
+  updateBatchStateCounts(state);
+  replaceBatchSummary(state);
+  const hasStreamIncomplete = state.items.some(item => (
+    item?.reason === "stream-incomplete" || item?.retry_reason === "stream-incomplete"
+  ));
+  if (hasStreamIncomplete) {
+    setError("部分流式结果未返回，缺失项已明确标记，可使用“重试未完成项”继续补查。");
+  } else if (!state.integrityConfirmed) {
+    setError("流式结束确认不完整，但已收到全部结果；建议关注代理或本地服务稳定性。");
+  }
+  statusText.textContent = "";
+  return {
+    complete: state.integrityConfirmed && !hasStreamIncomplete,
+    recoveredMissing,
+    state,
+  };
 }
 
 async function runSubscriptionQuery() {
@@ -748,41 +922,59 @@ async function runSubscriptionQuery() {
     setError("没有找到有效的三段式 AT。");
     return;
   }
+  const { requestId, controller } = beginSubscriptionRequest();
   runButton.disabled = true;
   statusText.textContent = tokens.length === 1 ? "查询中…" : `查询中 ${tokens.length} 个…`;
-  input.value = formatSubscriptionInputLines(tokens);
 
   try {
     const isSingleToken = tokens.length === 1;
     if (!isSingleToken) {
       lastSubscriptionBatchTokens = [...tokens];
       lastSubscriptionBatchState = null;
-      await runSubscriptionBatchStream(tokens);
-      renderInputTokenStatus(tokens, "查询完成 · 保留");
+      await runSubscriptionBatchStream(tokens, {
+        requestId,
+        signal: controller.signal,
+      });
+      if (isActiveSubscriptionRequest(requestId)) {
+        renderInputTokenStatus(extracted, "查询完成 · 保留");
+      }
       return;
     }
     lastSubscriptionBatchTokens = [];
     lastSubscriptionBatchState = null;
-    const response = await postSingleSubscription(tokens[0]);
+    const response = await postSingleSubscription(tokens[0], controller.signal);
     const data = await readLocalServiceJson(response, { serviceName: "订阅查询接口" });
+    if (!isActiveSubscriptionRequest(requestId)) return;
     if (!response.ok && !data?.message) {
       throw new Error(`本机服务返回 HTTP ${response.status}`);
     }
     renderSubscriptionResult(data);
-    renderInputTokenStatus(tokens, data?.ok ? "查询完成 · 保留" : "查询失败 · 保留");
+    renderInputTokenStatus(extracted, data?.ok ? "查询完成 · 保留" : "查询失败 · 保留");
   } catch (error) {
-    resultArea.hidden = true;
-    setHasResult(false);
+    if (isAbortError(error) || !isActiveSubscriptionRequest(requestId)) return;
+    const hasPartialResults = Array.isArray(lastSubscriptionBatchState?.items)
+      && lastSubscriptionBatchState.items.length > 0;
+    if (!hasPartialResults) {
+      resultArea.hidden = true;
+      setHasResult(false);
+    }
     setError(error instanceof Error
       ? `${error.message}。请确认已通过 npm start 打开本地服务页面。`
       : "查询失败。请确认本地服务正在运行。");
-    renderInputTokenStatus(tokens, "查询失败 · 保留");
+    renderInputTokenStatus(extracted, "查询失败 · 保留");
   } finally {
-    runButton.disabled = false;
+    if (requestId === activeSubscriptionRequestId) {
+      runButton.disabled = false;
+      activeSubscriptionController = null;
+    }
   }
 }
 
 function clearAll() {
+  activeSubscriptionController?.abort();
+  activeSubscriptionController = null;
+  activeSubscriptionRequestId += 1;
+  runButton.disabled = false;
   input.value = "";
   statusText.textContent = "";
   clearError();
@@ -802,7 +994,7 @@ runButton.addEventListener("click", runSubscriptionQuery);
 clearButton.addEventListener("click", clearAll);
 ipButton.addEventListener("click", runIpInfoQuery);
 input.addEventListener("input", () => {
-  renderInputTokenStatus(extractAccessTokens(input.value).tokens);
+  renderInputTokenStatus(extractAccessTokens(input.value));
 });
 input.addEventListener("keydown", event => {
   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {

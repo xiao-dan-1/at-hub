@@ -29,35 +29,33 @@
   <main id="top" class="app-shell subscription-shell">
     <section class="subscription-hero" aria-labelledby="subscriptionHeading">
       <div>
-        <p class="eyebrow">Subscription</p>
         <h1 id="subscriptionHeading">ChatGPT 订阅查询</h1>
-        <p>粘贴一个或多个 AT，查询账号套餐、续费状态和剩余时间。</p>
+        <p>批量查看套餐、试用资格与有效期。</p>
       </div>
-      <span class="dev-smoke-badge" data-dev-smoke>Docker dev hot reload ✓</span>
     </section>
 
     <section class="input-surface subscription-query" aria-label="订阅查询输入">
-      <label class="subscription-label" for="subscriptionInput">输入 AT 或 api/auth/session JSON</label>
+      <div class="subscription-query__heading">
+        <label class="subscription-label" for="subscriptionInput">粘贴 AT</label>
+        <span class="query-privacy" title="请求由本机服务联网查询，不保存原始 AT">不保存输入</span>
+      </div>
       <textarea
         id="subscriptionInput"
         autocomplete="off"
         autocapitalize="off"
         spellcheck="false"
         wrap="off"
-        placeholder="粘贴 accessToken、Bearer token，或 api/auth/session 返回的 JSON；也支持 email----pwd----2fa----at 逐行粘贴，查询后保留为一行一个 AT"
+        placeholder="每行一个 AT；也支持 session JSON 或 email----pwd----2fa----at"
       ></textarea>
-      <p class="network-boundary">
-        本页通过本地服务查询：AT 只发送到本机 /api/subscription 或 /api/subscriptions/batch，然后由本机服务会联网查询订阅状态；不保存、不记录原始 AT。
-      </p>
       <div class="input-actions">
         <button id="subscriptionRunButton" class="button button--primary" type="button">
-          <i data-lucide="radar" aria-hidden="true"></i><span>查询订阅</span>
+          <i data-lucide="radar" aria-hidden="true"></i><span>查询</span>
         </button>
         <button id="subscriptionClearButton" class="button button--secondary" type="button">
           <i data-lucide="trash-2" aria-hidden="true"></i><span>清空</span>
         </button>
         <button id="subscriptionIpButton" class="button button--secondary" type="button">
-          <i data-lucide="globe" aria-hidden="true"></i><span>测当前 IP</span>
+          <i data-lucide="globe" aria-hidden="true"></i><span>出口 IP</span>
         </button>
         <span id="subscriptionIpStatus" class="ip-inline-status" aria-live="polite" hidden></span>
         <span id="subscriptionStatus" class="keyboard-hint" aria-live="polite"></span>
@@ -67,8 +65,6 @@
 
     <section id="subscriptionResult" class="subscription-result" aria-live="polite" hidden></section>
   </main>
-
-  <footer class="app-footer">订阅查询依赖实时服务状态；AT 泄露后应立即注销相关会话或更新凭据。</footer>
   <script type="module" src="/subscription.js"></script>
 </body>
 </html>

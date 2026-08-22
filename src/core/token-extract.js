@@ -1,6 +1,6 @@
 import { decodeJsonObject } from "./jwt.js";
 
-const JWT_PATTERN = /\b(?:Bearer\s+)?([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)\b/giu;
+const JWT_PATTERN = /(?<![A-Za-z0-9_-])(?:Bearer\s+)?([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)(?![A-Za-z0-9_-])/giu;
 const CREDENTIAL_LINE_SEPARATOR = "----";
 const TOKEN_KEYS = new Set(["accesstoken", "access_token", "token"]);
 
@@ -22,13 +22,31 @@ function normalizeCandidate(value) {
 
 function addToken(collection, token, source) {
   const normalized = normalizeCandidate(token);
-  if (!normalized || collection.seen.has(normalized)) return;
+  if (!normalized) return "invalid";
+  if (collection.seen.has(normalized)) return "duplicate";
 
   collection.seen.add(normalized);
   collection.tokens.push(normalized);
   if (!collection.sources.includes(source)) {
     collection.sources.push(source);
   }
+  return "added";
+}
+
+function readNonEmptyLineRanges(text) {
+  const ranges = [];
+  let lineStart = 0;
+  for (let index = 0; index <= text.length; index += 1) {
+    if (index !== text.length && text[index] !== "\n") continue;
+    const lineEnd = index;
+    if (text.slice(lineStart, lineEnd).trim()) ranges.push({ start: lineStart, end: lineEnd });
+    lineStart = index + 1;
+  }
+  return ranges;
+}
+
+function rangesOverlap(left, right) {
+  return left.start < right.end && right.start < left.end;
 }
 
 function walkJson(value, collection) {
@@ -119,6 +137,8 @@ function readCredentialLineTokens(text) {
           const candidateOffset = trimmed.lastIndexOf(candidate);
           events.push({
             index: lineStart + contentStart + candidateOffset,
+            rangeStart: lineStart,
+            rangeEnd: lineEnd,
             source: "credential-line",
             token: normalized,
           });
@@ -150,7 +170,13 @@ export function extractAccessTokens(input) {
     const jsonCollection = { tokens: [], sources: [], seen: new Set() };
     walkJson(jsonObject.value, jsonCollection);
     for (const token of jsonCollection.tokens) {
-      events.push({ index: jsonObject.start, source: "json", token });
+      events.push({
+        index: jsonObject.start,
+        rangeStart: jsonObject.start,
+        rangeEnd: jsonObject.end,
+        source: "json",
+        token,
+      });
     }
   }
 
@@ -159,17 +185,36 @@ export function extractAccessTokens(input) {
     const isInsideJson = isInsideRanges(matchIndex, jsonObjects);
     const isInsideCredentialLine = isInsideRanges(matchIndex, credentialLines.ranges);
     if (!isInsideJson && !isInsideCredentialLine) {
-      events.push({ index: matchIndex, source: "jwt", token: match[1] });
+      events.push({
+        index: matchIndex,
+        rangeStart: matchIndex,
+        rangeEnd: matchIndex + match[0].length,
+        source: "jwt",
+        token: match[1],
+      });
     }
   }
 
   events.sort((left, right) => left.index - right.index);
+  const recognizedRanges = [];
+  let duplicateCount = 0;
   for (const event of events) {
-    addToken(collection, event.token, event.source);
+    const outcome = addToken(collection, event.token, event.source);
+    if (outcome === "invalid") continue;
+    if (outcome === "duplicate") duplicateCount += 1;
+    recognizedRanges.push({ start: event.rangeStart, end: event.rangeEnd });
   }
+
+  const inputLineRanges = readNonEmptyLineRanges(text);
+  const unrecognizedLineCount = inputLineRanges.filter(lineRange => (
+    !recognizedRanges.some(recognizedRange => rangesOverlap(lineRange, recognizedRange))
+  )).length;
 
   return {
     tokens: collection.tokens,
     sources: collection.sources,
+    input_line_count: inputLineRanges.length,
+    duplicate_count: duplicateCount,
+    unrecognized_line_count: unrecognizedLineCount,
   };
 }
