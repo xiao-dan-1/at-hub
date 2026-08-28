@@ -99,13 +99,20 @@ export async function startDevServer({
     concurrency: liveConcurrency,
     upstreamTimeoutMilliseconds,
   });
-  const handleSubscription = createSubscriptionHandler({ fetchFn: effectiveFetch, nowMilliseconds, origin, upstreamTimeoutMilliseconds });
+  const handleSubscription = createSubscriptionHandler({
+    fetchFn: effectiveFetch,
+    nowMilliseconds,
+    origin,
+    upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
+  });
   const handleSubscriptionBatch = createSubscriptionBatchHandler({
     fetchFn: effectiveFetch,
     nowMilliseconds,
     origin,
     concurrency: subscriptionConcurrency,
     upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
   });
   const streamSubscriptionBatch = createSubscriptionBatchStream({
     fetchFn: effectiveFetch,
@@ -113,6 +120,7 @@ export async function startDevServer({
     origin,
     concurrency: subscriptionConcurrency,
     upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
   });
 
   const server = createHttpServer(async (request, response) => {

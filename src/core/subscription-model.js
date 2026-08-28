@@ -88,35 +88,88 @@ function normalizeArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function firstNonEmptyArray(...values) {
-  return values.find(value => Array.isArray(value) && value.length > 0) ?? [];
-}
-
 function normalizeOfferIds(value) {
-  if (Array.isArray(value)) {
-    return value
-      .map(item => (typeof item === "string" ? item : item?.id))
-      .filter(Boolean);
+  const ids = [];
+  const seen = new Set();
+
+  function add(id) {
+    if (typeof id !== "string" || !id || seen.has(id)) return;
+    seen.add(id);
+    ids.push(id);
   }
-  if (Array.isArray(value?.offers)) {
-    return value.offers
-      .map(item => (typeof item === "string" ? item : item?.id))
-      .filter(Boolean);
+
+  function visit(candidate, depth = 0) {
+    if (depth > 4 || candidate === undefined || candidate === null) return;
+    if (typeof candidate === "string") {
+      add(candidate);
+      return;
+    }
+    if (Array.isArray(candidate)) {
+      candidate.forEach(item => visit(item, depth + 1));
+      return;
+    }
+    if (!isPlainObject(candidate)) return;
+    if (typeof candidate.id === "string") {
+      add(candidate.id);
+      return;
+    }
+    const nested = [
+      candidate.offers,
+      candidate.items,
+      candidate.eligible_offers,
+      candidate.available_offers,
+      candidate.plans,
+    ].filter(item => item !== undefined);
+    if (nested.length > 0) {
+      nested.forEach(item => visit(item, depth + 1));
+      return;
+    }
+    Object.values(candidate).forEach(item => visit(item, depth + 1));
   }
-  return [];
+
+  visit(value);
+  return ids;
 }
 
-function normalizeEligiblePromos(value) {
-  if (!isPlainObject(value)) return [];
-  return Object.values(value)
-    .filter(isPlainObject)
-    .map(item => ({
-      id: item.id ?? null,
-      plan_name: item.metadata?.plan_name ?? null,
-      title: item.metadata?.title ?? null,
-      discount: item.metadata?.discount ?? null,
-    }))
-    .filter(item => item.id || item.plan_name || item.title);
+function mergeUnique(values) {
+  return [...new Set(values.flat())];
+}
+
+function normalizeEligiblePromos(...values) {
+  const promos = [];
+  const seen = new Set();
+
+  function add(candidate) {
+    if (!isPlainObject(candidate)) return;
+    const promo = {
+      id: candidate.id ?? candidate.promo_campaign_id ?? null,
+      plan_name: candidate.metadata?.plan_name ?? candidate.plan_name ?? null,
+      title: candidate.metadata?.title ?? candidate.title ?? null,
+      discount: candidate.metadata?.discount ?? candidate.discount ?? null,
+    };
+    if (!promo.id && !promo.plan_name && !promo.title) return;
+    const key = [promo.id, promo.plan_name, promo.title].filter(Boolean).join("|");
+    if (seen.has(key)) return;
+    seen.add(key);
+    promos.push(promo);
+  }
+
+  function visit(candidate, depth = 0) {
+    if (depth > 4 || candidate === undefined || candidate === null) return;
+    if (Array.isArray(candidate)) {
+      candidate.forEach(item => visit(item, depth + 1));
+      return;
+    }
+    if (!isPlainObject(candidate)) return;
+    if (candidate.id || candidate.promo_campaign_id || candidate.metadata?.plan_name || candidate.plan_name || candidate.metadata?.title || candidate.title) {
+      add(candidate);
+      return;
+    }
+    Object.values(candidate).forEach(item => visit(item, depth + 1));
+  }
+
+  values.forEach(value => visit(value));
+  return promos;
 }
 
 function normalizeBooleanOrNull(value) {
@@ -147,7 +200,26 @@ export function normalizeSubscriptionStatus({
   const remaining = remainingFromIso(expiresAt, nowMilliseconds);
   const tokenRemaining = remainingFromIso(tokenExpiresAt, nowMilliseconds);
   const subscriptionEligibleOffers = normalizeOfferIds(subscriptionResponse.eligible_offers);
-  const accountEligibleOffers = normalizeOfferIds(accountRecord.eligible_offers);
+  const eligibleOffers = mergeUnique([
+    subscriptionEligibleOffers,
+    normalizeOfferIds(subscriptionResponse.available_offers),
+    normalizeOfferIds(subscriptionResponse.offers),
+    normalizeOfferIds(accountRecord.eligible_offers),
+    normalizeOfferIds(account.eligible_offers),
+    normalizeOfferIds(entitlement.eligible_offers),
+  ]);
+  const eligiblePromos = normalizeEligiblePromos(
+    subscriptionResponse.eligible_promo_campaigns,
+    subscriptionResponse.eligible_promos,
+    subscriptionResponse.eligible_promotions,
+    accountRecord.eligible_promo_campaigns,
+    accountRecord.eligible_promos,
+    accountRecord.eligible_promotions,
+    account.eligible_promo_campaigns,
+    account.eligible_promos,
+    entitlement.eligible_promo_campaigns,
+    entitlement.eligible_promos,
+  );
   const cancelsAt = toIsoDate(firstDefined(subscriptionResponse.cancels_at, entitlement.cancels_at));
 
   return {
@@ -198,13 +270,25 @@ export function normalizeSubscriptionStatus({
     is_processor_stripe: normalizeBooleanOrNull(subscriptionResponse.is_processor_stripe),
     seats_entitled: firstDefined(subscriptionResponse.seats_entitled, entitlement.seats_entitled, accountRecord.seats_entitled) ?? null,
     seats_in_use: firstDefined(subscriptionResponse.seats_in_use, entitlement.seats_in_use, accountRecord.seats_in_use) ?? null,
-    is_eligible_for_yearly_plus_subscription: normalizeBooleanOrNull(accountRecord.is_eligible_for_yearly_plus_subscription),
-    applied_discounts: firstNonEmptyArray(
+    is_eligible_for_yearly_plus_subscription: normalizeBooleanOrNull(firstDefined(
+      accountRecord.is_eligible_for_yearly_plus_subscription,
+      account.is_eligible_for_yearly_plus_subscription,
+      entitlement.is_eligible_for_yearly_plus_subscription,
+      subscriptionResponse.is_eligible_for_yearly_plus_subscription,
+    )),
+    is_eligible_for_free_trial: normalizeBooleanOrNull(firstDefined(
+      accountRecord.is_eligible_for_free_trial,
+      account.is_eligible_for_free_trial,
+      entitlement.is_eligible_for_free_trial,
+      subscriptionResponse.is_eligible_for_free_trial,
+    )),
+    applied_discounts: mergeUnique([
       normalizeArray(subscriptionResponse.applied_discounts),
       normalizeArray(entitlement.applied_discounts),
-    ),
-    eligible_offers: firstNonEmptyArray(subscriptionEligibleOffers, accountEligibleOffers),
-    eligible_promos: normalizeEligiblePromos(accountRecord.eligible_promo_campaigns),
+      normalizeArray(accountRecord.applied_discounts),
+    ]),
+    eligible_offers: eligibleOffers,
+    eligible_promos: eligiblePromos,
     default_offer_id: firstDefined(
       subscriptionResponse.default_offer_id,
       entitlement.default_offer_id,

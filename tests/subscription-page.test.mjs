@@ -143,6 +143,21 @@ test("subscription batch summary can retry incomplete items without keeping raw 
   assert.match(css, /\.subscription-batch-retry\s*\{/u);
 });
 
+test("every subscription result keeps an egress location and per-item retest control without exposing AT values", () => {
+  assert.match(js, /egress_ip/u);
+  assert.match(js, /formatEgressLocation/u);
+  assert.match(js, /subscription-row__egress/u);
+  assert.match(js, /出口 IP/u);
+  assert.match(js, /renderResultRetryButton/u);
+  assert.match(js, /retrySubscriptionResult/u);
+  assert.match(js, /data-retry-single/u);
+  assert.match(js, /data-retry-index/u);
+  assert.match(js, /lastSubscriptionSingleToken/u);
+  assert.doesNotMatch(js, /data-token=/u);
+  assert.match(css, /\.subscription-row__egress/u);
+  assert.match(css, /\.subscription-result-retry\s*\{/u);
+});
+
 test("subscription batch table shares one aligned column grid", () => {
   assert.match(css, /--subscription-row-columns:/u);
   assert.match(css, /\.subscription-row\s*\{[^}]*grid-template-columns:\s*var\(--subscription-row-columns\)/u);
@@ -206,6 +221,9 @@ test("subscription result keeps subscription status and AT validity separate", (
   assert.match(js, /AT 有效期/u);
   assert.match(js, /token_days_left/u);
   assert.match(js, /eligible_promos/u);
+  assert.match(js, /资格状态/u);
+  assert.match(js, /is_eligible_for_free_trial/u);
+  assert.match(js, /is_eligible_for_yearly_plus_subscription/u);
 });
 
 test("subscription page has compact result cards matching current visual system", () => {

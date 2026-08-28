@@ -30,6 +30,7 @@ const statusText = document.getElementById("subscriptionStatus");
 const shell = document.querySelector(".subscription-shell");
 let lastSubscriptionBatchTokens = [];
 let lastSubscriptionBatchState = null;
+let lastSubscriptionSingleToken = "";
 let activeSubscriptionRequestId = 0;
 let activeSubscriptionController = null;
 
@@ -190,6 +191,28 @@ function renderTagList(items, emptyText) {
     .join("");
 }
 
+function formatEgressLocation(data) {
+  if (!data?.egress_ip) return "未确认";
+  const location = [...new Set([
+    data.egress_city,
+    data.egress_region,
+    data.egress_country,
+  ].filter(value => typeof value === "string" && value.trim()))];
+  return [data.egress_ip, ...location].join(" · ");
+}
+
+function egressLocationTitle(data) {
+  if (data?.egress_ip) return `本次查询出口：${formatEgressLocation(data)}`;
+  return data?.egress_ip_message ?? "本次查询未能确认出口 IP。";
+}
+
+function renderResultRetryButton({ index } = {}) {
+  const attribute = Number.isInteger(index)
+    ? `data-retry-index="${escapeHtml(index)}"`
+    : "data-retry-single";
+  return `<button class="subscription-result-retry" type="button" ${attribute}>复测</button>`;
+}
+
 function setIpInlineStatus(text, state = "idle", title = "") {
   ipStatus.textContent = text;
   ipStatus.dataset.state = state;
@@ -244,7 +267,10 @@ function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
           <h2>${escapeHtml(plan)}</h2>
           <p class="subscription-card__account">${escapeHtml(valueOrDash(data.email))}${data.account_id ? ` · ${escapeHtml(data.account_id)}` : ""}</p>
         </div>
-        <span class="subscription-status-pill" data-active="${active ? "true" : "false"}">${active ? "有效订阅" : "无活跃订阅"}</span>
+        <div class="subscription-card__actions">
+          <span class="subscription-status-pill" data-active="${active ? "true" : "false"}">${active ? "有效订阅" : "无活跃订阅"}</span>
+          ${renderResultRetryButton()}
+        </div>
       </header>
       <p class="subscription-stage-note" ${stageStateAttribute(stageState)}>${escapeHtml(stageText)}</p>
 
@@ -273,6 +299,7 @@ function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
           <div><dt>订阅结束</dt><dd>${escapeHtml(formatDate(data.expires_at))}</dd></div>
           <div><dt>曾付费</dt><dd>${escapeHtml(formatBoolean(data.has_previously_paid_subscription))}</dd></div>
           <div><dt>AT 有效期</dt><dd>${escapeHtml(formatRemaining({ days_left: data.token_days_left, hours_left: data.token_hours_left }))}</dd></div>
+          <div title="${escapeHtml(egressLocationTitle(data))}"><dt>出口 IP</dt><dd>${escapeHtml(formatEgressLocation(data))}</dd></div>
         </dl>
 
         <div class="subscription-offers">
@@ -283,6 +310,10 @@ function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
           <div class="subscription-list-block">
             <span>可用优惠</span>
             <div>${renderTagList(data.eligible_promos, promoEmptyText)}</div>
+          </div>
+          <div class="subscription-list-block">
+            <span>资格状态</span>
+            <div>${renderEligibilityStatus(data)}</div>
           </div>
           <div class="subscription-list-block">
             <span>可购买套餐</span>
@@ -312,7 +343,10 @@ function renderSubscriptionErrorCard(data) {
           <h2>查询失败</h2>
           <p class="subscription-card__account">${escapeHtml(identity.primary)} · ${escapeHtml(identity.secondary)}</p>
         </div>
-        <span class="subscription-status-pill">失败</span>
+        <div class="subscription-card__actions">
+          <span class="subscription-status-pill">失败</span>
+          ${renderResultRetryButton()}
+        </div>
       </header>
       <p class="subscription-stage-note" ${stageStateAttribute(stageState)}>${escapeHtml(stageText)}</p>
       <p class="subscription-error-message">${escapeHtml(data?.message ?? "订阅查询失败。")}</p>
@@ -322,21 +356,35 @@ function renderSubscriptionErrorCard(data) {
         <div><dt>本地判断</dt><dd>${escapeHtml(valueOrDash(data?.auth_failure_hint ?? data?.local_token_status_label))}</dd></div>
         <div><dt>上游码</dt><dd>${escapeHtml(valueOrDash(data?.upstream_error_code))}</dd></div>
         <div><dt>上游说明</dt><dd>${escapeHtml(valueOrDash(data?.upstream_error_message ?? data?.upstream_error_body_excerpt))}</dd></div>
+        <div title="${escapeHtml(egressLocationTitle(data))}"><dt>出口 IP</dt><dd>${escapeHtml(formatEgressLocation(data))}</dd></div>
       </dl>
     </article>
   `;
 }
 
 function hasTrialEligibility(data) {
-  return Array.isArray(data?.eligible_promos) && data.eligible_promos.length > 0;
+  return data?.is_eligible_for_free_trial === true
+    || (Array.isArray(data?.eligible_promos) && data.eligible_promos.length > 0);
 }
 
 function renderTrialEligibility(data) {
+  const labels = [];
   if (hasTrialEligibility(data)) {
-    return data.eligible_promos.map(formatTagLabel).filter(Boolean).join(", ");
+    labels.push(...(data.eligible_promos ?? []).map(formatTagLabel).filter(Boolean));
+    if (data?.is_eligible_for_free_trial === true && labels.length === 0) labels.push("可试用");
   }
+  if (data?.is_eligible_for_yearly_plus_subscription === true) labels.push("Plus 年付可用");
+  if (labels.length > 0) return [...new Set(labels)].join(", ");
   if (data?.has_previously_paid_subscription === true) return "已付费";
+  if (Array.isArray(data?.eligible_offers) && data.eligible_offers.length > 0) return "可购买";
   return "—";
+}
+
+function renderEligibilityStatus(data) {
+  const label = renderTrialEligibility(data);
+  return label === "—"
+    ? '<span class="subscription-muted">未返回</span>'
+    : `<span class="subscription-tag">${escapeHtml(label)}</span>`;
 }
 
 function trialEligibilityState(data) {
@@ -360,11 +408,13 @@ function renderSubscriptionBatchHeader() {
       <span>#</span>
       <span>账号</span>
       <span>套餐</span>
-      <span>试用资格</span>
+      <span>资格</span>
       <span>AT</span>
       <span>订阅</span>
       <span>阶段</span>
+      <span>出口</span>
       <span>耗时</span>
+      <span>操作</span>
       <span>详情</span>
     </div>
   `;
@@ -421,7 +471,7 @@ function renderSubscriptionBatchRow(data) {
         <strong>${escapeHtml(planText)}</strong>
       </div>
       <div class="subscription-row__trial" data-trial="${trialState}">
-        <span>试用资格</span>
+        <span>资格</span>
         <strong>${escapeHtml(ok ? renderTrialEligibility(data) : "—")}</strong>
       </div>
       <div class="subscription-row__meta">
@@ -433,10 +483,15 @@ function renderSubscriptionBatchRow(data) {
         <span>阶段</span>
         <strong>${escapeHtml(stageText)}</strong>
       </div>
+      <div class="subscription-row__egress" title="${escapeHtml(egressLocationTitle(data))}">
+        <span>出口</span>
+        <strong>${escapeHtml(formatEgressLocation(data))}</strong>
+      </div>
       <div class="subscription-row__timing" title="${escapeHtml(ok ? `accounts ${renderTiming(data.accounts_ms)} · subscription ${renderTiming(data.subscription_ms)}` : valueOrDash(data?.reason))}">
         <span>耗时</span>
         <strong>${escapeHtml(renderTiming(data?.total_ms))}</strong>
       </div>
+      ${renderResultRetryButton({ index: Number(data?.index) })}
       <details class="subscription-row__json">
         <summary>JSON</summary>
         <pre tabindex="0">${rawJson}</pre>
@@ -515,10 +570,19 @@ function attachRetryIncompleteButton() {
   if (button) button.addEventListener("click", retryIncompleteSubscriptionItems);
 }
 
+function attachResultRetryButtons() {
+  const singleRetry = resultArea.querySelector("[data-retry-single]");
+  if (singleRetry) singleRetry.addEventListener("click", () => retrySubscriptionResult());
+  for (const button of resultArea.querySelectorAll("[data-retry-index]")) {
+    button.addEventListener("click", () => retrySubscriptionResult(Number(button.dataset.retryIndex)));
+  }
+}
+
 function replaceBatchSummary(state) {
   resultArea.querySelector(".subscription-batch-summary")?.remove();
   resultArea.insertAdjacentHTML("afterbegin", renderBatchSummary(state));
   attachRetryIncompleteButton();
+  attachResultRetryButtons();
 }
 
 export function renderSubscriptionResult(data) {
@@ -527,12 +591,14 @@ export function renderSubscriptionResult(data) {
     resultArea.hidden = false;
     setHasResult(true);
     setError(data?.message ?? "订阅查询失败。");
+    attachResultRetryButtons();
     return;
   }
 
   resultArea.innerHTML = renderSubscriptionCard(data);
   resultArea.hidden = false;
   setHasResult(true);
+  attachResultRetryButtons();
 }
 
 export function renderSubscriptionBatchResult(data) {
@@ -562,6 +628,7 @@ export function renderSubscriptionBatchResult(data) {
   resultArea.hidden = false;
   setHasResult(true);
   attachRetryIncompleteButton();
+  attachResultRetryButtons();
 }
 
 function renderSubscriptionBatchStart(total, state = {
@@ -598,6 +665,7 @@ function renderSubscriptionBatchStart(total, state = {
   resultArea.hidden = false;
   setHasResult(true);
   attachRetryIncompleteButton();
+  attachResultRetryButtons();
   return state;
 }
 
@@ -611,6 +679,7 @@ export function renderSubscriptionBatchItem(item, state) {
   `;
   updateBatchStateCounts(state);
   replaceBatchSummary(state);
+  attachResultRetryButtons();
 }
 
 function postSingleSubscription(token, signal) {
@@ -620,6 +689,51 @@ function postSingleSubscription(token, signal) {
     body: JSON.stringify({ token }),
     signal,
   });
+}
+
+async function retrySubscriptionResult(index) {
+  const isBatchItem = Number.isInteger(index) && index > 0;
+  const token = isBatchItem
+    ? lastSubscriptionBatchTokens[index - 1]
+    : lastSubscriptionSingleToken;
+  if (!token) return;
+
+  clearError();
+  const { requestId, controller } = beginSubscriptionRequest();
+  const button = isBatchItem
+    ? resultArea.querySelector(`[data-retry-index="${index}"]`)
+    : resultArea.querySelector("[data-retry-single]");
+  runButton.disabled = true;
+  if (button) button.disabled = true;
+  statusText.textContent = isBatchItem ? `复测第 ${index} 个 AT…` : "复测中…";
+
+  try {
+    const response = await postSingleSubscription(token, controller.signal);
+    const data = await readLocalServiceJson(response, { serviceName: "订阅复测接口" });
+    if (!isActiveSubscriptionRequest(requestId)) return;
+    if (!response.ok && !data?.message) {
+      throw new Error(`本机服务返回 HTTP ${response.status}`);
+    }
+    if (isBatchItem && lastSubscriptionBatchState) {
+      renderSubscriptionBatchItem({ ...data, index }, lastSubscriptionBatchState);
+      lastSubscriptionBatchState.done = true;
+      updateBatchStateCounts(lastSubscriptionBatchState);
+      replaceBatchSummary(lastSubscriptionBatchState);
+    } else {
+      renderSubscriptionResult(data);
+    }
+    statusText.textContent = "";
+  } catch (error) {
+    if (!isAbortError(error) && isActiveSubscriptionRequest(requestId)) {
+      setError(error instanceof Error ? error.message : "订阅复测失败。");
+      statusText.textContent = "复测失败";
+    }
+  } finally {
+    if (requestId === activeSubscriptionRequestId) {
+      runButton.disabled = false;
+      activeSubscriptionController = null;
+    }
+  }
 }
 
 function postBatchSubscriptions(tokens) {
@@ -931,6 +1045,7 @@ async function runSubscriptionQuery() {
     if (!isSingleToken) {
       lastSubscriptionBatchTokens = [...tokens];
       lastSubscriptionBatchState = null;
+      lastSubscriptionSingleToken = "";
       await runSubscriptionBatchStream(tokens, {
         requestId,
         signal: controller.signal,
@@ -942,6 +1057,7 @@ async function runSubscriptionQuery() {
     }
     lastSubscriptionBatchTokens = [];
     lastSubscriptionBatchState = null;
+    lastSubscriptionSingleToken = tokens[0];
     const response = await postSingleSubscription(tokens[0], controller.signal);
     const data = await readLocalServiceJson(response, { serviceName: "订阅查询接口" });
     if (!isActiveSubscriptionRequest(requestId)) return;
@@ -982,6 +1098,7 @@ function clearAll() {
   resultArea.innerHTML = "";
   lastSubscriptionBatchTokens = [];
   lastSubscriptionBatchState = null;
+  lastSubscriptionSingleToken = "";
   ipStatus.hidden = true;
   ipStatus.textContent = "";
   ipStatus.removeAttribute("data-state");

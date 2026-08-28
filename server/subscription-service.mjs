@@ -266,6 +266,90 @@ export function redactToken(token) {
   return `${normalized.slice(0, 12)}…${normalized.slice(-6)}`;
 }
 
+async function queryEgressIpInfo({
+  fetchFn,
+  ipInfoUrl = IP_INFO_URL,
+  timeoutMilliseconds = DEFAULT_IP_INFO_TIMEOUT_MS,
+  proxySessionId,
+} = {}) {
+  if (typeof fetchFn !== "function") {
+    return { ok: false, reason: "fetch-unavailable", message: "当前 Node 运行时不可用 fetch。", status: 500 };
+  }
+
+  const timeout = normalizePositiveInteger(timeoutMilliseconds, DEFAULT_IP_INFO_TIMEOUT_MS);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  timeoutId.unref?.();
+
+  try {
+    const requestInit = {
+      method: "GET",
+      signal: controller.signal,
+      headers: { accept: "text/plain, application/json;q=0.8" },
+    };
+    if (proxySessionId) requestInit.proxySessionId = proxySessionId;
+    const response = await fetchFn(ipInfoUrl, requestInit);
+    if (!response.ok) {
+      throw new SubscriptionQueryError(
+        "ip-info-http-error",
+        `IP 信息查询失败（HTTP ${response.status}）。`,
+        response.status,
+      );
+    }
+    const data = await readIpInfoResponse(response);
+    return {
+      ok: true,
+      reason: "ok",
+      status: 200,
+      source: "cloudflare-trace",
+      upstream_status: response.status,
+      ip: selectIpInfoValue(data, ["ip", "query", "address"]),
+      country: selectIpInfoValue(data, ["country", "countryCode", "country_code", "loc"]),
+      region: selectIpInfoValue(data, ["region", "regionName", "region_name"]),
+      city: selectIpInfoValue(data, ["city"]),
+      raw: data,
+    };
+  } catch (error) {
+    if (controller.signal.aborted || isAbortError(error)) {
+      return {
+        ok: false,
+        reason: "ip-info-timeout",
+        message: `IP 查询超时（${Math.round(timeout / 1000)} 秒）。`,
+        status: 504,
+      };
+    }
+    return {
+      ok: false,
+      reason: error?.code ?? "ip-info-query-failed",
+      message: error instanceof Error ? error.message : "IP 信息查询失败。",
+      status: error?.status ?? 500,
+    };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function buildEgressDiagnostics(ipInfo) {
+  if (ipInfo?.ok) {
+    return {
+      egress_ip_status: "confirmed",
+      egress_ip: ipInfo.ip ?? null,
+      egress_country: ipInfo.country ?? null,
+      egress_region: ipInfo.region ?? null,
+      egress_city: ipInfo.city ?? null,
+    };
+  }
+  return {
+    egress_ip_status: "unavailable",
+    egress_ip: null,
+    egress_country: null,
+    egress_region: null,
+    egress_city: null,
+    egress_ip_reason: ipInfo?.reason ?? "ip-info-query-failed",
+    egress_ip_message: ipInfo?.message ?? "出口 IP 未确认。",
+  };
+}
+
 export function createIpInfoHandler({
   fetchFn = globalThis.fetch,
   ipInfoUrl = IP_INFO_URL,
@@ -273,66 +357,20 @@ export function createIpInfoHandler({
   ipInfoTimeoutMilliseconds = DEFAULT_IP_INFO_TIMEOUT_MS,
 } = {}) {
   return async function handleIpInfoQuery() {
-    if (typeof fetchFn !== "function") {
-      return { ok: false, reason: "fetch-unavailable", message: "当前 Node 运行时不可用 fetch。", status: 500 };
-    }
-
-    const timeout = normalizePositiveInteger(ipInfoTimeoutMilliseconds, DEFAULT_IP_INFO_TIMEOUT_MS);
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    timeoutId.unref?.();
-
-    try {
-      const response = await fetchFn(ipInfoUrl, {
-        method: "GET",
-        signal: controller.signal,
-        headers: { accept: "text/plain, application/json;q=0.8" },
-      });
-      if (!response.ok) {
-        throw new SubscriptionQueryError(
-          "ip-info-http-error",
-          `IP 信息查询失败（HTTP ${response.status}）。`,
-          response.status,
-        );
-      }
-      const data = await readIpInfoResponse(response);
-      return {
-        ok: true,
-        reason: "ok",
-        status: 200,
-        source: "cloudflare-trace",
-        upstream_status: response.status,
-        ip: selectIpInfoValue(data, ["ip", "query", "address"]),
-        country: selectIpInfoValue(data, ["country", "countryCode", "country_code", "loc"]),
-        raw: data,
-      };
-    } catch (error) {
-      if (controller.signal.aborted || isAbortError(error)) {
-        return {
-          ok: false,
-          reason: "ip-info-timeout",
-          message: `IP 查询超时（${Math.round(timeout / 1000)} 秒）。`,
-          status: 504,
-        };
-      }
-      const hasPlaceholderProxy = typeof proxyUrl === "string" && /(?:xxxxxx|changeme|example|<.*>)/iu.test(proxyUrl);
-      if (hasPlaceholderProxy) {
-        return {
-          ok: false,
-          reason: "proxy-not-configured",
-          message: "IP 信息查询失败：AT_INSPECTOR_PROXY 仍是占位符，请在 .env 里换成真实代理后重启本机服务。",
-          status: 500,
-        };
-      }
+    const result = await queryEgressIpInfo({
+      fetchFn,
+      ipInfoUrl,
+      timeoutMilliseconds: ipInfoTimeoutMilliseconds,
+    });
+    if (!result.ok && typeof proxyUrl === "string" && /(?:xxxxxx|changeme|example|<.*>)/iu.test(proxyUrl)) {
       return {
         ok: false,
-        reason: error?.code ?? "ip-info-query-failed",
-        message: error instanceof Error ? error.message : "IP 信息查询失败。",
-        status: error?.status ?? 500,
+        reason: "proxy-not-configured",
+        message: "IP 信息查询失败：AT_INSPECTOR_PROXY 仍是占位符，请在 .env 里换成真实代理后重启本机服务。",
+        status: 500,
       };
-    } finally {
-      clearTimeout(timeoutId);
     }
+    return result;
   };
 }
 
@@ -496,6 +534,7 @@ export function createSubscriptionHandler({
   nowMilliseconds = Date.now(),
   origin = DEFAULT_ORIGIN,
   upstreamTimeoutMilliseconds = DEFAULT_UPSTREAM_TIMEOUT_MS,
+  ipInfoTimeoutMilliseconds = DEFAULT_IP_INFO_TIMEOUT_MS,
   proxySessionIdFactory = createUpstreamSessionId,
   timingNow = defaultTimingNow,
 } = {}) {
@@ -519,6 +558,10 @@ export function createSubscriptionHandler({
         accounts_attempts: accountsAttempts,
         subscription_attempts: subscriptionAttempts,
         retry_count: retryCount,
+        ...buildEgressDiagnostics(await queryEgressIpInfo({
+          fetchFn,
+          timeoutMilliseconds: ipInfoTimeoutMilliseconds,
+        })),
       };
     }
     if (typeof fetchFn !== "function") {
@@ -632,6 +675,11 @@ export function createSubscriptionHandler({
         accounts_attempts: accountsAttempts,
         subscription_attempts: subscriptionAttempts,
         retry_count: retryCount,
+        ...buildEgressDiagnostics(await queryEgressIpInfo({
+          fetchFn,
+          timeoutMilliseconds: ipInfoTimeoutMilliseconds,
+          proxySessionId,
+        })),
       };
     } catch (error) {
       const localDiagnostics = readLocalTokenDiagnostics(normalized, nowMilliseconds, error);
@@ -648,6 +696,11 @@ export function createSubscriptionHandler({
         accounts_attempts: accountsAttempts,
         subscription_attempts: subscriptionAttempts,
         retry_count: retryCount,
+        ...buildEgressDiagnostics(await queryEgressIpInfo({
+          fetchFn,
+          timeoutMilliseconds: ipInfoTimeoutMilliseconds,
+          proxySessionId,
+        })),
       };
     }
   };
@@ -691,6 +744,7 @@ export function createSubscriptionBatchHandler({
   batchLimit = DEFAULT_BATCH_LIMIT,
   concurrency = DEFAULT_BATCH_CONCURRENCY,
   upstreamTimeoutMilliseconds = DEFAULT_UPSTREAM_TIMEOUT_MS,
+  ipInfoTimeoutMilliseconds = DEFAULT_IP_INFO_TIMEOUT_MS,
   proxySessionIdFactory = createUpstreamSessionId,
   timingNow = defaultTimingNow,
 } = {}) {
@@ -699,6 +753,7 @@ export function createSubscriptionBatchHandler({
     nowMilliseconds,
     origin,
     upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
     proxySessionIdFactory,
     timingNow,
   });
@@ -747,6 +802,7 @@ export function createSubscriptionBatchStream({
   batchLimit = DEFAULT_BATCH_LIMIT,
   concurrency = DEFAULT_BATCH_CONCURRENCY,
   upstreamTimeoutMilliseconds = DEFAULT_UPSTREAM_TIMEOUT_MS,
+  ipInfoTimeoutMilliseconds = DEFAULT_IP_INFO_TIMEOUT_MS,
   proxySessionIdFactory = createUpstreamSessionId,
   timingNow = defaultTimingNow,
 } = {}) {
@@ -755,6 +811,7 @@ export function createSubscriptionBatchStream({
     nowMilliseconds,
     origin,
     upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
     proxySessionIdFactory,
     timingNow,
   });

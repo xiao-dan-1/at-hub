@@ -237,7 +237,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-batch-retry { min-height: 30px; padding: 5px 10px; color: var(--primary-strong); background: var(--surface); border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line)); border-radius: 999px; cursor: pointer; font-size: 0.72rem; font-weight: 780; white-space: nowrap; }
 .subscription-batch-retry:hover { background: var(--primary-soft); }
 .subscription-batch-retry:disabled { cursor: wait; opacity: 0.6; }
-.subscription-batch-table { --subscription-row-columns: 36px minmax(190px, 1.45fr) minmax(58px, 0.32fr) minmax(112px, 0.54fr) 54px 72px 76px 58px 48px; display: grid; gap: 0; overflow: hidden; background: var(--surface); border: 1px solid color-mix(in srgb, var(--line) 86%, transparent); border-radius: 16px; box-shadow: 0 14px 34px rgba(27, 42, 34, 0.045); }
+.subscription-batch-table { --subscription-row-columns: 36px minmax(180px, 1.25fr) minmax(58px, 0.32fr) minmax(100px, 0.5fr) 54px 72px 76px minmax(110px, 0.52fr) 58px 48px 48px; display: grid; gap: 0; overflow: hidden; background: var(--surface); border: 1px solid color-mix(in srgb, var(--line) 86%, transparent); border-radius: 16px; box-shadow: 0 14px 34px rgba(27, 42, 34, 0.045); }
 .subscription-row { display: grid; grid-template-columns: var(--subscription-row-columns); column-gap: 14px; row-gap: 10px; align-items: center; min-width: 0; padding: 14px 16px; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
 .subscription-row:not(:last-child) { border-bottom: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
 .subscription-row:hover { background: color-mix(in srgb, var(--surface-subtle) 72%, transparent); }
@@ -249,10 +249,11 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-row__account { display: grid; justify-self: stretch; gap: 3px; min-width: 0; }
 .subscription-row__account strong { min-width: 0; overflow: hidden; color: var(--text); font-size: 0.86rem; font-weight: 760; text-overflow: ellipsis; white-space: nowrap; }
 .subscription-row__account span { min-width: 0; overflow: hidden; color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.72rem; text-overflow: ellipsis; white-space: nowrap; }
-.subscription-row__meta, .subscription-row__trial, .subscription-row__stage, .subscription-row__timing { display: grid; justify-self: center; gap: 3px; min-width: 0; text-align: center; }
-.subscription-row:not(.subscription-row--header) .subscription-row__meta span, .subscription-row:not(.subscription-row--header) .subscription-row__trial span, .subscription-row:not(.subscription-row--header) .subscription-row__stage span, .subscription-row:not(.subscription-row--header) .subscription-row__timing span { display: none; }
-.subscription-row__meta span, .subscription-row__trial span, .subscription-row__stage span, .subscription-row__timing span { color: var(--muted); font-size: 0.68rem; font-weight: 680; }
-.subscription-row__meta strong, .subscription-row__trial strong, .subscription-row__stage strong, .subscription-row__timing strong { min-width: 0; overflow: hidden; font-size: 0.78rem; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+.subscription-row__meta, .subscription-row__trial, .subscription-row__stage, .subscription-row__egress, .subscription-row__timing { display: grid; justify-self: center; gap: 3px; min-width: 0; text-align: center; }
+.subscription-row:not(.subscription-row--header) .subscription-row__meta span, .subscription-row:not(.subscription-row--header) .subscription-row__trial span, .subscription-row:not(.subscription-row--header) .subscription-row__stage span, .subscription-row:not(.subscription-row--header) .subscription-row__egress span, .subscription-row:not(.subscription-row--header) .subscription-row__timing span { display: none; }
+.subscription-row__meta span, .subscription-row__trial span, .subscription-row__stage span, .subscription-row__egress span, .subscription-row__timing span { color: var(--muted); font-size: 0.68rem; font-weight: 680; }
+.subscription-row__meta strong, .subscription-row__trial strong, .subscription-row__stage strong, .subscription-row__egress strong, .subscription-row__timing strong { min-width: 0; overflow: hidden; font-size: 0.78rem; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+.subscription-row__egress strong { color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.72rem; }
 .subscription-row__timing strong { color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.72rem; }
 .subscription-row__stage { min-width: 0; }
 .subscription-row__stage strong { color: var(--muted); }
@@ -265,9 +266,12 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-stage-note[data-state="retried"] { color: var(--primary-strong); }
 .subscription-row__trial[data-trial="true"] strong { display: inline-flex; max-width: 100%; width: max-content; min-height: 23px; align-items: center; padding: 2px 8px; color: var(--primary-strong); background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent); border-radius: 999px; }
 .subscription-row__trial[data-trial="used"] strong { color: var(--muted); }
-.subscription-row > :nth-child(1), .subscription-row > :nth-child(3), .subscription-row > :nth-child(4), .subscription-row > :nth-child(5), .subscription-row > :nth-child(6), .subscription-row > :nth-child(7), .subscription-row > :nth-child(8), .subscription-row > :nth-child(9) { justify-self: center; }
+.subscription-row > :nth-child(1), .subscription-row > :nth-child(3), .subscription-row > :nth-child(4), .subscription-row > :nth-child(5), .subscription-row > :nth-child(6), .subscription-row > :nth-child(7), .subscription-row > :nth-child(8), .subscription-row > :nth-child(9), .subscription-row > :nth-child(10), .subscription-row > :nth-child(11) { justify-self: center; }
 .subscription-row--header > span:nth-child(2) { justify-self: start; }
 .subscription-row .subscription-status-pill { min-width: 82px; }
+.subscription-result-retry { min-height: 30px; padding: 5px 9px; color: var(--primary-strong); background: var(--surface); border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--line)); border-radius: 6px; cursor: pointer; font-size: 0.72rem; font-weight: 760; white-space: nowrap; }
+.subscription-result-retry:hover { background: var(--primary-soft); }
+.subscription-result-retry:disabled { cursor: wait; opacity: 0.6; }
 .subscription-row__json { justify-self: center; min-width: max-content; padding-top: 0; border-top: 0; }
 .subscription-row__json[open] { grid-column: 1 / -1; justify-self: stretch; min-width: 0; width: 100%; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--line) 62%, transparent); }
 .subscription-row__json summary { display: inline-flex; min-height: 28px; align-items: center; padding: 4px 9px; color: var(--muted); background: color-mix(in srgb, var(--surface-subtle) 76%, transparent); border: 1px solid color-mix(in srgb, var(--line) 68%, transparent); border-radius: 999px; cursor: pointer; font-size: 0.74rem; font-weight: 720; }
@@ -276,6 +280,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-card--error { border-color: color-mix(in srgb, var(--danger) 22%, var(--line)); }
 .subscription-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 2px 2px 0; }
 .subscription-card__identity { min-width: 0; }
+.subscription-card__actions { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
 .subscription-card__index { margin: 0 0 6px; color: var(--primary-strong); font-size: 0.72rem; font-weight: 780; letter-spacing: 0.04em; }
 .subscription-card__identity h2 { margin: 0; font-size: 1.45rem; line-height: 1.1; letter-spacing: -0.03em; }
 .subscription-card__account { margin: 8px 0 0; color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; font-size: 0.78rem; line-height: 1.45; overflow-wrap: anywhere; }
@@ -402,8 +407,9 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .subscription-batch-stats { justify-content: flex-start; }
   .subscription-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
   .subscription-row--header { display: none; }
-  .subscription-row:not(.subscription-row--header) .subscription-row__meta span, .subscription-row:not(.subscription-row--header) .subscription-row__trial span, .subscription-row:not(.subscription-row--header) .subscription-row__stage span, .subscription-row:not(.subscription-row--header) .subscription-row__timing span { display: block; }
-  .subscription-row__meta, .subscription-row__trial, .subscription-row__stage, .subscription-row__timing { grid-column: 2 / -1; grid-template-columns: 64px minmax(0, 1fr); align-items: baseline; justify-self: stretch; text-align: left; }
+  .subscription-row:not(.subscription-row--header) .subscription-row__meta span, .subscription-row:not(.subscription-row--header) .subscription-row__trial span, .subscription-row:not(.subscription-row--header) .subscription-row__stage span, .subscription-row:not(.subscription-row--header) .subscription-row__egress span, .subscription-row:not(.subscription-row--header) .subscription-row__timing span { display: block; }
+  .subscription-row__meta, .subscription-row__trial, .subscription-row__stage, .subscription-row__egress, .subscription-row__timing { grid-column: 2 / -1; grid-template-columns: 64px minmax(0, 1fr); align-items: baseline; justify-self: stretch; text-align: left; }
+  .subscription-row .subscription-result-retry { grid-column: 2 / -1; justify-self: start; }
   .subscription-row__json { grid-column: 1 / -1; }
   .live-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; }
   .live-row__meta { grid-column: 2 / -1; grid-template-columns: 58px minmax(0, 1fr); align-items: baseline; }

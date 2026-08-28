@@ -147,3 +147,57 @@ test("normalizeSubscriptionStatus keeps token expiry separate from free account 
     discount: { percentage: 100 },
   }]);
 });
+
+test("normalizeSubscriptionStatus merges eligibility returned from nested account and subscription variants", () => {
+  const model = normalizeSubscriptionStatus({
+    accountsResponse: {
+      accounts: {
+        default: {
+          account: {
+            account_id: "acc_eligible",
+            eligible_promo_campaigns: [{
+              promo_campaign_id: "account-trial",
+              title: "Account trial",
+              plan_name: "chatgptplusplan",
+            }],
+            eligible_offers: { items: [{ id: "chatgptgoplan" }] },
+            is_eligible_for_free_trial: true,
+          },
+          entitlement: {
+            eligible_offers: ["chatgptplusplan"],
+          },
+        },
+      },
+    },
+    subscriptionResponse: {
+      available_offers: [{ id: "chatgptbusinessplan" }],
+      eligible_promotions: {
+        subscription: {
+          id: "subscription-trial",
+          metadata: { title: "Subscription trial" },
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(model.eligible_offers, [
+    "chatgptbusinessplan",
+    "chatgptgoplan",
+    "chatgptplusplan",
+  ]);
+  assert.deepEqual(model.eligible_promos, [
+    {
+      id: "subscription-trial",
+      plan_name: null,
+      title: "Subscription trial",
+      discount: null,
+    },
+    {
+      id: "account-trial",
+      plan_name: "chatgptplusplan",
+      title: "Account trial",
+      discount: null,
+    },
+  ]);
+  assert.equal(model.is_eligible_for_free_trial, true);
+});

@@ -118,13 +118,20 @@ export function startLocalServer({
     concurrency: liveConcurrency,
     upstreamTimeoutMilliseconds,
   });
-  const handleSubscription = createSubscriptionHandler({ fetchFn: effectiveFetch, nowMilliseconds, origin, upstreamTimeoutMilliseconds });
+  const handleSubscription = createSubscriptionHandler({
+    fetchFn: effectiveFetch,
+    nowMilliseconds,
+    origin,
+    upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
+  });
   const handleSubscriptionBatch = createSubscriptionBatchHandler({
     fetchFn: effectiveFetch,
     nowMilliseconds,
     origin,
     concurrency: subscriptionConcurrency,
     upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
   });
   const streamSubscriptionBatch = createSubscriptionBatchStream({
     fetchFn: effectiveFetch,
@@ -132,6 +139,7 @@ export function startLocalServer({
     origin,
     concurrency: subscriptionConcurrency,
     upstreamTimeoutMilliseconds,
+    ipInfoTimeoutMilliseconds,
   });
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${host}:${port}`);

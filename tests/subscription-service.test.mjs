@@ -19,6 +19,9 @@ test("createSubscriptionHandler calls accounts/check then subscriptions without 
     nowMilliseconds: Date.UTC(2033, 4, 17),
     fetchFn: async (url, init) => {
       calls.push({ url: String(url), headers: init.headers });
+      if (String(url).includes("/cdn-cgi/trace")) {
+        return new Response("ip=78.180.242.194\nloc=TR\n", { status: 200 });
+      }
       if (String(url).includes("/accounts/check/")) {
         return new Response(JSON.stringify({
           accounts: {
@@ -40,14 +43,18 @@ test("createSubscriptionHandler calls accounts/check then subscriptions without 
   assert.equal(result.status, 200);
   assert.equal(result.account_id, "acc_123");
   assert.equal(result.subscription_plan, "chatgptfreeplan");
-  assert.equal(calls.length, 2);
-  assert.ok(calls.every(call => call.headers.authorization === `Bearer ${token}`));
-  assert.ok(calls.every(call => /Mozilla\/5\.0/u.test(call.headers["user-agent"])));
-  assert.ok(calls.every(call => call.headers.origin === "https://chatgpt.com"));
-  assert.ok(calls.every(call => call.headers.referer === "https://chatgpt.com/"));
-  assert.ok(calls.every(call => call.headers["accept-language"]));
-  assert.ok(calls.every(call => !("cookie" in call.headers)));
-  assert.ok(calls.every(call => !call.url.includes("timezone_offset_min")));
+  assert.equal(result.egress_ip, "78.180.242.194");
+  assert.equal(result.egress_country, "TR");
+  const upstreamCalls = calls.filter(call => call.url.includes("chatgpt.com/backend-api/"));
+  assert.equal(upstreamCalls.length, 2);
+  assert.equal(calls.filter(call => call.url.includes("/cdn-cgi/trace")).length, 1);
+  assert.ok(upstreamCalls.every(call => call.headers.authorization === `Bearer ${token}`));
+  assert.ok(upstreamCalls.every(call => /Mozilla\/5\.0/u.test(call.headers["user-agent"])));
+  assert.ok(upstreamCalls.every(call => call.headers.origin === "https://chatgpt.com"));
+  assert.ok(upstreamCalls.every(call => call.headers.referer === "https://chatgpt.com/"));
+  assert.ok(upstreamCalls.every(call => call.headers["accept-language"]));
+  assert.ok(upstreamCalls.every(call => !("cookie" in call.headers)));
+  assert.ok(upstreamCalls.every(call => !call.url.includes("timezone_offset_min")));
 });
 
 test("createSubscriptionHandler reports accounts, subscription, and total timing", async () => {
@@ -86,6 +93,9 @@ test("createSubscriptionHandler reuses one rotate proxy session for both upstrea
     proxySessionIdFactory: () => "perAtSession42",
     fetchFn: async (url, init) => {
       calls.push({ url: String(url), proxySessionId: init.proxySessionId });
+      if (String(url).includes("/cdn-cgi/trace")) {
+        return new Response("ip=203.0.113.15\nloc=JP\n", { status: 200 });
+      }
       if (String(url).includes("/accounts/check/")) {
         return new Response(JSON.stringify({
           accounts: {
@@ -103,9 +113,10 @@ test("createSubscriptionHandler reuses one rotate proxy session for both upstrea
   const result = await handler({ token });
 
   assert.equal(result.ok, true);
-  assert.equal(calls.length, 2);
-  assert.equal(calls[0].proxySessionId, "perAtSession42");
-  assert.equal(calls[1].proxySessionId, "perAtSession42");
+  assert.equal(result.egress_ip, "203.0.113.15");
+  assert.equal(result.egress_country, "JP");
+  assert.equal(calls.length, 3);
+  assert.ok(calls.every(call => call.proxySessionId === "perAtSession42"));
 });
 
 test("createSubscriptionHandler retries transient account lookup once with a fresh proxy session", async () => {
@@ -140,7 +151,7 @@ test("createSubscriptionHandler retries transient account lookup once with a fre
   assert.equal(result.retry_count, 1);
   assert.equal(result.accounts_attempts, 2);
   assert.equal(result.subscription_attempts, 1);
-  assert.deepEqual(calls.map(call => call.proxySessionId), ["firstSid", "retrySid", "retrySid"]);
+  assert.deepEqual(calls.map(call => call.proxySessionId), ["firstSid", "retrySid", "retrySid", "retrySid"]);
 });
 
 test("createSubscriptionHandler does not retry auth failures", async () => {
@@ -159,7 +170,7 @@ test("createSubscriptionHandler does not retry auth failures", async () => {
   assert.equal(result.reason, "upstream-auth-failed");
   assert.equal(result.accounts_attempts, 1);
   assert.equal(result.retry_count, 0);
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
 });
 
 test("createSubscriptionHandler keeps local JWT identity and diagnosis on upstream 401", async () => {
@@ -277,7 +288,7 @@ test("createSubscriptionHandler surfaces accounts check 401 body as account disa
   assert.match(result.upstream_error_message, /Account has been deactivated/u);
   assert.equal(result.upstream_path, "/backend-api/accounts/check/v4-2023-04-27");
   assert.doesNotMatch(JSON.stringify(result), new RegExp(token, "u"));
-  assert.equal(calls.length, 1);
+  assert.equal(calls.length, 2);
 });
 
 test("createSubscriptionHandler diagnoses expired local JWT when upstream returns 401", async () => {
@@ -337,7 +348,7 @@ test("createSubscriptionHandler keeps account success when subscription details 
   assert.equal(result.subscription_attempts, 2);
   assert.equal(result.retry_count, 1);
   assert.deepEqual(result.eligible_offers, ["account-fallback-offer"]);
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
 });
 
 test("createSubscriptionHandler retries Cloudflare challenge subscription details once", async () => {
