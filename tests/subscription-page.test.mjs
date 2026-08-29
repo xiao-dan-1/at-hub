@@ -31,7 +31,7 @@ test("subscription initial query surface removes developer and duplicate safety 
 test("subscription page exposes inline current IP feedback beside the debug button", () => {
   assert.match(html, /id="subscriptionIpButton"/u);
   assert.match(html, /id="subscriptionIpStatus"/u);
-  assert.match(html, /出口 IP/u);
+  assert.match(html, /出口国家/u);
   assert.doesNotMatch(html, /id="subscriptionIpPanel"/u);
   assert.match(js, /fetch\("\/api\/ip-info"/u);
   assert.match(js, /renderIpInlineStatus/u);
@@ -144,10 +144,11 @@ test("subscription batch summary can retry incomplete items without keeping raw 
 });
 
 test("every subscription result keeps an egress location and per-item retest control without exposing AT values", () => {
-  assert.match(js, /egress_ip/u);
-  assert.match(js, /formatEgressLocation/u);
+  assert.match(js, /egress_country/u);
+  assert.match(js, /formatEgressCountry/u);
   assert.match(js, /subscription-row__egress/u);
-  assert.match(js, /出口 IP/u);
+  assert.match(js, /出口国家/u);
+  assert.match(js, /当前出口国家/u);
   assert.match(js, /renderResultRetryButton/u);
   assert.match(js, /retrySubscriptionResult/u);
   assert.match(js, /data-retry-single/u);

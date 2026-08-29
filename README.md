@@ -22,7 +22,7 @@ npm install
 npm start
 ```
 
-然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个或多个 AT，也可以粘贴一个或多个 `api/auth/session` 返回的 JSON；页面会提取并去重 `accessToken`。也兼容每行 `email----pwd----2fa----at` 的记录格式，只取最后一段 AT。单个 AT 保持一张订阅卡片；批量查询会显示汇总和一组同风格结果卡。资格会合并账户检查与订阅响应中的优惠、可购套餐和试用标记；每项会显示本次同一代理会话的出口 IP/地区，并可单独复测。结果按输入顺序返回，单个失败不会影响其它 AT 的结果；默认并发 10，每个上游请求默认 12 秒超时，慢代理不会无限拖住整批。
+然后打开 `http://127.0.0.1:5173/subscription`。粘贴一个或多个 AT，也可以粘贴一个或多个 `api/auth/session` 返回的 JSON；页面会提取并去重 `accessToken`。也兼容每行 `email----pwd----2fa----at` 的记录格式，只取最后一段 AT。单个 AT 保持一张订阅卡片；批量查询会显示汇总和一组同风格结果卡。资格会合并账户检查与订阅响应中的优惠、可购套餐和试用标记；每项会显示本次同一代理会话的出口国家，并可单独复测。结果按输入顺序返回，单个失败不会影响其它 AT 的结果；默认并发 10，每个上游请求默认 12 秒超时，慢代理不会无限拖住整批。
 
 AT 只发送到本机 `/api/subscription` 或 `/api/subscriptions/batch`，再由本机服务请求 ChatGPT 订阅相关接口；本项目不保存、不记录原始 AT，也不会把它写进测试、日志或版本库。批量接口返回时只附带脱敏 token 片段用于定位失败项。
 
@@ -42,7 +42,7 @@ npm start -- --proxy socks5://proxy-region-JP-sid-fixed-t-5:proxy-password@proxy
 npm start -- --host 0.0.0.0 --proxy http://127.0.0.1:7890
 ```
 
-`--proxy` 只影响本地服务访问 ChatGPT 及出口 IP 检测接口的上游请求；浏览器访问 `127.0.0.1` 或本机 IPv4 的这段仍是本机连接。`--proxy-mode rotate` 会为每个 AT 分配一个代理 sid，并让该 AT 的 accounts/check、subscriptions 与出口检测复用同一个 sid，适合 1024proxy 这类按 session id 分配出口的动态代理；不写时默认 `fixed`，保持同一个代理会话。
+`--proxy` 只影响本地服务访问 ChatGPT 及出口检测接口的上游请求；浏览器访问 `127.0.0.1` 或本机 IPv4 的这段仍是本机连接。`--proxy-mode rotate` 会为每个 AT 分配一个代理 sid，并让该 AT 的 accounts/check、subscriptions 与出口检测复用同一个 sid，适合 1024proxy 这类按 session id 分配出口的动态代理；不写时默认 `fixed`，保持同一个代理会话。
 
 查询速度可以按代理质量调节：`--subscription-concurrency 10` 提高订阅批量并发（最高按 20 执行），`--live-concurrency 16` 提高测活批量并发，`--upstream-timeout-ms 9000` 缩短单次上游等待，`--ip-timeout-ms 2500` 缩短出口 IP 检测等待，`--body-limit-bytes 8388608` 调整本地服务接收批量 AT 的请求体上限。并发越高越快，但代理质量一般时也更容易触发限速或防护。
 
@@ -234,7 +234,7 @@ docker pull ghcr.io/xiao-dan-1/at-hub:0.0.3
 
 - 根目录 `index.html` 离线解析页面不发起网络请求，不使用 Cookie、`localStorage`、`sessionStorage` 或数据库；发布文件的 CSP 同样禁止外部连接与资源。
 - `/live` AT 测活页面只连接同源本地服务；本地服务会联网请求 `backend-api/me`，因此不要把它当成零上传页面。
-- `/subscription` 订阅查询页面只连接同源本地服务；本地服务会联网查询实时订阅状态，并通过 Cloudflare Trace 确认每项查询的出口 IP/国家或地区，因此不要把它当成零上传页面。
+- `/subscription` 订阅查询页面只连接同源本地服务；本地服务会联网查询实时订阅状态，并通过 Cloudflare Trace 确认每项查询的出口国家，因此不要把它当成零上传页面。
 - 本地服务上游请求只显式携带 `Authorization: Bearer <AT>` 与 JSON `Accept`，不主动携带浏览器 Cookie 或本机时区参数。
 - 工具只解码 JWT，不验证签名、撤销状态或服务器可用性。页面显示“在声明时间窗口内”也不等于 token 可用。
 - 权限风险来自本项目维护的本地规则和启发式提示，不是 OpenAI 官方权限评级，也不证明服务器一定接受相应 scope。

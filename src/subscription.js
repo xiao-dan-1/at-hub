@@ -191,19 +191,21 @@ function renderTagList(items, emptyText) {
     .join("");
 }
 
-function formatEgressLocation(data) {
-  if (!data?.egress_ip) return "未确认";
-  const location = [...new Set([
-    data.egress_city,
-    data.egress_region,
-    data.egress_country,
-  ].filter(value => typeof value === "string" && value.trim()))];
-  return [data.egress_ip, ...location].join(" · ");
+function formatEgressCountry(data) {
+  const country = String(data?.egress_country ?? "").trim();
+  return country || "未确认";
 }
 
 function egressLocationTitle(data) {
-  if (data?.egress_ip) return `本次查询出口：${formatEgressLocation(data)}`;
-  return data?.egress_ip_message ?? "本次查询未能确认出口 IP。";
+  if (data?.egress_country) {
+    const ip = data.egress_ip ? ` · ${data.egress_ip}` : "";
+    const location = [...new Set([
+      data.egress_city,
+      data.egress_region,
+    ].filter(value => typeof value === "string" && value.trim()))].join(" · ");
+    return `本次查询出口国家：${formatEgressCountry(data)}${location ? ` · ${location}` : ""}${ip}`;
+  }
+  return data?.egress_ip_message ?? "本次查询未能确认出口国家。";
 }
 
 function renderResultRetryButton({ index } = {}) {
@@ -227,13 +229,13 @@ export function renderIpInlineStatus(data) {
   }
 
   if (data?.ok === true) {
-    const ip = valueOrDash(data.ip);
     const country = valueOrDash(data.country);
-    setIpInlineStatus(`${ip} · ${country}`, "ok", `当前出口：${ip}，国家：${country}`);
+    const ip = valueOrDash(data.ip);
+    setIpInlineStatus(country, "ok", `当前出口国家：${country}，IP：${ip}`);
     return;
   }
 
-  setIpInlineStatus("IP 查询失败", "error", data?.message ?? "IP 信息查询失败。");
+  setIpInlineStatus("国家未确认", "error", data?.message ?? "出口国家查询失败。");
 }
 
 function setError(message) {
@@ -299,7 +301,7 @@ function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
           <div><dt>订阅结束</dt><dd>${escapeHtml(formatDate(data.expires_at))}</dd></div>
           <div><dt>曾付费</dt><dd>${escapeHtml(formatBoolean(data.has_previously_paid_subscription))}</dd></div>
           <div><dt>AT 有效期</dt><dd>${escapeHtml(formatRemaining({ days_left: data.token_days_left, hours_left: data.token_hours_left }))}</dd></div>
-          <div title="${escapeHtml(egressLocationTitle(data))}"><dt>出口 IP</dt><dd>${escapeHtml(formatEgressLocation(data))}</dd></div>
+          <div title="${escapeHtml(egressLocationTitle(data))}"><dt>出口国家</dt><dd>${escapeHtml(formatEgressCountry(data))}</dd></div>
         </dl>
 
         <div class="subscription-offers">
@@ -356,7 +358,7 @@ function renderSubscriptionErrorCard(data) {
         <div><dt>本地判断</dt><dd>${escapeHtml(valueOrDash(data?.auth_failure_hint ?? data?.local_token_status_label))}</dd></div>
         <div><dt>上游码</dt><dd>${escapeHtml(valueOrDash(data?.upstream_error_code))}</dd></div>
         <div><dt>上游说明</dt><dd>${escapeHtml(valueOrDash(data?.upstream_error_message ?? data?.upstream_error_body_excerpt))}</dd></div>
-        <div title="${escapeHtml(egressLocationTitle(data))}"><dt>出口 IP</dt><dd>${escapeHtml(formatEgressLocation(data))}</dd></div>
+        <div title="${escapeHtml(egressLocationTitle(data))}"><dt>出口国家</dt><dd>${escapeHtml(formatEgressCountry(data))}</dd></div>
       </dl>
     </article>
   `;
@@ -412,7 +414,7 @@ function renderSubscriptionBatchHeader() {
       <span>AT</span>
       <span>订阅</span>
       <span>阶段</span>
-      <span>出口</span>
+      <span>国家</span>
       <span>耗时</span>
       <span>操作</span>
       <span>详情</span>
@@ -485,7 +487,7 @@ function renderSubscriptionBatchRow(data) {
       </div>
       <div class="subscription-row__egress" title="${escapeHtml(egressLocationTitle(data))}">
         <span>出口</span>
-        <strong>${escapeHtml(formatEgressLocation(data))}</strong>
+        <strong>${escapeHtml(formatEgressCountry(data))}</strong>
       </div>
       <div class="subscription-row__timing" title="${escapeHtml(ok ? `accounts ${renderTiming(data.accounts_ms)} · subscription ${renderTiming(data.subscription_ms)}` : valueOrDash(data?.reason))}">
         <span>耗时</span>
