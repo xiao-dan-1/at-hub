@@ -86,8 +86,8 @@ test("createAtLiveBatchHandler uses CPA live-check default concurrency", async (
   assert.equal(peakRequests, 10);
 });
 
-test("createAtLiveBatchHandler allows up to 100 ATs by default", async () => {
-  const tokens = Array.from({ length: 100 }, (_, index) => `live-token-${index + 1}`);
+test("createAtLiveBatchHandler does not impose a default 100-token cap", async () => {
+  const tokens = Array.from({ length: 101 }, (_, index) => `live-token-${index + 1}`);
   const handler = createAtLiveBatchHandler({
     fetchFn: async () => new Response(JSON.stringify({ id: "user_live" }), { status: 200 }),
   });
@@ -95,20 +95,5 @@ test("createAtLiveBatchHandler allows up to 100 ATs by default", async () => {
   const result = await handler({ tokens });
 
   assert.equal(result.ok, true);
-  assert.equal(result.count, 100);
-});
-
-test("createAtLiveBatchHandler rejects the 101st AT by default", async () => {
-  const tokens = Array.from({ length: 101 }, (_, index) => `live-token-${index + 1}`);
-  const handler = createAtLiveBatchHandler({
-    fetchFn: async () => {
-      throw new Error("batch validation should run before upstream calls");
-    },
-  });
-
-  const result = await handler({ tokens });
-
-  assert.equal(result.ok, false);
-  assert.equal(result.reason, "batch-too-large");
-  assert.equal(result.max, 100);
+  assert.equal(result.count, 101);
 });

@@ -3,7 +3,7 @@ import { queryJson, redactToken } from "./subscription-service.mjs";
 
 const DEFAULT_ORIGIN = "https://chatgpt.com";
 const ME_PATH = "/backend-api/me";
-const DEFAULT_BATCH_LIMIT = 100;
+const DEFAULT_BATCH_LIMIT = Number.POSITIVE_INFINITY;
 const DEFAULT_BATCH_CONCURRENCY = 10;
 
 function buildUrl(origin, path) {

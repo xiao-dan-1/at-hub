@@ -9,7 +9,7 @@ const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 test("AT live page declares a local-service backend-api me check", () => {
   assert.match(html, /AT 测活/u);
   assert.match(html, /backend-api\/me/u);
-  assert.match(html, /最多 100 个/u);
+  assert.doesNotMatch(html, /最多\s*100\s*个/u);
   assert.match(html, /connect-src 'self'/u);
   assert.match(html, /id="liveInput"/u);
   assert.match(html, /id="liveCountHint"/u);
@@ -73,6 +73,6 @@ test("AT live input keeps the initial state quiet and focused", () => {
   assert.doesNotMatch(html, /未识别 AT/u);
   assert.match(js, /上次测活 \$\{count\} 个 AT/u);
   assert.doesNotMatch(js, /最多一次测活 20 个 AT/u);
-  assert.match(js, /MAX_BATCH_TOKENS\s*=\s*100/u);
-  assert.match(js, /最多一次测活 \$\{MAX_BATCH_TOKENS\} 个 AT/u);
+  assert.doesNotMatch(js, /MAX_BATCH_TOKENS/u);
+  assert.doesNotMatch(js, /最多一次测活/u);
 });

@@ -19,7 +19,6 @@ const errorBox = document.getElementById("liveError");
 const resultArea = document.getElementById("liveResult");
 const statusText = document.getElementById("liveStatus");
 const countHint = document.getElementById("liveCountHint");
-const MAX_BATCH_TOKENS = 100;
 
 configureToolNavigation();
 
@@ -49,9 +48,8 @@ function clearError() {
 function updateLiveCountHint() {
   const tokens = extractAccessTokens(input.value).tokens;
   const count = tokens.length;
-  const overLimit = count > MAX_BATCH_TOKENS;
 
-  countHint.dataset.state = overLimit ? "over" : count > 0 ? "ready" : "empty";
+  countHint.dataset.state = count > 0 ? "ready" : "empty";
   countHint.textContent = count === 0
     ? "等待粘贴 · 一行一个 AT"
     : `已识别 ${count} 个 AT · 一行一个 AT`;
@@ -213,11 +211,6 @@ async function runLiveCheck() {
     setError("没有找到有效的三段式 AT。");
     return;
   }
-  if (tokens.length > MAX_BATCH_TOKENS) {
-    setError(`最多一次测活 ${MAX_BATCH_TOKENS} 个 AT。`);
-    return;
-  }
-
   runButton.disabled = true;
   statusText.textContent = tokens.length === 1 ? "测活中…" : `测活中 ${tokens.length} 个…`;
   input.value = "";
