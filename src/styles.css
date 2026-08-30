@@ -268,8 +268,9 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-row__trial { overflow: hidden; }
 .subscription-row__trial strong, .subscription-row__trial small { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .subscription-row__trial small { margin-top: 2px; color: var(--muted); font-size: 0.66rem; font-weight: 680; }
-.subscription-row__trial[data-state="available"] { padding: 4px 6px; background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent); border-radius: 6px; }
-.subscription-row__trial[data-state="available"] strong { color: var(--primary-strong); }
+.subscription-row__trial[data-state="available"] { padding: 0; background: transparent; border: 0; border-radius: 0; }
+.subscription-row__trial-values { display: flex; min-width: 0; flex-wrap: wrap; justify-content: center; gap: 5px; }
+.subscription-row__trial-values .subscription-tag { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .subscription-row__trial[data-state="uncertain"] strong { color: var(--warning); }
 .subscription-row__trial[data-state="available"] strong { color: var(--text); }
 .subscription-row__status { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; }
@@ -427,6 +428,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
   .subscription-row:not(.subscription-row--header) .subscription-row__meta span, .subscription-row:not(.subscription-row--header) .subscription-row__trial span, .subscription-row:not(.subscription-row--header) .subscription-row__stage span, .subscription-row:not(.subscription-row--header) .subscription-row__egress span, .subscription-row:not(.subscription-row--header) .subscription-row__timing span { display: block; }
   .subscription-row__meta, .subscription-row__trial, .subscription-row__stage, .subscription-row__egress, .subscription-row__timing { grid-column: 2 / -1; grid-template-columns: 64px minmax(0, 1fr); align-items: baseline; justify-self: stretch; text-align: left; }
   .subscription-row__trial small { grid-column: 2; }
+  .subscription-row__trial-values { justify-content: flex-start; }
   .subscription-row__status, .subscription-row__egress, .subscription-row__actions { grid-column: 2 / -1; justify-self: stretch; }
   .subscription-row__status { grid-template-columns: 1fr; align-items: start; text-align: left; }
   .subscription-row__status .subscription-row__meta, .subscription-row__status .subscription-status-pill, .subscription-row__status .subscription-row__stage { justify-self: start; }

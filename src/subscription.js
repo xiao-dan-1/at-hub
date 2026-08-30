@@ -327,6 +327,10 @@ function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
             <span>可用优惠</span>
             <div>${renderTagList(data.eligible_promos, promoEmptyText)}</div>
           </div>
+          <div class="subscription-list-block">
+            <span>可购买</span>
+            <div>${renderTagList(data.eligible_offers, offersEmptyText)}</div>
+          </div>
         </div>
       </section>
 
@@ -372,13 +376,12 @@ function renderSubscriptionErrorCard(data) {
 
 function renderEligibilityStatus(data) {
   const eligibility = buildEligibilityDisplay(data);
-  if (eligibility.primary === "—") {
+  if (eligibility.values.length === 0) {
     return `<span class="subscription-muted">${escapeHtml(eligibility.secondary)}</span>`;
   }
-  const visible = [eligibility.primary, eligibility.secondary === "—" ? "" : eligibility.secondary]
-    .filter(Boolean)
-    .join(" · ");
-  return `<span class="subscription-tag" title="${escapeHtml(eligibility.title)}">${escapeHtml(visible)}</span>`;
+  return eligibility.values
+    .map(value => `<span class="subscription-tag" title="${escapeHtml(eligibility.title)}">${escapeHtml(value)}</span>`)
+    .join("");
 }
 
 function trialEligibilityState(data) {
@@ -458,8 +461,11 @@ function renderSubscriptionBatchRow(data) {
       </div>
       <div class="subscription-row__trial" data-trial="${trialState}" data-state="${escapeHtml(eligibility.state)}" title="${escapeHtml(eligibility.title)}">
         <span>可用优惠</span>
-        <strong>${escapeHtml(eligibility.primary)}</strong>
-        <small>${escapeHtml(eligibility.secondary)}</small>
+        <div class="subscription-row__trial-values">
+          ${eligibility.values.length > 0
+            ? eligibility.values.map(value => `<span class="subscription-tag">${escapeHtml(value)}</span>`).join("")
+            : `<span class="subscription-muted">${escapeHtml(eligibility.secondary)}</span>`}
+        </div>
       </div>
       <div class="subscription-row__status">
         <div class="subscription-row__meta">

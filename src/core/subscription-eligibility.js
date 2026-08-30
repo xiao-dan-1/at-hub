@@ -26,12 +26,13 @@ export function buildEligibilityDisplay(data) {
   promos.map(rawEligibilityValue).filter(Boolean)
     .forEach(value => entries.push({ key: "eligible_promos", value }));
   if (entries.length === 0) {
-    return { primary: "—", secondary: "未返回", title: "未返回 eligible_promos", state: "unknown" };
+    return { primary: "—", secondary: "未返回", values: [], title: "未返回 eligible_promos", state: "unknown" };
   }
 
   return {
     primary: entries[0].value,
     secondary: entries.slice(1).map(entry => entry.value).join(" · ") || "—",
+    values: entries.map(entry => entry.value),
     title: entries.map(entry => `${entry.key}: ${entry.value}`).join("\n"),
     state: "available",
   };

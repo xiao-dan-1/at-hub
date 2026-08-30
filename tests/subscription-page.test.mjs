@@ -93,7 +93,8 @@ test("subscription batch results use a compact eligibility table instead of repe
   assert.match(css, /\.subscription-row--header\s*\{/u);
   assert.match(css, /\.subscription-row\s*\{/u);
   assert.match(css, /\.subscription-row__trial\[data-state="available"\]/u);
-  assert.match(css, /\.subscription-row__trial strong, \.subscription-row__trial small\s*\{[^}]*text-overflow:\s*ellipsis/u);
+  assert.match(css, /\.subscription-row__trial-values\s*\{/u);
+  assert.match(css, /\.subscription-row__trial\[data-state="available"\]\s*\{[^}]*background:\s*transparent;[^}]*border:\s*0/u);
   assert.match(css, /\.subscription-row__stage\s*\{/u);
 });
 
@@ -229,6 +230,7 @@ test("subscription result keeps subscription status and AT validity separate", (
   assert.match(js, /AT 有效期/u);
   assert.match(js, /token_days_left/u);
   assert.match(js, /eligible_promos/u);
+  assert.match(js, /可购买/u);
   assert.match(eligibility, /is_eligible_for_free_trial/u);
 });
 
