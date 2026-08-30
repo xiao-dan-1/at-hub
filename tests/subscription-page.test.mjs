@@ -80,6 +80,7 @@ test("subscription batch results use a compact eligibility table instead of repe
   assert.match(js, /renderSubscriptionBatchRow/u);
   assert.match(js, /renderSubscriptionBatchHeader/u);
   assert.match(js, /renderTrialEligibility/u);
+  assert.match(js, /trialEligibilityTitle/u);
   assert.match(js, /renderSubscriptionStage/u);
   assert.match(js, /class="subscription-batch-table subscription-batch-list"/u);
   assert.match(js, /class="subscription-row__trial"/u);
@@ -92,6 +93,7 @@ test("subscription batch results use a compact eligibility table instead of repe
   assert.match(css, /\.subscription-row--header\s*\{/u);
   assert.match(css, /\.subscription-row\s*\{/u);
   assert.match(css, /\.subscription-row__trial\[data-trial="true"\]/u);
+  assert.match(css, /\.subscription-row__trial strong\s*\{[^}]*text-overflow:\s*ellipsis/u);
   assert.match(css, /\.subscription-row__stage\s*\{/u);
 });
 

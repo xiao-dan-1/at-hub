@@ -372,21 +372,35 @@ function hasTrialEligibility(data) {
 function renderTrialEligibility(data) {
   const labels = [];
   if (hasTrialEligibility(data)) {
-    labels.push(...(data.eligible_promos ?? []).map(formatTagLabel).filter(Boolean));
-    if (data?.is_eligible_for_free_trial === true && labels.length === 0) labels.push("可试用");
+    labels.push("可试用");
   }
-  if (data?.is_eligible_for_yearly_plus_subscription === true) labels.push("Plus 年付可用");
+  if (data?.is_eligible_for_yearly_plus_subscription === true) labels.push("Plus 年付");
   if (labels.length > 0) return [...new Set(labels)].join(", ");
   if (data?.has_previously_paid_subscription === true) return "已付费";
   if (Array.isArray(data?.eligible_offers) && data.eligible_offers.length > 0) return "可购买";
   return "—";
 }
 
+function trialEligibilityTitle(data) {
+  const details = [];
+  if (hasTrialEligibility(data)) {
+    const promos = (data?.eligible_promos ?? []).map(formatTagLabel).filter(Boolean);
+    details.push(promos.length > 0 ? `可试用：${promos.join(", ")}` : "可试用");
+  }
+  if (data?.is_eligible_for_yearly_plus_subscription === true) details.push("Plus 年付");
+  if (details.length > 0) return details.join(" · ");
+  if (data?.has_previously_paid_subscription === true) return "已付费资格已使用";
+  if (Array.isArray(data?.eligible_offers) && data.eligible_offers.length > 0) {
+    return `可购买：${data.eligible_offers.map(formatTagLabel).join(", ")}`;
+  }
+  return "未返回资格信息";
+}
+
 function renderEligibilityStatus(data) {
   const label = renderTrialEligibility(data);
   return label === "—"
     ? '<span class="subscription-muted">未返回</span>'
-    : `<span class="subscription-tag">${escapeHtml(label)}</span>`;
+    : `<span class="subscription-tag" title="${escapeHtml(trialEligibilityTitle(data))}">${escapeHtml(label)}</span>`;
 }
 
 function trialEligibilityState(data) {
@@ -474,7 +488,7 @@ function renderSubscriptionBatchRow(data) {
       </div>
       <div class="subscription-row__trial" data-trial="${trialState}">
         <span>资格</span>
-        <strong>${escapeHtml(ok ? renderTrialEligibility(data) : "—")}</strong>
+        <strong title="${escapeHtml(ok ? trialEligibilityTitle(data) : "未返回资格信息")}">${escapeHtml(ok ? renderTrialEligibility(data) : "—")}</strong>
       </div>
       <div class="subscription-row__meta">
         <span>AT</span>
