@@ -123,7 +123,7 @@ test("subscription input keeps the original content and reports extraction accou
 });
 
 test("subscription batch summary highlights trial eligibility counts", () => {
-  assert.match(js, /availableOfferCount/u);
+  assert.match(js, /availablePromoCount/u);
   assert.match(js, /activeSubscriptionCount/u);
   assert.match(js, /renderBatchStat/u);
   assert.match(js, /class="subscription-batch-stats"/u);
@@ -220,7 +220,7 @@ test("subscription summary separates complete, partial, and hard failure results
   assert.match(js, /offers_status/u);
   assert.match(js, /eligibility_unconfirmed_due_to_egress/u);
   assert.match(js, /出口漂移/u);
-  assert.match(eligibility, /eligible_offers/u);
+  assert.match(eligibility, /eligible_promos/u);
   assert.match(css, /\.subscription-batch-stat\[data-kind="partial"\] strong/u);
 });
 
@@ -228,7 +228,7 @@ test("subscription result keeps subscription status and AT validity separate", (
   assert.match(js, /剩余时间/u);
   assert.match(js, /AT 有效期/u);
   assert.match(js, /token_days_left/u);
-  assert.match(js, /eligible_offers/u);
+  assert.match(js, /eligible_promos/u);
   assert.match(eligibility, /is_eligible_for_free_trial/u);
 });
 

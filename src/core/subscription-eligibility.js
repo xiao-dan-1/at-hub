@@ -21,12 +21,12 @@ export function hasTrialEligibility(data) {
 
 export function buildEligibilityDisplay(data) {
   const entries = [];
-  const offers = Array.isArray(data?.eligible_offers) ? data.eligible_offers : [];
+  const promos = Array.isArray(data?.eligible_promos) ? data.eligible_promos : [];
 
-  offers.map(rawEligibilityValue).filter(Boolean)
-    .forEach(value => entries.push({ key: "eligible_offers", value }));
+  promos.map(rawEligibilityValue).filter(Boolean)
+    .forEach(value => entries.push({ key: "eligible_promos", value }));
   if (entries.length === 0) {
-    return { primary: "—", secondary: "未返回", title: "未返回 eligible_offers", state: "unknown" };
+    return { primary: "—", secondary: "未返回", title: "未返回 eligible_promos", state: "unknown" };
   }
 
   return {

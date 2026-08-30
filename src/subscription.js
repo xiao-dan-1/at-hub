@@ -325,7 +325,7 @@ function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
           </div>
           <div class="subscription-list-block">
             <span>可用优惠</span>
-            <div>${renderTagList(data.eligible_offers, offersEmptyText)}</div>
+            <div>${renderTagList(data.eligible_promos, promoEmptyText)}</div>
           </div>
         </div>
       </section>
@@ -386,8 +386,8 @@ function trialEligibilityState(data) {
   return buildEligibilityDisplay(data).state;
 }
 
-function availableOfferCount(results) {
-  return results.filter(item => item?.ok && Array.isArray(item.eligible_offers) && item.eligible_offers.length > 0).length;
+function availablePromoCount(results) {
+  return results.filter(item => item?.ok && Array.isArray(item.eligible_promos) && item.eligible_promos.length > 0).length;
 }
 
 function activeSubscriptionCount(results) {
@@ -551,7 +551,7 @@ function updateBatchStateCounts(state) {
   state.partial = items.filter(item => item?.ok === true && subscriptionResultNeedsRetry(item)).length;
   state.failure = items.filter(item => item?.ok !== true).length;
   state.active = activeSubscriptionCount(items);
-  state.trial = availableOfferCount(items);
+  state.trial = availablePromoCount(items);
   return state;
 }
 
