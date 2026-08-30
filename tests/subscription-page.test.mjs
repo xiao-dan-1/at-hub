@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const html = readFileSync(new URL("../src/subscription.html", import.meta.url), "utf8");
 const js = readFileSync(new URL("../src/subscription.js", import.meta.url), "utf8");
 const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+const eligibility = readFileSync(new URL("../src/core/subscription-eligibility.js", import.meta.url), "utf8");
 
 test("subscription page declares local-service network boundary", () => {
   assert.match(html, /ChatGPT 订阅查询/u);
@@ -79,8 +80,7 @@ test("subscription page supports batch subscription lookups without leaving the 
 test("subscription batch results use a compact eligibility table instead of repeated large cards", () => {
   assert.match(js, /renderSubscriptionBatchRow/u);
   assert.match(js, /renderSubscriptionBatchHeader/u);
-  assert.match(js, /renderTrialEligibility/u);
-  assert.match(js, /trialEligibilityTitle/u);
+  assert.match(js, /buildEligibilityDisplay/u);
   assert.match(js, /renderSubscriptionStage/u);
   assert.match(js, /class="subscription-batch-table subscription-batch-list"/u);
   assert.match(js, /class="subscription-row__trial"/u);
@@ -92,8 +92,9 @@ test("subscription batch results use a compact eligibility table instead of repe
   assert.match(css, /\.subscription-batch-table\s*\{/u);
   assert.match(css, /\.subscription-row--header\s*\{/u);
   assert.match(css, /\.subscription-row\s*\{/u);
-  assert.match(css, /\.subscription-row__trial\[data-trial="true"\]/u);
-  assert.match(css, /\.subscription-row__trial strong\s*\{[^}]*text-overflow:\s*ellipsis/u);
+  assert.match(css, /\.subscription-row__trial\[data-state="trial"\]/u);
+  assert.match(css, /\.subscription-row\[data-trial="trial"\]/u);
+  assert.match(css, /\.subscription-row__trial strong, \.subscription-row__trial small\s*\{[^}]*text-overflow:\s*ellipsis/u);
   assert.match(css, /\.subscription-row__stage\s*\{/u);
 });
 
@@ -167,6 +168,7 @@ test("subscription batch table shares one aligned column grid", () => {
   assert.match(css, /\.subscription-row > :nth-child\(3\)/u);
   assert.match(css, /\.subscription-row > :nth-child\(9\)/u);
   assert.match(css, /\.subscription-row__account\s*\{[^}]*justify-self:\s*stretch/u);
+  assert.match(css, /\.subscription-row__account strong\s*\{[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal/u);
   assert.match(css, /\.subscription-row \.subscription-status-pill\s*\{[^}]*min-width:/u);
 });
 
@@ -218,7 +220,7 @@ test("subscription summary separates complete, partial, and hard failure results
   assert.match(js, /offers_status/u);
   assert.match(js, /eligibility_unconfirmed_due_to_egress/u);
   assert.match(js, /出口漂移/u);
-  assert.match(js, /需复测/u);
+  assert.match(eligibility, /需复测/u);
   assert.match(css, /\.subscription-batch-stat\[data-kind="partial"\] strong/u);
 });
 
@@ -228,8 +230,8 @@ test("subscription result keeps subscription status and AT validity separate", (
   assert.match(js, /token_days_left/u);
   assert.match(js, /eligible_promos/u);
   assert.match(js, /资格状态/u);
-  assert.match(js, /is_eligible_for_free_trial/u);
-  assert.match(js, /is_eligible_for_yearly_plus_subscription/u);
+  assert.match(eligibility, /is_eligible_for_free_trial/u);
+  assert.match(eligibility, /is_eligible_for_yearly_plus_subscription/u);
 });
 
 test("subscription page has compact result cards matching current visual system", () => {

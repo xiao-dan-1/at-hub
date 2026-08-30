@@ -1,6 +1,7 @@
 import { Globe, Radar, ShieldCheck, Trash2, createIcons } from "lucide";
 import "./styles.css";
 import { readLocalServiceJson } from "./core/local-response.js";
+import { buildEligibilityDisplay, hasTrialEligibility } from "./core/subscription-eligibility.js";
 import {
   createIncompleteSubscriptionResult,
   isSubscriptionBatchComplete,
@@ -377,59 +378,14 @@ function renderSubscriptionErrorCard(data) {
   `;
 }
 
-function hasTrialEligibility(data) {
-  return data?.is_eligible_for_free_trial === true
-    || (Array.isArray(data?.eligible_promos) && data.eligible_promos.length > 0);
-}
-
-function renderTrialEligibility(data) {
-  if (data?.eligibility_unconfirmed_due_to_egress === true) return "需复测";
-  const labels = [];
-  if (hasTrialEligibility(data)) {
-    labels.push("可试用");
-  }
-  if (data?.is_eligible_for_yearly_plus_subscription === true) labels.push("Plus 年付");
-  if (labels.length > 0) return [...new Set(labels)].join(", ");
-  if (data?.has_previously_paid_subscription === true) return "已付费";
-  if (Array.isArray(data?.eligible_offers) && data.eligible_offers.length > 0) return "可购买";
-  return "—";
-}
-
-function trialEligibilityTitle(data) {
-  if (data?.eligibility_unconfirmed_due_to_egress === true) {
-    const before = data?.egress_before_country ?? "未确认";
-    const after = data?.egress_after_country ?? "未确认";
-    return data?.egress_consistency_status === "drifted"
-      ? `查询前后出口国家不一致：${before} → ${after}，试用资格不作否定判断`
-      : "查询前后出口国家未能完整确认，试用资格不作否定判断";
-  }
-  const details = [];
-  if (hasTrialEligibility(data)) {
-    const promos = (data?.eligible_promos ?? []).map(formatTagLabel).filter(Boolean);
-    details.push(promos.length > 0 ? `可试用：${promos.join(", ")}` : "可试用");
-  }
-  if (data?.is_eligible_for_yearly_plus_subscription === true) details.push("Plus 年付");
-  if (details.length > 0) return details.join(" · ");
-  if (data?.has_previously_paid_subscription === true) return "已付费资格已使用";
-  if (Array.isArray(data?.eligible_offers) && data.eligible_offers.length > 0) {
-    return `可购买：${data.eligible_offers.map(formatTagLabel).join(", ")}`;
-  }
-  return "未返回资格信息";
-}
-
 function renderEligibilityStatus(data) {
-  const label = renderTrialEligibility(data);
-  return label === "—"
-    ? '<span class="subscription-muted">未返回</span>'
-    : `<span class="subscription-tag" title="${escapeHtml(trialEligibilityTitle(data))}">${escapeHtml(label)}</span>`;
+  const eligibility = buildEligibilityDisplay(data);
+  return `<span class="subscription-tag" title="${escapeHtml(eligibility.title)}">${escapeHtml(`${eligibility.primary} · ${eligibility.secondary}`)}</span>`;
 }
 
 function trialEligibilityState(data) {
   if (!data?.ok) return "unknown";
-  if (data?.eligibility_unconfirmed_due_to_egress === true) return "unknown";
-  if (hasTrialEligibility(data)) return "true";
-  if (data?.has_previously_paid_subscription === true) return "used";
-  return "false";
+  return buildEligibilityDisplay(data).state;
 }
 
 function trialEligibleCount(results) {
@@ -496,6 +452,9 @@ function renderSubscriptionBatchRow(data) {
   const stageState = subscriptionStageState(data);
   const stageText = renderSubscriptionStage(data);
   const planText = ok ? formatPlan(data) : titleCase(data?.plan_type ?? data?.plan_type_jwt ?? "查询失败");
+  const eligibility = ok
+    ? buildEligibilityDisplay(data)
+    : { primary: "失败", secondary: "—", title: "未返回资格信息", state: "unknown" };
 
   return `
     <article class="subscription-row${ok ? "" : " subscription-row--error"}" data-active="${active ? "true" : "false"}" data-trial="${trialState}" role="listitem">
@@ -508,9 +467,10 @@ function renderSubscriptionBatchRow(data) {
         <span>套餐</span>
         <strong>${escapeHtml(planText)}</strong>
       </div>
-      <div class="subscription-row__trial" data-trial="${trialState}">
+      <div class="subscription-row__trial" data-trial="${trialState}" data-state="${escapeHtml(eligibility.state)}" title="${escapeHtml(eligibility.title)}">
         <span>资格</span>
-        <strong title="${escapeHtml(ok ? trialEligibilityTitle(data) : "未返回资格信息")}">${escapeHtml(ok ? renderTrialEligibility(data) : "—")}</strong>
+        <strong>${escapeHtml(eligibility.primary)}</strong>
+        <small>${escapeHtml(eligibility.secondary)}</small>
       </div>
       <div class="subscription-row__meta">
         <span>AT</span>
