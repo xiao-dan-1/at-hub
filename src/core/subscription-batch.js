@@ -32,7 +32,8 @@ export function isSubscriptionBatchComplete({
 export function subscriptionResultNeedsRetry(result) {
   return result?.ok !== true
     || result?.subscription_detail_status === "failed"
-    || result?.offers_status === "unknown";
+    || result?.offers_status === "unknown"
+    || result?.eligibility_unconfirmed_due_to_egress === true;
 }
 
 export function createIncompleteSubscriptionResult(index, tokenHint = "") {

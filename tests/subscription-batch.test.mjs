@@ -50,6 +50,11 @@ test("subscriptionResultNeedsRetry includes hard failures and partial subscripti
   assert.equal(subscriptionResultNeedsRetry({ ok: true, offers_status: "unknown" }), true);
   assert.equal(subscriptionResultNeedsRetry({
     ok: true,
+    offers_status: "not_returned",
+    eligibility_unconfirmed_due_to_egress: true,
+  }), true);
+  assert.equal(subscriptionResultNeedsRetry({
+    ok: true,
     subscription_detail_status: "ok",
     offers_status: "confirmed",
   }), false);

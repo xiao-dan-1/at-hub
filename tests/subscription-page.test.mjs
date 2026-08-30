@@ -216,6 +216,9 @@ test("subscription summary separates complete, partial, and hard failure results
   assert.match(js, /subscriptionResultNeedsRetry/u);
   assert.match(js, /subscription_detail_status/u);
   assert.match(js, /offers_status/u);
+  assert.match(js, /eligibility_unconfirmed_due_to_egress/u);
+  assert.match(js, /出口漂移/u);
+  assert.match(js, /需复测/u);
   assert.match(css, /\.subscription-batch-stat\[data-kind="partial"\] strong/u);
 });
 

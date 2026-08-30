@@ -94,6 +94,7 @@ function renderTiming(milliseconds) {
 function subscriptionStageState(data) {
   if (!data?.ok && data?.reason === "upstream-auth-failed") return "auth";
   if (!data?.ok) return "failed";
+  if (data.eligibility_unconfirmed_due_to_egress === true) return "partial";
   if (data.subscription_detail_status === "failed" || data.offers_status === "unknown") return "partial";
   if (data.subscription_detail_status === "not_found") return "quiet";
   if (Number(data.retry_count) > 0) return "retried";
@@ -112,6 +113,9 @@ function renderAuthFailureStage(data) {
 
 function renderSubscriptionStage(data) {
   if (!data?.ok) return renderAuthFailureStage(data);
+  if (data.eligibility_unconfirmed_due_to_egress === true) {
+    return data.egress_consistency_status === "drifted" ? "出口漂移" : "出口未确认";
+  }
   if (data.subscription_detail_status === "failed" || data.offers_status === "unknown") return "优惠未确认";
   if (data.subscription_detail_status === "not_found") return "无订阅详情";
   if (Number(data.retry_count) > 0) return `已重试 ${data.retry_count}`;
@@ -192,11 +196,20 @@ function renderTagList(items, emptyText) {
 }
 
 function formatEgressCountry(data) {
+  const before = String(data?.egress_before_country ?? "").trim();
+  const after = String(data?.egress_after_country ?? data?.egress_country ?? "").trim();
+  if (before && after && before !== after) return `${before}→${after}`;
   const country = String(data?.egress_country ?? "").trim();
-  return country || "未确认";
+  return country || after || before || "未确认";
 }
 
 function egressLocationTitle(data) {
+  if (data?.egress_consistency_status === "drifted") {
+    return `查询前后出口国家发生变化：${data.egress_before_country ?? "未确认"} → ${data.egress_after_country ?? "未确认"}`;
+  }
+  if (data?.egress_consistency_status === "unconfirmed") {
+    return data?.egress_ip_message ?? "查询前后出口国家未能完整确认。";
+  }
   if (data?.egress_country) {
     const ip = data.egress_ip ? ` · ${data.egress_ip}` : "";
     const location = [...new Set([
@@ -370,6 +383,7 @@ function hasTrialEligibility(data) {
 }
 
 function renderTrialEligibility(data) {
+  if (data?.eligibility_unconfirmed_due_to_egress === true) return "需复测";
   const labels = [];
   if (hasTrialEligibility(data)) {
     labels.push("可试用");
@@ -382,6 +396,13 @@ function renderTrialEligibility(data) {
 }
 
 function trialEligibilityTitle(data) {
+  if (data?.eligibility_unconfirmed_due_to_egress === true) {
+    const before = data?.egress_before_country ?? "未确认";
+    const after = data?.egress_after_country ?? "未确认";
+    return data?.egress_consistency_status === "drifted"
+      ? `查询前后出口国家不一致：${before} → ${after}，试用资格不作否定判断`
+      : "查询前后出口国家未能完整确认，试用资格不作否定判断";
+  }
   const details = [];
   if (hasTrialEligibility(data)) {
     const promos = (data?.eligible_promos ?? []).map(formatTagLabel).filter(Boolean);
@@ -405,6 +426,7 @@ function renderEligibilityStatus(data) {
 
 function trialEligibilityState(data) {
   if (!data?.ok) return "unknown";
+  if (data?.eligibility_unconfirmed_due_to_egress === true) return "unknown";
   if (hasTrialEligibility(data)) return "true";
   if (data?.has_previously_paid_subscription === true) return "used";
   return "false";

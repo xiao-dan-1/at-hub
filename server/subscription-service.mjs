@@ -350,6 +350,37 @@ function buildEgressDiagnostics(ipInfo) {
   };
 }
 
+function normalizeCountry(value) {
+  const country = String(value ?? "").trim().toUpperCase();
+  return country || null;
+}
+
+function hasConfirmedTrialEligibility(model) {
+  return model?.is_eligible_for_free_trial === true
+    || (Array.isArray(model?.eligible_promos) && model.eligible_promos.length > 0);
+}
+
+function buildEgressComparisonDiagnostics(before, after, { trialConfirmed = false } = {}) {
+  const beforeCountry = before?.ok ? normalizeCountry(before.country) : null;
+  const afterCountry = after?.ok ? normalizeCountry(after.country) : null;
+  const consistencyStatus = beforeCountry && afterCountry
+    ? beforeCountry === afterCountry ? "stable" : "drifted"
+    : "unconfirmed";
+
+  return {
+    ...buildEgressDiagnostics(after),
+    egress_before_status: before?.ok ? "confirmed" : "unavailable",
+    egress_before_ip: before?.ok ? before.ip ?? null : null,
+    egress_before_country: beforeCountry,
+    egress_after_status: after?.ok ? "confirmed" : "unavailable",
+    egress_after_ip: after?.ok ? after.ip ?? null : null,
+    egress_after_country: afterCountry,
+    egress_consistency_status: consistencyStatus,
+    egress_country_drifted: consistencyStatus === "drifted",
+    eligibility_unconfirmed_due_to_egress: !trialConfirmed && consistencyStatus !== "stable",
+  };
+}
+
 export function createIpInfoHandler({
   fetchFn = globalThis.fetch,
   ipInfoUrl = IP_INFO_URL,
@@ -587,6 +618,11 @@ export function createSubscriptionHandler({
         : undefined;
       return proxySessionId;
     };
+    const egressBefore = await queryEgressIpInfo({
+      fetchFn,
+      timeoutMilliseconds: ipInfoTimeoutMilliseconds,
+      proxySessionId,
+    });
 
     try {
       let accountsResponse;
@@ -660,6 +696,11 @@ export function createSubscriptionHandler({
         subscriptionResponse,
         nowMilliseconds,
       });
+      const egressAfter = await queryEgressIpInfo({
+        fetchFn,
+        timeoutMilliseconds: ipInfoTimeoutMilliseconds,
+        proxySessionId,
+      });
       return {
         ...model,
         status: 200,
@@ -675,14 +716,17 @@ export function createSubscriptionHandler({
         accounts_attempts: accountsAttempts,
         subscription_attempts: subscriptionAttempts,
         retry_count: retryCount,
-        ...buildEgressDiagnostics(await queryEgressIpInfo({
-          fetchFn,
-          timeoutMilliseconds: ipInfoTimeoutMilliseconds,
-          proxySessionId,
-        })),
+        ...buildEgressComparisonDiagnostics(egressBefore, egressAfter, {
+          trialConfirmed: hasConfirmedTrialEligibility(model),
+        }),
       };
     } catch (error) {
       const localDiagnostics = readLocalTokenDiagnostics(normalized, nowMilliseconds, error);
+      const egressAfter = await queryEgressIpInfo({
+        fetchFn,
+        timeoutMilliseconds: ipInfoTimeoutMilliseconds,
+        proxySessionId,
+      });
       return {
         ok: false,
         ...localDiagnostics,
@@ -696,11 +740,7 @@ export function createSubscriptionHandler({
         accounts_attempts: accountsAttempts,
         subscription_attempts: subscriptionAttempts,
         retry_count: retryCount,
-        ...buildEgressDiagnostics(await queryEgressIpInfo({
-          fetchFn,
-          timeoutMilliseconds: ipInfoTimeoutMilliseconds,
-          proxySessionId,
-        })),
+        ...buildEgressComparisonDiagnostics(egressBefore, egressAfter),
       };
     }
   };

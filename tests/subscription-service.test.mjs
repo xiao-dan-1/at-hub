@@ -45,9 +45,13 @@ test("createSubscriptionHandler calls accounts/check then subscriptions without 
   assert.equal(result.subscription_plan, "chatgptfreeplan");
   assert.equal(result.egress_ip, "78.180.242.194");
   assert.equal(result.egress_country, "TR");
+  assert.equal(result.egress_before_country, "TR");
+  assert.equal(result.egress_after_country, "TR");
+  assert.equal(result.egress_consistency_status, "stable");
+  assert.equal(result.eligibility_unconfirmed_due_to_egress, false);
   const upstreamCalls = calls.filter(call => call.url.includes("chatgpt.com/backend-api/"));
   assert.equal(upstreamCalls.length, 2);
-  assert.equal(calls.filter(call => call.url.includes("/cdn-cgi/trace")).length, 1);
+  assert.equal(calls.filter(call => call.url.includes("/cdn-cgi/trace")).length, 2);
   assert.ok(upstreamCalls.every(call => call.headers.authorization === `Bearer ${token}`));
   assert.ok(upstreamCalls.every(call => /Mozilla\/5\.0/u.test(call.headers["user-agent"])));
   assert.ok(upstreamCalls.every(call => call.headers.origin === "https://chatgpt.com"));
@@ -115,22 +119,97 @@ test("createSubscriptionHandler reuses one rotate proxy session for both upstrea
   assert.equal(result.ok, true);
   assert.equal(result.egress_ip, "203.0.113.15");
   assert.equal(result.egress_country, "JP");
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
   assert.ok(calls.every(call => call.proxySessionId === "perAtSession42"));
+});
+
+test("createSubscriptionHandler marks a negative eligibility result uncertain when the exit country drifts", async () => {
+  const token = makeJwt({ alg: "RS256" }, { sub: "egress-drift" });
+  let traceCalls = 0;
+  const handler = createSubscriptionHandler({
+    proxySessionIdFactory: () => "oneRandomSession",
+    fetchFn: async (url, init) => {
+      if (String(url).includes("/cdn-cgi/trace")) {
+        traceCalls += 1;
+        return new Response(
+          traceCalls === 1 ? "ip=198.51.100.21\nloc=PH\n" : "ip=203.0.113.22\nloc=JP\n",
+          { status: 200 },
+        );
+      }
+      if (String(url).includes("/accounts/check/")) {
+        return new Response(JSON.stringify({
+          accounts: {
+            default: {
+              account: { account_id: "acc_drift", plan_type: "free" },
+              entitlement: { has_active_subscription: false, subscription_plan: "chatgptfreeplan" },
+            },
+          },
+        }), { status: 200 });
+      }
+      assert.equal(init.proxySessionId, "oneRandomSession");
+      return new Response(JSON.stringify({ eligible_offers: ["chatgptplusplan"] }), { status: 200 });
+    },
+  });
+
+  const result = await handler({ token });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.egress_before_country, "PH");
+  assert.equal(result.egress_after_country, "JP");
+  assert.equal(result.egress_consistency_status, "drifted");
+  assert.equal(result.egress_country_drifted, true);
+  assert.equal(result.eligibility_unconfirmed_due_to_egress, true);
+});
+
+test("createSubscriptionHandler keeps a confirmed trial hit even when the exit country drifts", async () => {
+  const token = makeJwt({ alg: "RS256" }, { sub: "trial-with-drift" });
+  let traceCalls = 0;
+  const handler = createSubscriptionHandler({
+    fetchFn: async url => {
+      if (String(url).includes("/cdn-cgi/trace")) {
+        traceCalls += 1;
+        return new Response(traceCalls === 1 ? "loc=KH\n" : "loc=JP\n", { status: 200 });
+      }
+      if (String(url).includes("/accounts/check/")) {
+        return new Response(JSON.stringify({
+          accounts: {
+            default: {
+              account: { account_id: "acc_trial_drift", plan_type: "free" },
+              entitlement: { has_active_subscription: false, subscription_plan: "chatgptfreeplan" },
+            },
+          },
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({
+        eligible_promos: [{ id: "plus-1-month-free", title: "Plus trial" }],
+      }), { status: 200 });
+    },
+  });
+
+  const result = await handler({ token });
+
+  assert.equal(result.egress_consistency_status, "drifted");
+  assert.equal(result.eligible_promos[0].id, "plus-1-month-free");
+  assert.equal(result.eligibility_unconfirmed_due_to_egress, false);
 });
 
 test("createSubscriptionHandler retries transient account lookup once with a fresh proxy session", async () => {
   const token = makeJwt({ alg: "RS256" }, { sub: "retry-account" });
   const sessions = ["firstSid", "retrySid"];
   const calls = [];
+  let accountCalls = 0;
   const handler = createSubscriptionHandler({
     proxySessionIdFactory: () => sessions.shift(),
     fetchFn: async (url, init) => {
       calls.push({ url: String(url), proxySessionId: init.proxySessionId });
-      if (calls.length === 1) {
-        return new Response(JSON.stringify({ error: "rate limited" }), { status: 429 });
+      if (String(url).includes("/cdn-cgi/trace")) {
+        return new Response("ip=203.0.113.10\nloc=JP\n", { status: 200 });
       }
       if (String(url).includes("/accounts/check/")) {
+        accountCalls += 1;
+        if (accountCalls === 1) {
+          return new Response(JSON.stringify({ error: "rate limited" }), { status: 429 });
+        }
         return new Response(JSON.stringify({
           accounts: {
             default: {
@@ -151,7 +230,7 @@ test("createSubscriptionHandler retries transient account lookup once with a fre
   assert.equal(result.retry_count, 1);
   assert.equal(result.accounts_attempts, 2);
   assert.equal(result.subscription_attempts, 1);
-  assert.deepEqual(calls.map(call => call.proxySessionId), ["firstSid", "retrySid", "retrySid", "retrySid"]);
+  assert.deepEqual(calls.map(call => call.proxySessionId), ["firstSid", "firstSid", "retrySid", "retrySid", "retrySid"]);
 });
 
 test("createSubscriptionHandler does not retry auth failures", async () => {
@@ -170,7 +249,7 @@ test("createSubscriptionHandler does not retry auth failures", async () => {
   assert.equal(result.reason, "upstream-auth-failed");
   assert.equal(result.accounts_attempts, 1);
   assert.equal(result.retry_count, 0);
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
 });
 
 test("createSubscriptionHandler keeps local JWT identity and diagnosis on upstream 401", async () => {
@@ -288,7 +367,7 @@ test("createSubscriptionHandler surfaces accounts check 401 body as account disa
   assert.match(result.upstream_error_message, /Account has been deactivated/u);
   assert.equal(result.upstream_path, "/backend-api/accounts/check/v4-2023-04-27");
   assert.doesNotMatch(JSON.stringify(result), new RegExp(token, "u"));
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
 });
 
 test("createSubscriptionHandler diagnoses expired local JWT when upstream returns 401", async () => {
@@ -348,7 +427,7 @@ test("createSubscriptionHandler keeps account success when subscription details 
   assert.equal(result.subscription_attempts, 2);
   assert.equal(result.retry_count, 1);
   assert.deepEqual(result.eligible_offers, ["account-fallback-offer"]);
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 5);
 });
 
 test("createSubscriptionHandler retries Cloudflare challenge subscription details once", async () => {
@@ -356,6 +435,9 @@ test("createSubscriptionHandler retries Cloudflare challenge subscription detail
   let subscriptionCalls = 0;
   const handler = createSubscriptionHandler({
     fetchFn: async url => {
+      if (String(url).includes("/cdn-cgi/trace")) {
+        return new Response("ip=203.0.113.10\nloc=JP\n", { status: 200 });
+      }
       if (String(url).includes("/accounts/check/")) {
         return new Response(JSON.stringify({
           accounts: {
