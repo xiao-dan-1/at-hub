@@ -401,15 +401,10 @@ function renderSubscriptionBatchHeader() {
     <div class="subscription-row subscription-row--header" aria-hidden="true">
       <span>#</span>
       <span>账号</span>
-      <span>套餐</span>
       <span>资格</span>
-      <span>AT</span>
-      <span>订阅</span>
-      <span>阶段</span>
-      <span>国家</span>
-      <span>耗时</span>
+      <span>订阅状态</span>
+      <span>出口国家</span>
       <span>操作</span>
-      <span>详情</span>
     </div>
   `;
 }
@@ -463,37 +458,36 @@ function renderSubscriptionBatchRow(data) {
         <strong>${escapeHtml(identity)}</strong>
         <span>${escapeHtml(secondary)}</span>
       </div>
-      <div class="subscription-row__meta">
-        <span>套餐</span>
-        <strong>${escapeHtml(planText)}</strong>
-      </div>
       <div class="subscription-row__trial" data-trial="${trialState}" data-state="${escapeHtml(eligibility.state)}" title="${escapeHtml(eligibility.title)}">
         <span>资格</span>
         <strong>${escapeHtml(eligibility.primary)}</strong>
         <small>${escapeHtml(eligibility.secondary)}</small>
       </div>
-      <div class="subscription-row__meta">
-        <span>AT</span>
-        <strong>${escapeHtml(ok ? formatRemaining({ days_left: data.token_days_left, hours_left: data.token_hours_left }) : "—")}</strong>
-      </div>
-      <span class="subscription-status-pill" data-active="${active ? "true" : "false"}">${escapeHtml(ok ? active ? "有效订阅" : "无活跃订阅" : "失败")}</span>
-      <div class="subscription-row__stage" ${stageStateAttribute(stageState)} title="${escapeHtml(valueOrDash(data?.retry_message ?? data?.auth_failure_hint ?? data?.subscription_detail_message ?? data?.subscription_detail_reason ?? stageText))}">
-        <span>阶段</span>
-        <strong>${escapeHtml(stageText)}</strong>
+      <div class="subscription-row__status">
+        <div class="subscription-row__meta">
+          <span>套餐</span>
+          <strong>${escapeHtml(planText)}</strong>
+        </div>
+        <span class="subscription-status-pill" data-active="${active ? "true" : "false"}">${escapeHtml(ok ? active ? "有效订阅" : "无活跃订阅" : "失败")}</span>
+        <div class="subscription-row__stage" ${stageStateAttribute(stageState)} title="${escapeHtml(valueOrDash(data?.retry_message ?? data?.auth_failure_hint ?? data?.subscription_detail_message ?? data?.subscription_detail_reason ?? stageText))}">
+          <span>阶段</span>
+          <strong>${escapeHtml(stageText)}</strong>
+        </div>
       </div>
       <div class="subscription-row__egress" title="${escapeHtml(egressLocationTitle(data))}">
-        <span>出口</span>
         <strong>${escapeHtml(formatEgressCountry(data))}</strong>
+        <div class="subscription-row__timing" title="${escapeHtml(ok ? `accounts ${renderTiming(data.accounts_ms)} · subscription ${renderTiming(data.subscription_ms)}` : valueOrDash(data?.reason))}">
+          <span>耗时</span>
+          <strong>${escapeHtml(renderTiming(data?.total_ms))}</strong>
+        </div>
       </div>
-      <div class="subscription-row__timing" title="${escapeHtml(ok ? `accounts ${renderTiming(data.accounts_ms)} · subscription ${renderTiming(data.subscription_ms)}` : valueOrDash(data?.reason))}">
-        <span>耗时</span>
-        <strong>${escapeHtml(renderTiming(data?.total_ms))}</strong>
+      <div class="subscription-row__actions">
+        ${renderResultRetryButton({ index: Number(data?.index) })}
+        <details class="subscription-row__json">
+          <summary>JSON</summary>
+          <pre tabindex="0">${rawJson}</pre>
+        </details>
       </div>
-      ${renderResultRetryButton({ index: Number(data?.index) })}
-      <details class="subscription-row__json">
-        <summary>JSON</summary>
-        <pre tabindex="0">${rawJson}</pre>
-      </details>
     </article>
   `;
 }
