@@ -21,27 +21,18 @@ export function hasTrialEligibility(data) {
 
 export function buildEligibilityDisplay(data) {
   const entries = [];
-  const promos = Array.isArray(data?.eligible_promos) ? data.eligible_promos : [];
   const offers = Array.isArray(data?.eligible_offers) ? data.eligible_offers : [];
 
-  promos.map(rawEligibilityValue).filter(Boolean)
-    .forEach(value => entries.push({ key: "eligible_promos", value }));
   offers.map(rawEligibilityValue).filter(Boolean)
     .forEach(value => entries.push({ key: "eligible_offers", value }));
-  for (const key of ["is_eligible_for_free_trial", "is_eligible_for_yearly_plus_subscription"]) {
-    if (data?.[key] !== undefined && data?.[key] !== null) entries.push({ key, value: String(data[key]) });
-  }
-  if (entries.length === 0 && data?.has_previously_paid_subscription === true) {
-    entries.push({ key: "has_previously_paid_subscription", value: "true" });
-  }
   if (entries.length === 0) {
-    return { primary: "未返回", secondary: "—", title: "未返回原始资格字段", state: "unknown" };
+    return { primary: "—", secondary: "未返回", title: "未返回 eligible_offers", state: "unknown" };
   }
 
   return {
     primary: entries[0].value,
     secondary: entries.slice(1).map(entry => entry.value).join(" · ") || "—",
     title: entries.map(entry => `${entry.key}: ${entry.value}`).join("\n"),
-    state: promos.length > 0 || data?.is_eligible_for_free_trial === true ? "trial" : "available",
+    state: "available",
   };
 }

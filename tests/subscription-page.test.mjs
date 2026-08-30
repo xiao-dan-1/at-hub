@@ -92,8 +92,7 @@ test("subscription batch results use a compact eligibility table instead of repe
   assert.match(css, /\.subscription-batch-table\s*\{/u);
   assert.match(css, /\.subscription-row--header\s*\{/u);
   assert.match(css, /\.subscription-row\s*\{/u);
-  assert.match(css, /\.subscription-row__trial\[data-state="trial"\]/u);
-  assert.match(css, /\.subscription-row\[data-trial="trial"\]/u);
+  assert.match(css, /\.subscription-row__trial\[data-state="available"\]/u);
   assert.match(css, /\.subscription-row__trial strong, \.subscription-row__trial small\s*\{[^}]*text-overflow:\s*ellipsis/u);
   assert.match(css, /\.subscription-row__stage\s*\{/u);
 });
@@ -124,12 +123,12 @@ test("subscription input keeps the original content and reports extraction accou
 });
 
 test("subscription batch summary highlights trial eligibility counts", () => {
-  assert.match(js, /trialEligibleCount/u);
+  assert.match(js, /availableOfferCount/u);
   assert.match(js, /activeSubscriptionCount/u);
   assert.match(js, /renderBatchStat/u);
   assert.match(js, /class="subscription-batch-stats"/u);
   assert.match(js, /data-kind="trial"/u);
-  assert.match(js, /renderBatchStat\("可试用",\s*trial/u);
+  assert.match(js, /renderBatchStat\("可用优惠",\s*trial/u);
   assert.match(css, /\.subscription-batch-stats\s*\{/u);
   assert.match(css, /\.subscription-batch-stat\s*\{/u);
   assert.match(css, /\.subscription-batch-stat\[data-kind="trial"\]\s*\{/u);
@@ -221,7 +220,7 @@ test("subscription summary separates complete, partial, and hard failure results
   assert.match(js, /offers_status/u);
   assert.match(js, /eligibility_unconfirmed_due_to_egress/u);
   assert.match(js, /出口漂移/u);
-  assert.match(eligibility, /eligible_promos/u);
+  assert.match(eligibility, /eligible_offers/u);
   assert.match(css, /\.subscription-batch-stat\[data-kind="partial"\] strong/u);
 });
 
@@ -229,10 +228,8 @@ test("subscription result keeps subscription status and AT validity separate", (
   assert.match(js, /剩余时间/u);
   assert.match(js, /AT 有效期/u);
   assert.match(js, /token_days_left/u);
-  assert.match(js, /eligible_promos/u);
-  assert.match(js, /资格状态/u);
+  assert.match(js, /eligible_offers/u);
   assert.match(eligibility, /is_eligible_for_free_trial/u);
-  assert.match(eligibility, /is_eligible_for_yearly_plus_subscription/u);
 });
 
 test("subscription page has compact result cards matching current visual system", () => {

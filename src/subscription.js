@@ -1,7 +1,7 @@
 import { Globe, Radar, ShieldCheck, Trash2, createIcons } from "lucide";
 import "./styles.css";
 import { readLocalServiceJson } from "./core/local-response.js";
-import { buildEligibilityDisplay, hasTrialEligibility } from "./core/subscription-eligibility.js";
+import { buildEligibilityDisplay } from "./core/subscription-eligibility.js";
 import {
   createIncompleteSubscriptionResult,
   isSubscriptionBatchComplete,
@@ -325,14 +325,6 @@ function renderSubscriptionCard(data, { indexLabel = "" } = {}) {
           </div>
           <div class="subscription-list-block">
             <span>可用优惠</span>
-            <div>${renderTagList(data.eligible_promos, promoEmptyText)}</div>
-          </div>
-          <div class="subscription-list-block">
-            <span>资格状态</span>
-            <div>${renderEligibilityStatus(data)}</div>
-          </div>
-          <div class="subscription-list-block">
-            <span>可购买套餐</span>
             <div>${renderTagList(data.eligible_offers, offersEmptyText)}</div>
           </div>
         </div>
@@ -380,7 +372,13 @@ function renderSubscriptionErrorCard(data) {
 
 function renderEligibilityStatus(data) {
   const eligibility = buildEligibilityDisplay(data);
-  return `<span class="subscription-tag" title="${escapeHtml(eligibility.title)}">${escapeHtml(`${eligibility.primary} · ${eligibility.secondary}`)}</span>`;
+  if (eligibility.primary === "—") {
+    return `<span class="subscription-muted">${escapeHtml(eligibility.secondary)}</span>`;
+  }
+  const visible = [eligibility.primary, eligibility.secondary === "—" ? "" : eligibility.secondary]
+    .filter(Boolean)
+    .join(" · ");
+  return `<span class="subscription-tag" title="${escapeHtml(eligibility.title)}">${escapeHtml(visible)}</span>`;
 }
 
 function trialEligibilityState(data) {
@@ -388,8 +386,8 @@ function trialEligibilityState(data) {
   return buildEligibilityDisplay(data).state;
 }
 
-function trialEligibleCount(results) {
-  return results.filter(item => item?.ok && hasTrialEligibility(item)).length;
+function availableOfferCount(results) {
+  return results.filter(item => item?.ok && Array.isArray(item.eligible_offers) && item.eligible_offers.length > 0).length;
 }
 
 function activeSubscriptionCount(results) {
@@ -401,7 +399,7 @@ function renderSubscriptionBatchHeader() {
     <div class="subscription-row subscription-row--header" aria-hidden="true">
       <span>#</span>
       <span>账号</span>
-      <span>资格</span>
+      <span>可用优惠</span>
       <span>订阅状态</span>
       <span>出口国家</span>
       <span>操作</span>
@@ -459,7 +457,7 @@ function renderSubscriptionBatchRow(data) {
         <span>${escapeHtml(secondary)}</span>
       </div>
       <div class="subscription-row__trial" data-trial="${trialState}" data-state="${escapeHtml(eligibility.state)}" title="${escapeHtml(eligibility.title)}">
-        <span>资格</span>
+        <span>可用优惠</span>
         <strong>${escapeHtml(eligibility.primary)}</strong>
         <small>${escapeHtml(eligibility.secondary)}</small>
       </div>
@@ -534,7 +532,7 @@ function renderBatchSummary({
         <span>${escapeHtml(completed)}/${escapeHtml(total)} 已完成</span>
       </div>
       <div class="subscription-batch-stats">
-        ${renderBatchStat("可试用", trial, { kind: "trial" })}
+        ${renderBatchStat("可用优惠", trial, { kind: "trial" })}
         ${renderBatchStat("订阅中", active, { kind: "active" })}
         ${renderBatchStat("成功", success, { kind: "success" })}
         ${renderBatchStat("待补查", partial, { kind: "partial" })}
@@ -553,7 +551,7 @@ function updateBatchStateCounts(state) {
   state.partial = items.filter(item => item?.ok === true && subscriptionResultNeedsRetry(item)).length;
   state.failure = items.filter(item => item?.ok !== true).length;
   state.active = activeSubscriptionCount(items);
-  state.trial = trialEligibleCount(items);
+  state.trial = availableOfferCount(items);
   return state;
 }
 
