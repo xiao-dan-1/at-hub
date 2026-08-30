@@ -203,6 +203,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .app-footer { width: min(100% - 32px, 920px); margin: 0 auto; padding: 10px 0 24px; color: var(--muted); border-top: 0; font-size: 0.78rem; }
 
 .subscription-shell { display: grid; gap: 16px; }
+.subscription-page .app-bar__inner, .subscription-page .app-shell, .subscription-page .app-footer { width: min(100% - 40px, 1180px); }
 .subscription-hero { padding: 8px 2px 0; }
 .subscription-hero p { margin-bottom: 0; }
 .eyebrow { margin: 0 0 6px; color: var(--primary-strong); font-size: 0.72rem; font-weight: 780; letter-spacing: 0.04em; text-transform: uppercase; }
@@ -270,6 +271,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 .subscription-row__trial[data-state="trial"] { padding: 4px 6px; background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent); border-radius: 6px; }
 .subscription-row__trial[data-state="trial"] strong { color: var(--primary-strong); }
 .subscription-row__trial[data-state="uncertain"] strong { color: var(--warning); }
+.subscription-row__trial[data-state="available"] strong { color: var(--text); }
 .subscription-row__trial[data-trial="used"] strong { color: var(--muted); }
 .subscription-row > :nth-child(1), .subscription-row > :nth-child(3), .subscription-row > :nth-child(4), .subscription-row > :nth-child(5), .subscription-row > :nth-child(6), .subscription-row > :nth-child(7), .subscription-row > :nth-child(8), .subscription-row > :nth-child(9), .subscription-row > :nth-child(10), .subscription-row > :nth-child(11) { justify-self: center; }
 .subscription-row--header > span:nth-child(2) { justify-self: start; }
@@ -387,6 +389,7 @@ pre { max-height: 520px; margin: 0; padding: 16px; overflow: auto; color: var(--
 
 @media (max-width: 700px) {
   .app-bar__inner, .app-shell, .app-footer { width: calc(100% - 20px); }
+  .subscription-page .app-bar__inner, .subscription-page .app-shell, .subscription-page .app-footer { width: calc(100% - 20px); }
   .app-bar { height: auto; min-height: 56px; }
   .app-bar__inner { min-height: 56px; padding: 8px 0; }
   .app-bar__primary { flex: 1 1 auto; flex-wrap: wrap; gap: 8px 10px; justify-content: flex-start; }

@@ -169,6 +169,7 @@ test("subscription batch table shares one aligned column grid", () => {
   assert.match(css, /\.subscription-row > :nth-child\(9\)/u);
   assert.match(css, /\.subscription-row__account\s*\{[^}]*justify-self:\s*stretch/u);
   assert.match(css, /\.subscription-row__account strong\s*\{[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal/u);
+  assert.match(css, /\.subscription-page \.app-bar__inner, \.subscription-page \.app-shell, \.subscription-page \.app-footer\s*\{[^}]*width:\s*min\(100% - 40px,\s*1180px\)/u);
   assert.match(css, /\.subscription-row \.subscription-status-pill\s*\{[^}]*min-width:/u);
 });
 
@@ -220,7 +221,7 @@ test("subscription summary separates complete, partial, and hard failure results
   assert.match(js, /offers_status/u);
   assert.match(js, /eligibility_unconfirmed_due_to_egress/u);
   assert.match(js, /出口漂移/u);
-  assert.match(eligibility, /需复测/u);
+  assert.match(eligibility, /eligible_promos:/u);
   assert.match(css, /\.subscription-batch-stat\[data-kind="partial"\] strong/u);
 });
 
